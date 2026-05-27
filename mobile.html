@@ -38,79 +38,14 @@ html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'Montser
 .nav-btn.active{color:var(--acc)}
 .nav-btn.active .ni{transform:scale(1.1)}
 
-/* FIN TOGGLE */
-.fin-tog{display:flex;background:var(--brd);border-radius:12px;padding:3px;margin:12px 16px 8px}
-.fin-tog-btn{flex:1;padding:8px;border:none;border-radius:9px;background:none;color:var(--mut);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;font-family:'Montserrat',sans-serif}
-.fin-tog-btn.active{background:var(--acc);color:#fff}
-
-/* MONTH BAR */
-.mo-bar{display:flex;align-items:center;gap:12px;padding:0 16px;margin-bottom:12px}
-.mo-bar .mo-name{flex:1;text-align:center;font-size:15px;font-weight:700;text-transform:capitalize;color:var(--txt)}
-.mo-arr{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--brd);background:var(--surf);color:var(--txt);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;box-shadow:0 1px 4px rgba(0,0,0,.08)}
-
-/* STAT CARDS */
-.stat-scroll{overflow-x:auto;padding:0 16px 4px;display:flex;gap:10px;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin-bottom:14px}
-.stat-scroll::-webkit-scrollbar{display:none}
-.m-sc{flex-shrink:0;width:148px;background:var(--surf);border-radius:14px;padding:14px;position:relative;overflow:hidden;border:1px solid var(--brd);box-shadow:0 2px 8px rgba(0,0,0,.06)}
-.m-sc::before{content:'';position:absolute;top:-14px;right:-14px;width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.1)}
-.m-sc::after{content:'';position:absolute;bottom:-20px;right:8px;width:70px;height:70px;border-radius:50%;background:rgba(255,255,255,.06)}
-.m-sc .si{font-size:18px;margin-bottom:6px}
-.m-sc .sl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;opacity:.75}
-.m-sc .sv{font-size:15px;font-weight:800;line-height:1.1}
-.m-sc .ss{font-size:9px;margin-top:4px;line-height:1.4;opacity:.7}
-/* stat cards com cor própria = texto branco */
-.m-sc[style*="gradient"] .sl,.m-sc[style*="gradient"] .ss{color:rgba(255,255,255,.8)}
-.m-sc[style*="gradient"] .sv{color:#fff}
-/* stat cards brancos = texto normal */
-.m-sc:not([style]) .sl,.m-sc:not([style]) .ss{color:var(--mut)}
-.m-sc:not([style]) .sv{color:var(--txt)}
-
-/* BANCO */
-.banco-box{background:var(--surf);border-radius:16px;margin:0 12px 12px;padding:16px;border:1px solid var(--brd);box-shadow:0 2px 8px rgba(0,0,0,.06)}
-.banco-lbl{font-size:10px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
-.banco-amt{font-size:26px;font-weight:800;color:var(--txt)}
-.banco-edit{font-size:12px;color:var(--acc);margin-top:5px;cursor:pointer;text-decoration:underline dotted;font-weight:600}
-
-/* BLOCKS */
-.mob-blk{background:var(--surf);border-radius:16px;margin:0 12px 12px;overflow:hidden;border:1px solid var(--brd);box-shadow:0 2px 8px rgba(0,0,0,.06)}
-.blk-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;user-select:none}
-.blk-title{font-size:14px;font-weight:700;display:flex;align-items:center;gap:6px;color:var(--txt)}
-.blk-badge{font-size:11px;color:var(--mut);font-weight:600}
-.blk-chev{color:var(--mut);font-size:11px;transition:transform .2s}
-.mob-blk.open .blk-chev{transform:rotate(180deg)}
-.blk-body{display:none;border-top:1px solid var(--brd)}
-.mob-blk.open .blk-body{display:block}
-
-/* LIST ITEMS */
-.li{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--brd)}
-.li:last-child{border-bottom:none}
-.li .li-name{flex:1;font-size:13px;font-weight:500;color:var(--txt)}
-.li .li-val{font-size:13px;font-weight:700;color:var(--ok)}
-.li .li-val.paid{color:var(--mut);text-decoration:line-through}
-.li .li-val.red{color:var(--err)}
-
 /* CHECKBOX */
 .chk{width:20px;height:20px;border-radius:5px;border:2px solid var(--brd);background:var(--surf);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
 .chk.on{background:var(--ok);border-color:var(--ok)}
 .chk.on::after{content:'✓';color:#fff;font-size:11px;font-weight:800}
 
 /* ADD ROW */
-.add-row{display:flex;gap:8px;padding:10px 16px;border-top:1px solid var(--brd);background:var(--surf2)}
-.add-row input{flex:1;background:var(--surf);border:1.5px solid var(--brd);border-radius:8px;padding:8px 12px;color:var(--txt);font-size:13px;outline:none;min-width:0;font-family:'Montserrat',sans-serif}
-.add-row input:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(200,136,42,.12)}
-.add-row .v-inp{width:76px;flex:none}
 .btn-add{padding:8px 14px;border-radius:8px;border:none;background:var(--acc);color:#fff;font-size:15px;font-weight:700;cursor:pointer;flex-shrink:0}
 .btn-del{padding:4px 8px;border-radius:6px;border:none;background:rgba(160,69,53,.12);color:var(--err);font-size:12px;cursor:pointer;flex-shrink:0;font-weight:700}
-
-/* FESTAS */
-.festa-li{padding:12px 16px;border-bottom:1px solid var(--brd)}
-.festa-li:last-child{border-bottom:none}
-.festa-nm{font-size:14px;font-weight:700;color:var(--txt)}
-.festa-dt{font-size:11px;color:var(--mut);margin-top:2px;font-weight:500}
-.f-badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;margin-top:5px}
-.f-badge.pago{background:#EAF0E3;color:#556248}
-.f-badge.sinal{background:#FEF3C7;color:#92400E}
-.f-badge.pendente{background:#F5E8E6;color:#991B1B}
 
 /* TAREFAS */
 .tar-add{display:flex;gap:8px;padding:12px 16px 8px}
@@ -236,55 +171,8 @@ select{background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;c
 
   <div id="mob-content">
 
-    <!-- FINANCEIRO -->
-    <section id="sec-fin" class="mob-sec active">
-      <div class="fin-tog">
-        <button class="fin-tog-btn active" onclick="switchFin('empresa',this)">🏢 Empresa</button>
-        <button class="fin-tog-btn" onclick="switchFin('pessoal',this)">👤 Pessoal</button>
-      </div>
-      <div class="mo-bar">
-        <button class="mo-arr" onclick="changeMonth(-1)">‹</button>
-        <div class="mo-name" id="mob-mo-name">maio</div>
-        <button class="mo-arr" onclick="changeMonth(1)">›</button>
-      </div>
-      <div class="stat-scroll" id="mob-stats"></div>
-      <div class="banco-box">
-        <div class="banco-lbl" id="mob-banco-lbl">🏦 Banco — Empresa</div>
-        <div class="banco-amt" id="mob-banco-val">R$ 0,00</div>
-        <div class="banco-edit" onclick="editBanco()">✏️ Editar saldo do banco</div>
-      </div>
-      <div class="mob-blk" id="blk-gf">
-        <div class="blk-hdr" onclick="toggleBlk('blk-gf')">
-          <div class="blk-title">💸 Gastos Fixos <span class="blk-badge" id="gf-badge"></span></div>
-          <span class="blk-chev">▼</span>
-        </div>
-        <div class="blk-body" id="gf-list"></div>
-      </div>
-      <div class="mob-blk open" id="blk-gd">
-        <div class="blk-hdr" onclick="toggleBlk('blk-gd')">
-          <div class="blk-title">🧾 Gastos do Mês <span class="blk-badge" id="gd-badge"></span></div>
-          <span class="blk-chev">▼</span>
-        </div>
-        <div class="blk-body">
-          <div id="gd-list"></div>
-          <div class="add-row">
-            <input type="text" id="gd-nome" placeholder="Descrição...">
-            <input type="number" id="gd-val" placeholder="R$" class="v-inp" inputmode="decimal">
-            <button class="btn-add" onclick="addDiario()">+</button>
-          </div>
-        </div>
-      </div>
-      <div class="mob-blk" id="blk-ft">
-        <div class="blk-hdr" onclick="toggleBlk('blk-ft')">
-          <div class="blk-title">🎉 Festas do Mês <span class="blk-badge" id="ft-badge"></span></div>
-          <span class="blk-chev">▼</span>
-        </div>
-        <div class="blk-body" id="ft-list"></div>
-      </div>
-    </section>
-
     <!-- TAREFAS -->
-    <section id="sec-tar" class="mob-sec">
+    <section id="sec-tar" class="mob-sec active">
       <div style="height:8px"></div>
       <div class="tar-add">
         <input type="text" class="tar-inp" id="tar-inp" placeholder="Nova tarefa...">
@@ -365,10 +253,7 @@ select{background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;c
   </div>
 
   <nav id="mob-nav">
-    <button class="nav-btn active" onclick="showSec('fin',this)">
-      <span class="ni">💰</span><span>Financeiro</span>
-    </button>
-    <button class="nav-btn" onclick="showSec('tar',this)">
+    <button class="nav-btn active" onclick="showSec('tar',this)">
       <span class="ni">✅</span><span>Tarefas</span>
     </button>
     <button class="nav-btn" onclick="showSec('cnt',this)">
@@ -387,30 +272,24 @@ select{background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;c
 <script>
 // ── CONSTANTES ──────────────────────────────
 const MESES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
-const FIN_COLS=['confirmado','confirmado-pendencias'];
 const CNT_ST_ORDER=['ideia','produzindo','publicado'];
 const CNT_TIPO_LBL={reels:'🎬 Reels',carrossel:'🖼️ Carrossel',stories:'📱 Stories',foto:'📷 Foto',outros:'📝 Outros'};
 
 // ── STATE ────────────────────────────────────
-let _mesIdx=new Date().getMonth();
-let _mode='empresa';
 let _tFilter='pendentes', _cFilter='todos';
 let _recMode=false, _recDias=[], _dateMode=false;
 
-let finVG={},finGD={},finDD={},finRG=0;
-let pessVG={},pessGD={},pessDD={},pessFD={},pessRG=0;
 let opCards=[],packages=[],tarefas=[],conteudos=[];
 
-let _finDb=null,_pessDb=null;
-let _finTs=0,_pessTs=0,_dadosTs=0;
-let _finTmr=null,_pessTmr=null,_dadosTmr=null;
-let _rFin=false,_rPess=false,_rDados=false;
+let _finDb=null;
+let _dadosTs=0;
+let _dadosTmr=null;
+let _rDados=false;
 
 // ── UTILS ────────────────────────────────────
 const fmtM=v=>(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const uid=()=>Math.random().toString(36).slice(2)+Date.now().toString(36);
 const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-const curMes=()=>MESES[_mesIdx];
 
 function toast(msg,dur=2200){
   const el=document.getElementById('mob-toast');
@@ -418,254 +297,22 @@ function toast(msg,dur=2200){
   setTimeout(()=>el.classList.remove('show'),dur);
 }
 
-function toggleBlk(id){document.getElementById(id).classList.toggle('open');}
-
 function showSec(k,btn){
   document.querySelectorAll('.mob-sec').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('sec-'+k).classList.add('active');
   btn.classList.add('active');
-  if(k==='fin')renderFin();
-  else if(k==='tar')renderTar();
+  if(k==='tar')renderTar();
   else if(k==='cnt')renderCnt();
   else if(k==='ag'){renderAgenda();}
   // mostra/esconde FAB
   document.getElementById('ag-fab').style.display=k==='ag'?'flex':'none';
 }
 
-function switchFin(mode,btn){
-  _mode=mode;
-  document.querySelectorAll('.fin-tog-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('sec-fin').style.background=mode==='empresa'?'#F2E9DF':'#E8EDE4';
-  renderFin();
-}
-
-function changeMonth(dir){
-  _mesIdx=(_mesIdx+dir+12)%12;
-  document.getElementById('mob-mo-name').textContent=curMes();
-  renderFin();
-}
-
 function updateGreeting(){
   const h=new Date().getHours();
   const g=h<12?'Bom dia':h<18?'Boa tarde':'Boa noite';
   document.getElementById('mob-greet').textContent=g+', André ☀️';
-}
-
-// ── CÁLCULOS EMPRESA ─────────────────────────
-function empShare(c){
-  if((c.tipoExecucao||'proprio')==='freelancer'||(c.tipoExecucao||'proprio')==='sou-freela')return 0;
-  const t=c.valorTotal||0;
-  const ids=c.pacoteIds||(c.pacoteId?[c.pacoteId]:[]);
-  const pacs=ids.map(id=>packages.find(p=>p.id===id)).filter(Boolean);
-  const vc=c.valorCoresJob||Math.max(0,...pacs.filter(p=>p.tipoPlano==='memorias'||p.tipoPlano==='movimento').map(p=>p.valorCores||0),0);
-  if(vc>0){
-    const gE=(c.gastosItens||[]).filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
-    return parseFloat((vc*0.4+gE).toFixed(2));
-  }
-  return parseFloat((t*0.4).toFixed(2));
-}
-
-function getMes(ds){if(!ds)return null;return MESES[new Date(ds+'T12:00:00').getMonth()];}
-
-function getFinFestas(mes){
-  return opCards.filter(c=>FIN_COLS.includes(c.coluna)&&getMes(c.dataEvento)===mes&&(c.tipoExecucao||'proprio')!=='sou-freela').map(c=>{
-    const t=c.valorTotal||0,es=empShare(c),vPago=c.valorReserva||0;
-    const gE=(c.gastosItens||[]).filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
-    const liq=parseFloat((es-gE).toFixed(2));
-    const falta=Math.max(0,parseFloat((liq-vPago).toFixed(2)));
-    const st=falta<=0&&liq>0?'pago':vPago>0?'sinal':'pendente';
-    const dia=c.dataEvento?parseInt(c.dataEvento.split('-')[2]):0;
-    return{id:c.id,n:c.nomePais||c.titulo||'Cliente',d:dia,vFull:t,v:es,liq,custo:gE,reserva:vPago,rest:falta,statusPag:st};
-  });
-}
-
-function calcEmp(mes){
-  const festas=getFinFestas(mes),G=finGD[mes]||[],D=finDD[mes]||[];
-  const totalF=festas.reduce((s,f)=>s+(f.liq??f.v),0);
-  const totalAR=festas.reduce((s,f)=>s+f.rest,0);
-  const bruto=festas.reduce((s,f)=>s+(f.vFull||0),0);
-  const vg=finVG[mes]!==undefined?finVG[mes]:festas.reduce((s,f)=>s+(f.reserva||0),0);
-  return{totalF,totalAR,bruto,vg,festas,G,D};
-}
-
-// ── CÁLCULOS PESSOAL ─────────────────────────
-function calcPessAR(mes){
-  return(pessFD[mes]||[]).reduce((s,f)=>{
-    const op=f._opId?opCards.find(o=>o.id===f._opId):null;
-    const gp=(op?.gastosItens||[]).filter(g=>g.tipo==='pessoal').reduce((ss,g)=>ss+(g.val||0),0);
-    return s+Math.max(0,Math.max(0,f.v-gp)-(op?.valorReserva||0));
-  },0);
-}
-
-function calcPess(mes){
-  const F=pessFD[mes]||[],G=pessGD[mes]||[],D=pessDD[mes]||[];
-  const totalF=F.reduce((s,f)=>s+f.v,0);
-  const vg=pessVG[mes]||0;
-  return{totalF,vg,F,G,D};
-}
-
-// ── RENDER FINANCEIRO ─────────────────────────
-function renderFin(){
-  if(_mode==='empresa')renderEmp();else renderPess();
-}
-
-function renderEmp(){
-  const mes=curMes(),c=calcEmp(mes);
-  const disp=c.vg+c.totalAR;
-  const dg=disp>1000?'linear-gradient(135deg,#6B7C5C,#556248)':disp<0?'linear-gradient(135deg,#A04535,#7f2718)':'linear-gradient(135deg,#C07830,#A06020)';
-
-  document.getElementById('mob-stats').innerHTML=`
-    <div class="m-sc" style="background:linear-gradient(135deg,#C8882A,#A06E1E)"><div class="si">💰</div><div class="sl">Festas Bruto</div><div class="sv">${fmtM(c.bruto)}</div><div class="ss">${c.festas.length} evento(s)</div></div>
-    <div class="m-sc" style="background:linear-gradient(135deg,#B88A42,#8B6A2E)"><div class="si">✅</div><div class="sl">Festas Líquido</div><div class="sv">${fmtM(c.totalF)}</div><div class="ss">Parte empresa</div></div>
-    <div class="m-sc" style="background:linear-gradient(135deg,#6B7C5C,#556248)"><div class="si">⏳</div><div class="sl">A Receber</div><div class="sv">${fmtM(c.totalAR)}</div><div class="ss">Restante mês</div></div>
-    <div class="m-sc" style="background:${dg}"><div class="si">💸</div><div class="sl">Pode Gastar</div><div class="sv">${fmtM(disp)}</div><div class="ss">${fmtM(c.vg)} + ${fmtM(c.totalAR)}</div></div>
-    <div class="m-sc" style="background:linear-gradient(135deg,#4A3428,#241408);cursor:pointer" onclick="editRG('empresa')"><div class="si">🏦</div><div class="sl">Reserva</div><div class="sv">${fmtM(finRG+(finVG[mes]||0))}</div><div class="ss">${fmtM(finRG)} guard.<br>${fmtM(finVG[mes]||0)} banco</div></div>`;
-
-  document.getElementById('mob-banco-lbl').textContent='🏦 Banco — Empresa';
-  document.getElementById('mob-banco-val').textContent=fmtM(c.vg);
-
-  // Gastos Fixos
-  const G=c.G;
-  document.getElementById('gf-badge').textContent=G.length?`${G.filter(g=>g.p).length}/${G.length} pagos`:'';
-  document.getElementById('gf-list').innerHTML=G.length
-    ?G.map((g,i)=>`<div class="li"><div class="chk ${g.p?'on':''}" onclick="toggleFG('${mes}',${i},${!g.p})"></div><div class="li-name" style="${g.p?'color:var(--mut)':''}">${esc(g.n||'Gasto')}</div><div class="li-val ${g.p?'paid':''}">${fmtM(g.v)}</div></div>`).join('')
-    :'<div class="empty">Nenhum gasto fixo</div>';
-
-  // Gastos Diários
-  const D=c.D;
-  document.getElementById('gd-badge').textContent=D.length?`${D.length}`:'';
-  document.getElementById('gd-list').innerHTML=D.length
-    ?D.map((d,i)=>`<div class="li"><div class="chk ${d.p?'on':''}" onclick="toggleFD('${mes}',${i},${!d.p})"></div><div class="li-name" style="${d.p?'color:var(--mut)':''}">${esc(d.n||'Gasto')}</div><div class="li-val red">${fmtM(d.v)}</div><button class="btn-del" onclick="delFD('${mes}',${i})">✕</button></div>`).join('')
-    :'';
-
-  // Festas
-  const F=c.festas.sort((a,b)=>a.d-b.d);
-  document.getElementById('ft-badge').textContent=F.length?`${F.length}`:'';
-  document.getElementById('ft-list').innerHTML=F.length
-    ?F.map(f=>`<div class="festa-li"><div class="festa-nm">${esc(f.n)}</div><div class="festa-dt">Dia ${f.d} · ${fmtM(f.vFull)} bruto · ${fmtM(f.liq)} liq.</div><span class="f-badge ${f.statusPag}">${f.statusPag==='pago'?'✅ Pago':f.statusPag==='sinal'?'💰 Sinal':'⏳ Pendente'}</span>${f.rest>0?` <span style="font-size:11px;color:var(--warn)">Falta: ${fmtM(f.rest)}</span>`:''}</div>`).join('')
-    :'<div class="empty">Nenhuma festa neste mês</div>';
-}
-
-function renderPess(){
-  const mes=curMes(),c=calcPess(mes),aR=calcPessAR(mes);
-  const disp=c.vg+aR;
-  const dg=disp>300?'linear-gradient(135deg,#6B7C5C,#556248)':disp<0?'linear-gradient(135deg,#A04535,#7f2718)':'linear-gradient(135deg,#C07830,#A06020)';
-
-  // Líquido pessoal
-  const liq=c.F.reduce((s,f)=>{
-    const op=f._opId?opCards.find(o=>o.id===f._opId):null;
-    const gp=(op?.gastosItens||[]).filter(g=>g.tipo==='pessoal').reduce((ss,g)=>ss+(g.val||0),0);
-    return s+Math.max(0,f.v-gp);
-  },0);
-
-  document.getElementById('mob-stats').innerHTML=`
-    <div class="m-sc" style="background:linear-gradient(135deg,#C8882A,#A06E1E)"><div class="si">💰</div><div class="sl">Festas Bruto</div><div class="sv">${fmtM(c.totalF)}</div><div class="ss">${c.F.length} evento(s)</div></div>
-    <div class="m-sc" style="background:linear-gradient(135deg,#B88A42,#8B6A2E)"><div class="si">✅</div><div class="sl">Festas Líquido</div><div class="sv">${fmtM(liq)}</div><div class="ss">Após gastos pessoais</div></div>
-    <div class="m-sc" style="background:linear-gradient(135deg,#6B7C5C,#556248)"><div class="si">⏳</div><div class="sl">A Receber</div><div class="sv">${fmtM(aR)}</div><div class="ss">Restante mês</div></div>
-    <div class="m-sc" style="background:${dg}"><div class="si">💸</div><div class="sl">Pode Gastar</div><div class="sv">${fmtM(disp)}</div><div class="ss">${fmtM(c.vg)} + ${fmtM(aR)}</div></div>
-    <div class="m-sc" style="background:linear-gradient(135deg,#4A3428,#241408);cursor:pointer" onclick="editRG('pessoal')"><div class="si">🏦</div><div class="sl">Reserva</div><div class="sv">${fmtM(pessRG+(pessVG[mes]||0))}</div><div class="ss">${fmtM(pessRG)} guard.<br>${fmtM(pessVG[mes]||0)} banco</div></div>`;
-
-  document.getElementById('mob-banco-lbl').textContent='🏦 Banco — Pessoal';
-  document.getElementById('mob-banco-val').textContent=fmtM(c.vg);
-
-  const G=c.G;
-  document.getElementById('gf-badge').textContent=G.length?`${G.filter(g=>g.p).length}/${G.length} pagos`:'';
-  document.getElementById('gf-list').innerHTML=G.length
-    ?G.map((g,i)=>`<div class="li"><div class="chk ${g.p?'on':''}" onclick="togglePG('${mes}',${i},${!g.p})"></div><div class="li-name" style="${g.p?'color:var(--mut)':''}">${esc(g.n||'Gasto')}</div><div class="li-val ${g.p?'paid':''}">${fmtM(g.v)}</div></div>`).join('')
-    :'<div class="empty">Nenhum gasto fixo</div>';
-
-  const D=c.D;
-  document.getElementById('gd-badge').textContent=D.length?`${D.length}`:'';
-  document.getElementById('gd-list').innerHTML=D.length
-    ?D.map((d,i)=>`<div class="li"><div class="chk ${d.p?'on':''}" onclick="togglePD('${mes}',${i},${!d.p})"></div><div class="li-name" style="${d.p?'color:var(--mut)':''}">${esc(d.n||'Gasto')}</div><div class="li-val red">${fmtM(d.v)}</div><button class="btn-del" onclick="delPD('${mes}',${i})">✕</button></div>`).join('')
-    :'';
-
-  const F=c.F;
-  document.getElementById('ft-badge').textContent=F.length?`${F.length}`:'';
-  document.getElementById('ft-list').innerHTML=F.length
-    ?F.map(f=>`<div class="festa-li"><div class="festa-nm">${esc(f.n||f.nome||'Evento')}</div><div class="festa-dt">Parte pessoal: ${fmtM(f.v)}</div><span class="f-badge ${f.p?'pago':'pendente'}">${f.p?'✅ Pago':'⏳ Pendente'}</span></div>`).join('')
-    :'<div class="empty">Nenhuma festa neste mês</div>';
-}
-
-// ── AÇÕES EMPRESA ─────────────────────────────
-function toggleFG(mes,i,val){
-  if(!finGD[mes]||!finGD[mes][i])return;
-  const g=finGD[mes][i],foi=g.p;g.p=val;
-  if(val&&!foi)finVG[mes]=(finVG[mes]||0)-(g.v||0);
-  else if(!val&&foi)finVG[mes]=(finVG[mes]||0)+(g.v||0);
-  saveF();renderFin();
-}
-function toggleFD(mes,i,val){
-  if(!finDD[mes]||!finDD[mes][i])return;
-  const d=finDD[mes][i],foi=d.p;d.p=val;
-  if(val&&!foi)finVG[mes]=(finVG[mes]||0)-(d.v||0);
-  else if(!val&&foi)finVG[mes]=(finVG[mes]||0)+(d.v||0);
-  saveF();renderFin();
-}
-function delFD(mes,i){
-  if(!finDD[mes]||!finDD[mes][i])return;
-  const d=finDD[mes][i];
-  if(d.p)finVG[mes]=(finVG[mes]||0)+(d.v||0);
-  finDD[mes].splice(i,1);saveF();renderFin();
-}
-
-// ── AÇÕES PESSOAL ─────────────────────────────
-function togglePG(mes,i,val){
-  if(!pessGD[mes]||!pessGD[mes][i])return;
-  const g=pessGD[mes][i],foi=g.p;g.p=val;
-  if(val&&!foi)pessVG[mes]=(pessVG[mes]||0)-(g.v||0);
-  else if(!val&&foi)pessVG[mes]=(pessVG[mes]||0)+(g.v||0);
-  saveP();renderFin();
-}
-function togglePD(mes,i,val){
-  if(!pessDD[mes]||!pessDD[mes][i])return;
-  const d=pessDD[mes][i],foi=d.p;d.p=val;
-  if(val&&!foi)pessVG[mes]=(pessVG[mes]||0)-(d.v||0);
-  else if(!val&&foi)pessVG[mes]=(pessVG[mes]||0)+(d.v||0);
-  saveP();renderFin();
-}
-function delPD(mes,i){
-  if(!pessDD[mes]||!pessDD[mes][i])return;
-  const d=pessDD[mes][i];
-  if(d.p)pessVG[mes]=(pessVG[mes]||0)+(d.v||0);
-  pessDD[mes].splice(i,1);saveP();renderFin();
-}
-
-// ── ADD DIÁRIO (modo-aware) ───────────────────
-function addDiario(){
-  const mes=curMes();
-  const nome=document.getElementById('gd-nome').value.trim();
-  const val=parseFloat(document.getElementById('gd-val').value.replace(',','.'));
-  if(!nome||isNaN(val)||val<=0){toast('⚠️ Preencha descrição e valor');return;}
-  if(_mode==='empresa'){
-    if(!finDD[mes])finDD[mes]=[];
-    finDD[mes].push({n:nome,v:val,p:false,id:uid()});saveF();
-  } else {
-    if(!pessDD[mes])pessDD[mes]=[];
-    pessDD[mes].push({n:nome,v:val,p:false,id:uid()});saveP();
-  }
-  document.getElementById('gd-nome').value='';
-  document.getElementById('gd-val').value='';
-  renderFin();toast('✅ Gasto adicionado');
-}
-
-// ── BANCO / RESERVA ───────────────────────────
-function editBanco(){
-  const mes=curMes();
-  const cur=_mode==='empresa'?(finVG[mes]||0):(pessVG[mes]||0);
-  openSheet('Saldo do Banco ('+(_mode==='empresa'?'Empresa':'Pessoal')+')',cur,v=>{
-    if(_mode==='empresa'){finVG[mes]=v;saveF();}else{pessVG[mes]=v;saveP();}
-    renderFin();
-  });
-}
-function editRG(mode){
-  const cur=mode==='empresa'?finRG:pessRG;
-  openSheet('Reserva Guardada — '+(mode==='empresa'?'Empresa':'Pessoal'),cur,v=>{
-    if(mode==='empresa'){finRG=v;saveF();}else{pessRG=v;saveP();}
-    renderFin();
-  });
 }
 
 // ── SHEET ─────────────────────────────────────
@@ -789,14 +436,6 @@ function cycleCnt(id){
 function delCnt(id){conteudos=conteudos.filter(x=>x.id!==id);saveD();renderCnt();}
 
 // ── FIREBASE SAVE ─────────────────────────────
-function saveF(){
-  if(!_finDb)return;_finTs=Date.now();
-  clearTimeout(_finTmr);_finTmr=setTimeout(()=>{_finDb.ref('crm26').update({vg:finVG,gd:finGD,dd:finDD,rg:finRG});},1500);
-}
-function saveP(){
-  if(!_pessDb)return;_pessTs=Date.now();
-  clearTimeout(_pessTmr);_pessTmr=setTimeout(()=>{_pessDb.ref('pess26').update({vg:pessVG,gd:pessGD,dd:pessDD,fd:pessFD,rg:pessRG});},1500);
-}
 function saveD(){
   if(!_finDb)return;_dadosTs=Date.now();
   clearTimeout(_dadosTmr);_dadosTmr=setTimeout(()=>{_finDb.ref('dados26').update({tar:tarefas,cnt:conteudos,op:opCards,pac:packages,lem:lembretes});},1500);
@@ -804,10 +443,10 @@ function saveD(){
 
 // ── READY CHECK ───────────────────────────────
 function checkReady(){
-  if(_rFin&&_rPess&&_rDados){
+  if(_rDados){
     document.getElementById('mob-load').style.display='none';
     document.getElementById('app').style.display='flex';
-    updateGreeting();renderFin();renderTar();renderCnt();
+    updateGreeting();renderTar();renderCnt();
     initNotifications();
     checkNotifBanner();
   }
@@ -823,18 +462,6 @@ function checkReady(){
     const aF=firebase.initializeApp(cfg,'mob-fin');
     _finDb=firebase.database(aF);
 
-    _finDb.ref('crm26').on('value',snap=>{
-      const d=snap.val();
-      if(d&&Date.now()-_finTs>2000){
-        if(d.vg)finVG=d.vg;
-        if(d.gd)finGD=d.gd;
-        if(d.dd)finDD=d.dd;
-        if(d.rg!==undefined)finRG=d.rg;
-      }
-      if(!_rFin){_rFin=true;checkReady();}
-      else if(document.getElementById('sec-fin').classList.contains('active'))renderFin();
-    });
-
     _finDb.ref('dados26').on('value',snap=>{
       const d=snap.val();
       const has=d&&((d.op&&d.op.length)||(d.tar&&d.tar.length)||(d.cnt&&d.cnt.length));
@@ -849,31 +476,15 @@ function checkReady(){
       if(!_rDados){_rDados=true;checkReady();}
       else{
         const sec=document.querySelector('.mob-sec.active')?.id;
-        if(sec==='sec-fin')renderFin();
-        else if(sec==='sec-tar')renderTar();
+        if(sec==='sec-tar')renderTar();
         else if(sec==='sec-cnt')renderCnt();
         else if(sec==='sec-ag')renderAgenda();
       }
     });
 
-    const aP=firebase.initializeApp(cfg,'mob-pess');
-    _pessDb=firebase.database(aP);
-    _pessDb.ref('pess26').on('value',snap=>{
-      const d=snap.val();
-      if(d&&Date.now()-_pessTs>2000){
-        if(d.vg)pessVG=d.vg;
-        if(d.gd)pessGD=d.gd;
-        if(d.dd)pessDD=d.dd;
-        if(d.fd)pessFD=d.fd;
-        if(d.rg!==undefined)pessRG=d.rg;
-      }
-      if(!_rPess){_rPess=true;checkReady();}
-      else if(document.getElementById('sec-fin').classList.contains('active')&&_mode==='pessoal')renderFin();
-    });
-
   }catch(e){
     console.error('Firebase:',e);
-    _rFin=_rPess=_rDados=true;checkReady();
+    _rDados=true;checkReady();
   }
 })();
 
@@ -1223,8 +834,6 @@ document.addEventListener('keydown',e=>{
   const sec=document.querySelector('.mob-sec.active')?.id;
   if(sec==='sec-tar'&&document.activeElement===document.getElementById('tar-inp'))addTarefa();
   else if(sec==='sec-cnt'&&document.activeElement===document.getElementById('cnt-inp'))addConteudo();
-  else if(sec==='sec-fin'&&document.activeElement===document.getElementById('gd-nome'))document.getElementById('gd-val').focus();
-  else if(sec==='sec-fin'&&document.activeElement===document.getElementById('gd-val'))addDiario();
 });
 </script>
 </body>
