@@ -3463,6 +3463,8 @@ function onColChange(){
   // Título do financeiro muda
   const finTitle=document.querySelector('#sec-financeiro .fs-title');
   if(finTitle)finTitle.textContent=perdido?'💰 Valor Orçado':'💳 Financeiro';
+  // Distribuição só aparece em Confirmado
+  calcDistribuicao();
 }
 function renderGastosItens(){
   const list=document.getElementById('f-gastos-list');
@@ -3695,12 +3697,7 @@ function calcRestante(){
   autoStatusPag();calcDistribuicao();
   autoRecalcParcelas();
 }
-const CUSTOS_PADRAO_EVENTO=[
-  {desc:'Transporte ida',val:55.40,tipo:'empresa'},
-  {desc:'Transporte volta',val:55.40,tipo:'pessoal'},
-];
-const TRANSP_IDA=55.40;  // Uber R$15 + passagem R$35 + metrô R$5,40 — pago pela empresa
-const TRANSP_VOLTA=55.40; // Metrô R$5,40 + passagem R$35 + Uber casa R$15 — pago pelo André
+const CUSTOS_PADRAO_EVENTO=[];
 function syncAllDistrib(){
   // Remove TODAS as entradas auto de todos os meses
   MESES_FIN.forEach(m=>{
@@ -3714,14 +3711,6 @@ function syncAllDistrib(){
     if(!pessFD[mes])pessFD[mes]=[];
     const dia=c.dataEvento?parseInt(c.dataEvento.split('-')[2]):0;
     pessFD[mes].push({n:c.nomePais||c.titulo||'Cliente',v:calcAndreShare(c),d:dia,t:'Fotografia (auto)',p:c.statusPag==='pago',_opId:c.id});
-    // Transporte automático — só quando André vai pessoalmente e o evento ainda não aconteceu
-    const _hoje=new Date().toISOString().slice(0,10);
-    if((c.tipoExecucao||'proprio')==='proprio'&&(c.dataEvento||'')>=_hoje){
-      if(!pessDD[mes])pessDD[mes]=[];
-      pessDD[mes].push({dt:c.dataEvento||'',v:TRANSP_VOLTA,l:'🚌 Transporte volta — '+(c.nomePais||c.titulo||'Cliente'),_opId:c.id});
-      if(!finDD[mes])finDD[mes]=[];
-      finDD[mes].push({dt:c.dataEvento||'',v:TRANSP_IDA,l:'🚌 Transporte ida — '+(c.nomePais||c.titulo||'Cliente'),_opId:c.id});
-    }
   });
   MESES_FIN.forEach(m=>{
     if(pessDD[m])pessDD[m].sort((a,b)=>a.dt.localeCompare(b.dt));
@@ -3782,16 +3771,6 @@ function syncPessDistrib(data){
       p:data.statusPag==='pago'||data.pagoAndre===true,
       _opId:data.id
     });
-    // Transporte automático — só quando André vai pessoalmente e o evento ainda não aconteceu
-    const _hoje=new Date().toISOString().slice(0,10);
-    if((data.tipoExecucao||'proprio')==='proprio'&&(data.dataEvento||'')>=_hoje){
-      if(!pessDD[mes])pessDD[mes]=[];
-      pessDD[mes].push({dt:data.dataEvento||'',v:TRANSP_VOLTA,l:'🚌 Transporte volta — '+(data.nomePais||data.titulo||'Cliente'),_opId:data.id});
-      pessDD[mes].sort((a,b)=>a.dt.localeCompare(b.dt));
-      if(!finDD[mes])finDD[mes]=[];
-      finDD[mes].push({dt:data.dataEvento||'',v:TRANSP_IDA,l:'🚌 Transporte ida — '+(data.nomePais||data.titulo||'Cliente'),_opId:data.id});
-      finDD[mes].sort((a,b)=>a.dt.localeCompare(b.dt));
-    }
   }
   savePessData();
 }
@@ -3822,7 +3801,9 @@ function calcDistribuicao(){
   const r=parseFloat(document.getElementById('f-valorReserva').value)||0;
   const rest=parseFloat(document.getElementById('f-valorRestante').value)||0;
   const sec=document.getElementById('sec-distribuicao');if(!sec)return;
-  if(t<=0){sec.style.display='none';return;}
+  const _colAtual=document.getElementById('f-col')?.value||'';
+  const _isConf=_colAtual==='confirmado'||_colAtual==='confirmado-pendencias';
+  if(t<=0||!_isConf){sec.style.display='none';return;}
   sec.style.display='block';
   const fm=v=>'R$ '+v.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
   const gastosEmp=gastosItensTemp.filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
