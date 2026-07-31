@@ -385,9 +385,9 @@ tr:hover td{background:var(--n50)}
 .cfm-box h3{font-size:15px;font-weight:700;margin-bottom:7px;color:var(--n900)}
 .cfm-box p{font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.5}
 .cfm-btns{display:flex;gap:8px;justify-content:flex-end}
-.toast{position:fixed;bottom:22px;right:22px;background:var(--n900);color:#fff;padding:11px 17px;border-radius:11px;font-size:13px;font-weight:500;box-shadow:var(--sh-lg);z-index:400;transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1);display:flex;align-items:center;gap:7px;max-width:320px}
+.toast{position:fixed;bottom:22px;right:22px;background:#20252A;color:#EAEEF2;border:1px solid #3A434F;padding:11px 17px;border-radius:11px;font-size:13px;font-weight:500;box-shadow:var(--sh-lg);z-index:400;transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1);display:flex;align-items:center;gap:7px;max-width:320px}
 .toast.show{transform:translateY(0);opacity:1}
-.toast.green{background:var(--success-dark)}.toast.orange{background:#E0A14E}.toast.blue{background:#6BA3E0}
+.toast.green{background:#1D2630;border-color:#6E879F;color:#CFE0D6}.toast.orange{background:#2A2113;border-color:#8C7652;color:#E9C88A}.toast.blue{background:#16202E;border-color:#2C4A6B;color:#9FC4EC}
 
 /* ── Scrollbar ── */
 ::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-track{background:var(--n100);border-radius:99px}::-webkit-scrollbar-thumb{background:var(--n300);border-radius:99px}::-webkit-scrollbar-thumb:hover{background:var(--primary)}
@@ -2115,9 +2115,9 @@ td { padding: 13px 16px; font-size: 13.5px; }
             onfocusout="setTimeout(hideClientDropdown,200)">
           <div id="cl-dropdown" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;box-shadow:var(--sh-lg);z-index:50;max-height:220px;overflow-y:auto"></div>
         </div>
-        <div id="cl-selected-badge" style="display:none;margin-top:8px;padding:9px 13px;background:#ede9fe;border:1.5px solid #c4b5fd;border-radius:9px;align-items:center;justify-content:space-between">
-          <span id="cl-selected-name" style="font-size:13px;font-weight:600;color:#6d28d9"></span>
-          <button onclick="clearClientSelection()" style="background:none;border:none;cursor:pointer;font-size:13px;color:#a98be0;font-weight:600;padding:2px 6px;border-radius:5px">✕</button>
+        <div id="cl-selected-badge" style="display:none;margin-top:8px;padding:9px 13px;background:#231D33;border:1.5px solid #6B5AA0;border-radius:9px;align-items:center;justify-content:space-between">
+          <span id="cl-selected-name" style="font-size:13px;font-weight:600;color:#C6B6F0"></span>
+          <button onclick="clearClientSelection()" style="background:none;border:none;cursor:pointer;font-size:13px;color:#C6B6F0;font-weight:600;padding:2px 6px;border-radius:5px">✕</button>
         </div>
         <div id="freela-parceiro-banner" style="display:none;margin-top:8px;padding:10px 13px;background:#241715;border:1.5px solid #b05a45;border-radius:9px;align-items:center;gap:10px">
           <span style="font-size:18px;flex-shrink:0">📸</span>
@@ -2305,10 +2305,10 @@ td { padding: 13px 16px; font-size: 13.5px; }
             </div>
           </div>
         </div>
-        <div id="sec-pix-parcelas" style="display:none;background:#16202e;padding:13px;border-radius:10px;border:1px solid #bfdbfe;margin-bottom:11px">
+        <div id="sec-pix-parcelas" style="display:none;background:#16202e;padding:13px;border-radius:10px;border:1px solid #2c4a6b;margin-bottom:11px">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
             <span style="font-size:11px;font-weight:700;color:#6ba3e0;text-transform:uppercase;letter-spacing:.5px">💠 PIX em 2x — Datas de Pagamento</span>
-            <span id="f-parcelas-resumo" style="font-size:12px;color:#1d4ed8;font-weight:600"></span>
+            <span id="f-parcelas-resumo" style="font-size:12px;color:#7FB0E6;font-weight:600"></span>
           </div>
           <div id="f-parcelas-list" style="display:flex;flex-direction:column;gap:7px"></div>
           <div style="margin-top:10px;font-size:11px;color:#8FB8E8;background:#101A26;border:1px dashed #2c4a6b;border-radius:8px;padding:8px 11px;font-weight:600;line-height:1.5">🔔 No dia de cada parcela você recebe um lembrete aqui no CRM para cobrar o cliente — preencha as duas datas acima.</div>
@@ -2456,7 +2456,7 @@ td { padding: 13px 16px; font-size: 13.5px; }
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
           <div class="fs-title" style="margin-bottom:0">⚠️ Pendências <span id="pend-count-badge" style="display:none;font-size:11px;background:#2a2113;color:#92400e;border-radius:99px;padding:1px 8px;font-weight:700;margin-left:4px"></span></div>
           <div style="position:relative">
-            <button type="button" id="btn-pend-add" onclick="togglePendMenu()" style="background:#241b12;color:#92400e;border:1.5px solid #5c4326;border-radius:8px;padding:5px 12px;font:700 12px Montserrat,sans-serif;cursor:pointer;display:flex;align-items:center;gap:5px">＋ Adicionar</button>
+            <button type="button" id="btn-pend-add" onclick="togglePendMenu()" style="background:#241b12;color:#E0A14E;border:1.5px solid #5c4326;border-radius:8px;padding:5px 12px;font:700 12px Montserrat,sans-serif;cursor:pointer;display:flex;align-items:center;gap:5px">＋ Adicionar</button>
             <div id="pend-menu" style="display:none;position:absolute;right:0;bottom:calc(100% + 6px);z-index:200;background:var(--surface);border-radius:10px;box-shadow:0 -2px 24px rgba(0,0,0,.13);border:1px solid #e5e7eb;padding:8px;min-width:230px">
               <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;padding:2px 6px 6px">Opções rápidas</div>
               <div id="pend-menu-options" style="display:flex;flex-direction:column;gap:2px"></div>
@@ -4545,20 +4545,20 @@ function renderParcelasItens(){
   const resumo=document.getElementById('f-parcelas-resumo');
   if(!list)return;
   list.innerHTML=parcelasItensTemp.map((p,i)=>`
-    <div style="display:flex;align-items:center;gap:8px;background:var(--surface);border:1.5px solid ${p.recebido?'#86efac':'#bfdbfe'};border-radius:8px;padding:8px 10px;transition:.2s">
+    <div style="display:flex;align-items:center;gap:8px;background:var(--surface);border:1.5px solid ${p.recebido?'#6E879F':'#2c4a6b'};border-radius:8px;padding:8px 10px;transition:.2s">
       <button type="button" onclick="toggleParcela(${i})" title="${p.recebido?'Desmarcar':'Marcar como recebida'}"
         style="width:26px;height:26px;border-radius:50%;border:2px solid ${p.recebido?'#6E879F':'#2c4a6b'};background:${p.recebido?'#6E879F':'transparent'};color:#fff;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
         ${p.recebido?'✓':''}</button>
-      <span style="font-size:12px;font-weight:700;color:#4b5563;min-width:68px">${esc(p.label)}</span>
-      <label style="font-size:11px;font-weight:600;color:${p.recebido?'#6E879F':'#6b7280'};white-space:nowrap">R$
+      <span style="font-size:12px;font-weight:700;color:${p.recebido?'#AFC0D1':'#B1C0CF'};min-width:68px">${esc(p.label)}</span>
+      <label style="font-size:11px;font-weight:600;color:${p.recebido?'#AFC0D1':'#8FB8E8'};white-space:nowrap">R$
         <input type="number" value="${p.valor>0?p.valor:''}" min="0" step="0.01" placeholder="ex: 666,67"
           oninput="updateParcelaValor(${i},this.value)"
           onclick="event.stopPropagation()"
-          style="margin-left:4px;width:100px;border:2px solid ${p.recebido?'#86efac':'#2c4a6b'};border-radius:7px;padding:5px 8px;font-size:13px;font-weight:700;color:${p.recebido?'#6E879F':'#1d4ed8'};background:${p.recebido?'#F2F5F8':'#16202e'};outline:none">
+          style="margin-left:4px;width:100px;border:2px solid ${p.recebido?'#6E879F':'#2c4a6b'};border-radius:7px;padding:5px 8px;font-size:13px;font-weight:700;color:${p.recebido?'#AFC0D1':'#7FB0E6'};background:${p.recebido?'#1D2630':'#16202e'};outline:none">
       </label>
       <input type="date" value="${p.data}" onchange="updateParcelaData(${i},this.value)"
         onclick="event.stopPropagation()"
-        style="border:1.5px solid ${p.recebido?'#86efac':'#bfdbfe'};border-radius:6px;padding:5px 7px;font-size:12px;color:var(--text);background:${p.recebido?'#F2F5F8':'#16202e'}">
+        style="border:1.5px solid ${p.recebido?'#6E879F':'#2c4a6b'};border-radius:6px;padding:5px 7px;font-size:12px;color:${p.recebido?'#AFC0D1':'var(--text)'};background:${p.recebido?'#1D2630':'#16202e'}">
     </div>`).join('');
   if(resumo){
     const rec=parcelasItensTemp.filter(p=>p.recebido).length;
@@ -4566,7 +4566,7 @@ function renderParcelasItens(){
     const totVal=parseFloat(document.getElementById('f-valorTotal')?.value)||parcelasItensTemp.reduce((s,p)=>s+(p.valor||0),0);
     const recVal=parcelasItensTemp.filter(p=>p.recebido).reduce((s,p)=>s+(p.valor||0),0);
     resumo.textContent=tot>0?`${rec}/${tot} recebidas · ${fmtMoney(recVal)} de ${fmtMoney(totVal)}`:'';
-    resumo.style.color=rec===tot&&tot>0?'#6E879F':'#1d4ed8';
+    resumo.style.color=rec===tot&&tot>0?'#AFC0D1':'#7FB0E6';
   }
 }
 
@@ -9357,7 +9357,7 @@ function renderMensagens(){
   const grid=document.getElementById('tpl-grid');if(!grid)return;
   grid.innerHTML=templates.map(t=>{
     const col=t.colunaVinculo?OP_COLS.find(c=>c.id===t.colunaVinculo):null;
-    const badge=col?`<div style="margin-bottom:6px"><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:${col.color}22;color:${col.color};border:1px solid ${col.color}44">${col.emoji} ${col.name}</span></div>`:'';
+    const badge=col?`<div style="margin-bottom:6px"><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:${col.color}33;color:${adjustHexColor(col.color,95)};border:1px solid ${col.color}88">${col.emoji} ${col.name}</span></div>`:'';
     return`<div class="tpl-card">
       ${badge}<div class="tpl-card-name">💬 ${esc(t.nome)}</div>
       <div class="tpl-card-preview">${esc(t.mensagem.slice(0,130))}${t.mensagem.length>130?'…':''}</div>
@@ -9431,7 +9431,7 @@ function renderTplSendModal(){
   document.getElementById('tpl-preview-text').value='';
   document.getElementById('tpl-send-list').innerHTML=templates.map(t=>{
     const col=t.colunaVinculo?OP_COLS.find(c=>c.id===t.colunaVinculo):null;
-    const badge=col?`<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:99px;background:${col.color}22;color:${col.color};margin-bottom:4px;display:inline-block">${col.emoji} ${col.name}</span><br>`:'';
+    const badge=col?`<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:99px;background:${col.color}33;color:${adjustHexColor(col.color,95)};margin-bottom:4px;display:inline-block">${col.emoji} ${col.name}</span><br>`:'';
     return`<div class="tpl-send-item" id="tsi-${t.id}" onclick="selectTpl('${t.id}')">
       ${badge}<div class="tpl-si-name">${esc(t.nome)}</div>
       <div class="tpl-si-prev">${esc(t.mensagem)}</div>
@@ -9676,10 +9676,44 @@ function openBackupModal(){
   else{area.innerHTML=`<div class="bk-banner"><span class="bk-banner-icon">⚠️</span><span class="bk-banner-text">Nenhum backup encontrado. Exporte agora!</span></div>`}
   document.getElementById('mo-backup').classList.remove('hidden');
 }
+// Estado do Financeiro (Empresa + Pessoal) que também precisa entrar no backup.
+// Cada entrada: [chave no arquivo, getter, setter].
+const BK_FIN=[
+  ['finVG',()=>finVG,v=>finVG=v],['finGD',()=>finGD,v=>finGD=v],['finDD',()=>finDD,v=>finDD=v],
+  ['finRG',()=>finRG,v=>finRG=v],['contaSpEmp',()=>contaSpEmp,v=>contaSpEmp=v],
+  ['finCustomCats',()=>finCustomCats,v=>finCustomCats=v],['finContas',()=>finContas,v=>finContas=v],
+];
+const BK_PESS=[
+  ['pessVG',()=>pessVG,v=>pessVG=v],['pessGD',()=>pessGD,v=>pessGD=v],['pessDD',()=>pessDD,v=>pessDD=v],
+  ['pessFD',()=>pessFD,v=>pessFD=v],['pessAP',()=>pessAP,v=>pessAP=v],['pessPC',()=>pessPC,v=>pessPC=v],
+  ['pessHUGO',()=>pessHUGO,v=>pessHUGO=v],['pessDV',()=>pessDV,v=>pessDV=v],
+  ['pessAnaP',()=>pessAnaP,v=>pessAnaP=v],['pessAlug',()=>pessAlug,v=>pessAlug=v],
+  ['pessRefItens',()=>pessRefItens,v=>pessRefItens=v],['pessRefPend',()=>pessRefPend,v=>pessRefPend=v],
+  ['pessRefTotal',()=>pessRefTotal,v=>pessRefTotal=v],['pessAP_gar',()=>pessAP_gar,v=>pessAP_gar=v],
+  ['pessAP_n',()=>pessAP_n,v=>pessAP_n=v],['contaSP',()=>contaSP,v=>contaSP=v],
+  ['pessCustomCats',()=>pessCustomCats,v=>pessCustomCats=v],['pessContas',()=>pessContas,v=>pessContas=v],
+  ['pessPedreiro',()=>pessPedreiro,v=>pessPedreiro=v],['opCardsPess',()=>opCardsPess,v=>opCardsPess=v],
+];
+function _bkColeta(){
+  const o={};
+  [...BK_FIN,...BK_PESS].forEach(([k,get])=>{try{const v=get();if(v!==undefined)o[k]=v}catch(e){}});
+  return o;
+}
+function _bkAplica(data){
+  let n=0;
+  [...BK_FIN,...BK_PESS].forEach(([k,,set])=>{
+    if(data[k]===undefined)return;
+    try{set(data[k]);n++}catch(e){}
+  });
+  return n;
+}
 function exportBackup(){
-  const payload={version:'avf_crm_v1',exportedAt:Date.now(),
-    counts:{oportunidades:opCards.length,projetos:prCards.length,albuns:albCards.length,pacotes:packages.length,clientes:clients.length,templates:templates.length},
-    data:{opCards,prCards,albCards,packages,clients,templates,indicData}};
+  const payload={version:'avf_crm_v2',exportedAt:Date.now(),
+    counts:{oportunidades:opCards.length,projetos:prCards.length,albuns:albCards.length,pacotes:packages.length,clientes:clients.length,templates:templates.length,
+            contas:(finContas||[]).length+(pessContas||[]).length,freelancers:(freelancers||[]).length},
+    data:{opCards,prCards,albCards,packages,clients,templates,indicData,
+          freelancers,tarefas,conteudos,pendencias,pendenciasGerais,freelaCards,
+          ..._bkColeta()}};
   const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);const a=document.createElement('a');
   const _bd=new Date();const _bName=`backup-${String(_bd.getDate()).padStart(2,'0')}.${String(_bd.getMonth()+1).padStart(2,'0')}-${String(_bd.getHours()).padStart(2,'0')}h${String(_bd.getMinutes()).padStart(2,'0')}.json`;a.href=url;a.download=_bName;a.click();
@@ -9703,8 +9737,17 @@ function importBackup(input){
         if(d.data.clients)clients=d.data.clients;
         if(d.data.templates&&d.data.templates.length)templates=d.data.templates;
         if(d.data.indicData&&typeof d.data.indicData==='object'){indicData=d.data.indicData;savIndic();}
+        if(Array.isArray(d.data.freelancers))freelancers=d.data.freelancers;
+        if(Array.isArray(d.data.tarefas))tarefas=d.data.tarefas;
+        if(Array.isArray(d.data.conteudos))conteudos=d.data.conteudos;
+        if(Array.isArray(d.data.pendencias))pendencias=d.data.pendencias;
+        if(Array.isArray(d.data.pendenciasGerais))pendenciasGerais=d.data.pendenciasGerais;
+        if(Array.isArray(d.data.freelaCards))freelaCards=d.data.freelaCards;
+        const _nFin=_bkAplica(d.data);
         ensureIndicTemplate();
         savOp();savPr();savAlb();savPac();savCl();savTemplates();
+        savFrl();savTar();savCnt();savPen();savPgr();savFreela();
+        if(_nFin){try{saveFinData()}catch(e){}try{savePessData()}catch(e){}}
         syncAllDistrib();
         localStorage.setItem('crm_last_backup',Date.now().toString());
         closeMo('mo-backup');
@@ -9747,7 +9790,9 @@ function mergeBackup(input){
         if(d.data.packages)d.data.packages.forEach(c=>{if(!packages.find(o=>o.id===c.id))packages.push(c)});
         if(d.data.clients)d.data.clients.forEach(c=>{if(!clients.find(o=>o.id===c.id))clients.push(c)});
         if(d.data.templates)d.data.templates.forEach(c=>{if(!templates.find(o=>o.id===c.id))templates.push(c)});
-        savOp();savPr();savAlb();savPac();savCl();savTemplates();
+        if(d.data.freelancers)d.data.freelancers.forEach(c=>{if(!freelancers.find(o=>o.id===c.id))freelancers.push(c)});
+        if(d.data.freelaCards)d.data.freelaCards.forEach(c=>{if(!freelaCards.find(o=>o.id===c.id))freelaCards.push(c)});
+        savOp();savPr();savAlb();savPac();savCl();savTemplates();savFrl();savFreela();
         syncAllDistrib();
         closeMo('mo-backup');
         renderDashboard();
