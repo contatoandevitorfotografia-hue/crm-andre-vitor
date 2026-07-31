@@ -1066,6 +1066,12 @@ td { padding: 13px 16px; font-size: 13.5px; }
 .gtasks-url-inp:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(44,122,123,.1)}
 .gtasks-url-inp::placeholder{color:var(--n400)}
 
+/* ── Mover / Copiar entre boards ── */
+.trf-chips{display:flex;flex-wrap:wrap;gap:8px}
+.trf-chip{background:var(--surface);border:1.5px solid var(--border);color:var(--muted);border-radius:22px;padding:9px 15px;font:700 12.5px 'Montserrat',sans-serif;cursor:pointer;transition:.15s}
+.trf-chip:hover{border-color:var(--primary-mid);color:var(--text)}
+.trf-chip.on{background:var(--primary);border-color:var(--primary);color:#1A1410}
+
 /* ── Freela Board ── */
 #freela-section{margin-bottom:0;background:#1A212A;border-bottom:2px solid var(--border);padding:16px 20px 0}
 .freela-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:12px;flex-wrap:wrap}
@@ -1413,12 +1419,14 @@ td { padding: 13px 16px; font-size: 13.5px; }
     <div><div class="pg-title">Projetos</div><div class="pg-sub">Workflow pós-evento e edição</div></div>
     <button class="btn btn-p" id="btn-novo-proj" onclick="openOpModal(null,'confirmado',null,true)">＋ Novo Projeto</button>
     <button class="btn btn-p" id="btn-novo-alb" style="display:none" onclick="openAlbModal(null,'alb-selecao')">＋ Novo Álbum</button>
-    <button class="btn btn-p" id="btn-novo-pr-freela" style="display:none" onclick="openPrModal(null,'freela-aguardando-fotos')">＋ Novo Freela</button>
+    <button class="btn btn-p" id="btn-novo-video" style="display:none" onclick="openPrModal(null,'freela-aguardando-fotos')">＋ Novo Vídeo</button>
+    <button class="btn btn-p" id="btn-novo-frl" style="display:none" onclick="openPrModal(null,'frl-aguardando-fotos')">＋ Novo Freela</button>
   </div>
   <div class="proj-tab-bar">
     <button class="proj-tab active" id="ptab-proj" onclick="switchProjTab('proj')">📸 Projetos</button>
     <button class="proj-tab" id="ptab-alb" onclick="switchProjTab('alb')">📒 Álbuns</button>
-    <button class="proj-tab" id="ptab-freela" onclick="switchProjTab('freela')">🎥 Freelas</button>
+    <button class="proj-tab" id="ptab-video" onclick="switchProjTab('video')">🎥 Vídeo</button>
+    <button class="proj-tab" id="ptab-frl" onclick="switchProjTab('frl')">🤝 Freelas</button>
   </div>
   <div id="proj-section">
     <div class="srch-bar"><div class="srch-wrap"><input class="srch-inp" id="srch-pr" placeholder="Buscar projeto..." oninput="renderPr()"></div></div>
@@ -1430,10 +1438,15 @@ td { padding: 13px 16px; font-size: 13.5px; }
     <div class="kb-wrap" id="kb-alb"><div class="kb-board" id="board-alb"></div></div>
     <div class="kb-scrollbar-track"><div class="kb-scrollbar-thumb" id="kb-thumb-alb"></div></div>
   </div>
-  <div id="freela-proj-section" style="display:none">
-    <div class="srch-bar"><div class="srch-wrap"><input class="srch-inp" id="srch-pr-freela" placeholder="Buscar freela..." oninput="renderPrFreela()"></div></div>
-    <div class="kb-wrap" id="kb-pr-freela"><div class="kb-board" id="board-pr-freela"></div></div>
-    <div class="kb-scrollbar-track"><div class="kb-scrollbar-thumb" id="kb-thumb-pr-freela"></div></div>
+  <div id="video-proj-section" style="display:none">
+    <div class="srch-bar"><div class="srch-wrap"><input class="srch-inp" id="srch-pr-video" placeholder="Buscar vídeo..." oninput="renderPrVideo()"></div></div>
+    <div class="kb-wrap" id="kb-pr-video"><div class="kb-board" id="board-pr-video"></div></div>
+    <div class="kb-scrollbar-track"><div class="kb-scrollbar-thumb" id="kb-thumb-pr-video"></div></div>
+  </div>
+  <div id="frl-proj-section" style="display:none">
+    <div class="srch-bar"><div class="srch-wrap"><input class="srch-inp" id="srch-pr-frl" placeholder="Buscar freela..." oninput="renderPrFrl()"></div></div>
+    <div class="kb-wrap" id="kb-pr-frl"><div class="kb-board" id="board-pr-frl"></div></div>
+    <div class="kb-scrollbar-track"><div class="kb-scrollbar-thumb" id="kb-thumb-pr-frl"></div></div>
   </div>
 </div>
 
@@ -2507,8 +2520,7 @@ td { padding: 13px 16px; font-size: 13.5px; }
     </div>
     <div class="mo-ftr">
       <button class="btn btn-d" id="btn-del-pr" onclick="confirmDel('pr')" style="display:none">🗑️ Excluir</button>
-      <button class="btn btn-g" id="btn-pr-to-alb" onclick="moveToAlbum()" style="display:none;background:#F2F5F8;color:#9FB5CB;border:1.5px solid #86efac" title="Cria um álbum com os dados deste projeto e remove daqui">📒 Mover para Álbuns</button>
-      <button class="btn btn-g" id="btn-pr-to-freela" onclick="moveToFreela()" style="display:none;background:#fdf3ef;color:#c4633f;border:1.5px solid #e0a483" title="Move este projeto para o board de Freelas, fase Aguardando fotos">🎥 Mover para Freela</button>
+      <button class="btn btn-g" id="btn-pr-transfer" onclick="openTransfer('pr')" style="display:none;background:#20252A;color:#E0A14E;border:1.5px solid #E0A14E" title="Mover ou copiar este projeto para Projetos, Álbuns, Vídeo ou Freelas">🔀 Mover / Copiar</button>
       <button class="btn btn-g" onclick="closeMo('mo-pr')">Cancelar</button>
       <button class="btn btn-p" onclick="savePrCard()">💾 Salvar</button>
     </div>
@@ -2537,10 +2549,41 @@ td { padding: 13px 16px; font-size: 13.5px; }
     </div>
     <div class="mo-ftr">
       <button class="btn btn-d" id="btn-del-alb" onclick="confirmDel('alb')" style="display:none">🗑️ Excluir</button>
-      <button class="btn btn-g" id="btn-alb-to-proj" onclick="moveAlbToProj('proj')" style="display:none;background:var(--primary-light);color:var(--primary);border:1.5px solid var(--primary)" title="Move este álbum para o board de Projetos, fase Festa para acontecer">📸 Mover p/ Projetos</button>
-      <button class="btn btn-g" id="btn-alb-to-freela" onclick="moveAlbToProj('freela')" style="display:none;background:#fdf3ef;color:#c4633f;border:1.5px solid #e0a483" title="Move este álbum para o board de Freelas, fase Aguardando fotos">🎥 Mover p/ Freela</button>
+      <button class="btn btn-g" id="btn-alb-transfer" onclick="openTransfer('alb')" style="display:none;background:#20252A;color:#E0A14E;border:1.5px solid #E0A14E" title="Mover ou copiar este álbum para Projetos, Álbuns, Vídeo ou Freelas">🔀 Mover / Copiar</button>
       <button class="btn btn-g" onclick="closeMo('mo-alb')">Cancelar</button>
       <button class="btn btn-p" onclick="saveAlbCard()">💾 Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MOVER / COPIAR ENTRE BOARDS -->
+<div class="mo hidden" id="mo-trf" onclick="moOverlay(event,'mo-trf')">
+  <div class="mo-box sm">
+    <div class="mo-hdr"><h2>🔀 Mover / Copiar</h2><button class="mo-close" onclick="closeMo('mo-trf')">✕</button></div>
+    <div class="mo-body">
+      <div class="fs">
+        <div class="fs-title">📌 Card</div>
+        <div id="trf-origem" style="background:#20252A;border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;font-size:13px;line-height:1.6"></div>
+      </div>
+      <div class="fs">
+        <div class="fs-title">🎯 Para qual board?</div>
+        <div class="trf-chips" id="trf-dests"></div>
+      </div>
+      <div class="fs">
+        <div class="pipe-box"><span style="font-size:18px">🎬</span><label for="trf-col">Fase de destino:</label><select id="trf-col"></select></div>
+      </div>
+      <div class="fs">
+        <div class="fs-title">⚙️ O que fazer</div>
+        <div class="trf-chips">
+          <button type="button" class="trf-chip on" id="trf-mode-mover" onclick="setTrfMode('mover')">➡️ Mover</button>
+          <button type="button" class="trf-chip" id="trf-mode-copiar" onclick="setTrfMode('copiar')">📋 Copiar</button>
+        </div>
+        <div id="trf-hint" style="margin-top:10px;font-size:12px;color:var(--muted);line-height:1.6"></div>
+      </div>
+    </div>
+    <div class="mo-ftr">
+      <button class="btn btn-g" onclick="closeMo('mo-trf')">Cancelar</button>
+      <button class="btn btn-p" onclick="confirmTransfer()">✅ Confirmar</button>
     </div>
   </div>
 </div>
@@ -3056,10 +3099,24 @@ const PR_COLS=[
   {id:'final-entregar',name:'Finalizado — entregar',emoji:'📤',color:'#6D756E'},
   {id:'final-pagar',name:'Falta pagar',emoji:'💸',color:'#8B765D'},
   {id:'finalizado',name:'Finalizado',emoji:'🎉',color:'#59605D'},
-  {id:'freela-aguardando-fotos',name:'Aguardando fotos',emoji:'📸',color:'#5D626A',cat:'freela'},
-  {id:'freela-final-entregar',name:'Finalizado, entregar',emoji:'📤',color:'#526267',cat:'freela'},
-  {id:'freela-falta-pagar',name:'Falta pagar',emoji:'💸',color:'#806B62',cat:'freela'},
+  // ── Board Vídeo (ids mantidos como "freela-*" por compatibilidade com dados já salvos) ──
+  {id:'freela-aguardando-fotos',name:'Aguardando material',emoji:'📸',color:'#5D626A',cat:'video'},
+  {id:'freela-final-entregar',name:'Finalizado, entregar',emoji:'📤',color:'#526267',cat:'video'},
+  {id:'freela-falta-pagar',name:'Falta pagar',emoji:'💸',color:'#806B62',cat:'video'},
+  // ── Board Freelas ──
+  {id:'frl-aguardando-fotos',name:'Aguardando fotos',emoji:'📸',color:'#5D626A',cat:'frl'},
+  {id:'frl-editando',name:'Editando',emoji:'🎨',color:'#5A6472',cat:'frl'},
+  {id:'frl-final-entregar',name:'Finalizado, entregar',emoji:'📤',color:'#526267',cat:'frl'},
+  {id:'frl-falta-receber',name:'Falta receber',emoji:'💸',color:'#806B62',cat:'frl'},
+  {id:'frl-finalizado',name:'Finalizado',emoji:'🎉',color:'#59605D',cat:'frl'},
 ];
+// Categorias de board dentro da aba Projetos
+const PR_CATS={
+  proj :{key:'proj', label:'Projetos', emoji:'📸', defCol:'festa-acontecer'},
+  video:{key:'video',label:'Vídeo',    emoji:'🎥', defCol:'freela-aguardando-fotos'},
+  frl  :{key:'frl',  label:'Freelas',  emoji:'🤝', defCol:'frl-aguardando-fotos'},
+};
+const prCatOf=colId=>PR_COLS.find(c=>c.id===colId)?.cat||'proj';
 
 const ALB_COLS=[
   {id:'alb-festa',     name:'Festa para acontecer',            emoji:'🎉', color:'#2C7A7B'},
@@ -3279,15 +3336,18 @@ function savPen(){
 function savPgr(){localStorage.setItem('crm_pgr_v1',JSON.stringify(pendenciasGerais));_saveDadosFirebase()}
 
 function switchProjTab(tab){
+  if(tab==='freela')tab='video'; // compat com chamadas antigas
   document.querySelectorAll('.proj-tab').forEach(b=>b.classList.remove('active'));
-  document.getElementById('ptab-'+tab).classList.add('active');
+  document.getElementById('ptab-'+tab)?.classList.add('active');
   document.getElementById('proj-section').style.display=tab==='proj'?'':'none';
   document.getElementById('alb-section').style.display=tab==='alb'?'':'none';
-  document.getElementById('freela-proj-section').style.display=tab==='freela'?'':'none';
+  document.getElementById('video-proj-section').style.display=tab==='video'?'':'none';
+  document.getElementById('frl-proj-section').style.display=tab==='frl'?'':'none';
   document.getElementById('btn-novo-proj').style.display=tab==='proj'?'':'none';
   document.getElementById('btn-novo-alb').style.display=tab==='alb'?'':'none';
-  document.getElementById('btn-novo-pr-freela').style.display=tab==='freela'?'':'none';
-  if(tab==='alb')renderAlb();else if(tab==='freela')renderPrFreela();else renderPr();
+  document.getElementById('btn-novo-video').style.display=tab==='video'?'':'none';
+  document.getElementById('btn-novo-frl').style.display=tab==='frl'?'':'none';
+  if(tab==='alb')renderAlb();else renderPr();
 }
 function renderAlb(){
   const q=(document.getElementById('srch-alb')?.value||'').toLowerCase();
@@ -3311,7 +3371,8 @@ function buildAlbCol(col,cs){
 }
 function albCardHTML(c,cc){
   return `<div class="proj-card" draggable="true" data-id="${c.id}" style="--cc:${cc}" ondragstart="onDS(event,'${c.id}','alb')" ondragend="onDE2(event)" onclick="openAlbModal('${c.id}',null,event)">
-    <div class="card-actions"><button class="cab del" onclick="qDel('alb','${c.id}',event)">🗑</button><button class="cab">✏️</button></div>
+    <div class="card-actions"><button class="cab del" onclick="qDel('alb','${c.id}',event)">🗑</button><button class="cab" onclick="openTransfer('alb','${c.id}',event)" title="Mover ou copiar para outro board">🔀</button><button class="cab">✏️</button></div>
+    ${c.copiaDe?`<div style="display:inline-flex;align-items:center;gap:4px;font-size:9.5px;font-weight:700;color:#B1C0CF;background:#20252A;border:1px solid #566370;border-radius:20px;padding:2px 7px;margin-bottom:6px">🔗 Cópia</div>`:''}
     <div class="pc-name">${esc(c.titulo||'Sem título')}</div>
     ${c.cliente?`<div class="pc-child">👤 ${esc(c.cliente)}</div>`:''}
     ${c.dataEvento?`<div class="pc-date">📅 ${fmtDate(c.dataEvento)}</div>`:''}
@@ -3327,8 +3388,7 @@ function openAlbModal(cardId,defaultCol,event){
   const card=cardId?albCards.find(c=>c.id===cardId):null;
   document.getElementById('mo-alb-title').textContent=card?'✏️ Editar Álbum':'📒 Novo Álbum';
   document.getElementById('btn-del-alb').style.display=card?'inline-flex':'none';
-  document.getElementById('btn-alb-to-proj').style.display=card?'inline-flex':'none';
-  document.getElementById('btn-alb-to-freela').style.display=card?'inline-flex':'none';
+  document.getElementById('btn-alb-transfer').style.display=card?'inline-flex':'none';
   fillAlbColSelect(card?card.coluna:(defaultCol||'alb-selecao'));
   document.getElementById('f-alb-titulo').value=card?.titulo||'';
   document.getElementById('f-alb-cliente').value=card?.cliente||'';
@@ -3337,87 +3397,156 @@ function openAlbModal(cardId,defaultCol,event){
   document.getElementById('f-alb-titulo').focus();
 }
 
-function moveToAlbum(){
-  const card=editingPrId?prCards.find(c=>c.id===editingPrId):null;
-  if(!card){toast('⚠️ Nenhum projeto selecionado','orange');return}
+/* ═══════════════════ MOVER / COPIAR ENTRE BOARDS ═══════════════════
+   Boards de destino:
+     proj / video / frl → vivem em prCards (diferenciados pelo cat da coluna)
+     alb                → vive em albCards
+   "Mover" tira do board de origem. "Copiar" mantém os dois, permitindo
+   acompanhar o mesmo trabalho em Projetos e também em Álbuns/Vídeo/Freelas.
+──────────────────────────────────────────────────────────────────── */
+const TRANSFER_DESTS=[
+  {key:'proj', label:'Projetos', emoji:'📸'},
+  {key:'alb',  label:'Álbuns',   emoji:'📒'},
+  {key:'video',label:'Vídeo',    emoji:'🎥'},
+  {key:'frl',  label:'Freelas',  emoji:'🤝'},
+];
+let _trfKind=null,_trfId=null,_trfDest=null,_trfMode='mover';
+
+const trfCols=dest=>dest==='alb'?ALB_COLS:PR_COLS.filter(c=>(c.cat||'proj')===dest);
+const trfDestInfo=dest=>TRANSFER_DESTS.find(d=>d.key===dest)||TRANSFER_DESTS[0];
+function trfFindCard(kind,id){return kind==='alb'?albCards.find(c=>c.id===id):prCards.find(c=>c.id===id)}
+function trfCardName(kind,card){
+  if(!card)return '';
+  if(kind==='alb')return card.titulo||card.cliente||'Sem título';
   const src=card.sourceId?opCards.find(o=>o.id===card.sourceId):null;
-  const titulo=src?.titulo||(_nomesCriancas(src)?'Álbum — Festa de '+_nomesCriancas(src):'')|| card.nomePais||'Álbum';
-  openCfm(
-    'Mover para Álbuns?',
-    `O projeto "${titulo}" será movido para o board de Álbuns na fase "Aguardando seleção". Deseja continuar?`,
-    ()=>{
-      const novoAlb={
-        id:uid(),
-        coluna:'alb-selecao',
-        titulo,
-        cliente:card.nomePais||src?.nomePais||'',
-        obs:card.obs||'',
-        dataEvento:card.dataEvento||src?.dataEvento||'',
-        criadoEm:Date.now(),
-        updatedAt:Date.now()
-      };
-      albCards.push(novoAlb);savAlb();
-      prCards=prCards.filter(c=>c.id!==editingPrId);savPr();
-      closeMo('mo-pr');
-      // Ir para aba Álbuns
-      if(document.getElementById('ptab-alb'))switchProjTab('alb');
-      toast('📒 Movido para Álbuns!','green');
-    }
-  );
+  return src?.nomePais||card.nomePais||'Sem nome';
 }
-function moveToFreela(){
-  const card=editingPrId?prCards.find(c=>c.id===editingPrId):null;
-  if(!card){toast('⚠️ Nenhum projeto selecionado','orange');return}
+function trfOrigemDest(kind,card){return kind==='alb'?'alb':prCatOf(card.coluna)}
+
+function openTransfer(kind,id,event){
+  if(event)event.stopPropagation();
+  const cardId=id||(kind==='alb'?editingAlbId:editingPrId);
+  const card=cardId?trfFindCard(kind,cardId):null;
+  if(!card){toast('⚠️ Nenhum item selecionado','orange');return}
+  _trfKind=kind;_trfId=cardId;_trfMode='mover';
+  const origem=trfOrigemDest(kind,card);
+  _trfDest=TRANSFER_DESTS.find(d=>d.key!==origem).key;
+  const oi=trfDestInfo(origem);
+  document.getElementById('trf-origem').innerHTML=
+    `<strong style="color:var(--text);font-size:14px">${esc(trfCardName(kind,card))}</strong><br>`+
+    `<span style="font-size:12px;color:var(--muted)">Hoje em ${oi.emoji} ${oi.label}${card.copiaDe?' · 🔗 é uma cópia':''}</span>`;
+  renderTrfDests(origem);
+  setTrfMode('mover');
+  document.getElementById('mo-trf').classList.remove('hidden');
+}
+function renderTrfDests(origem){
+  document.getElementById('trf-dests').innerHTML=TRANSFER_DESTS.map(d=>{
+    const on=d.key===_trfDest;
+    return `<button type="button" class="trf-chip${on?' on':''}" onclick="setTrfDest('${d.key}')">${d.emoji} ${d.label}${d.key===origem?' <span style="opacity:.6;font-weight:600">(atual)</span>':''}</button>`;
+  }).join('');
+  fillTrfColSelect();
+}
+function setTrfDest(dest){
+  _trfDest=dest;
+  const card=trfFindCard(_trfKind,_trfId);
+  renderTrfDests(card?trfOrigemDest(_trfKind,card):null);
+  updateTrfHint();
+}
+function fillTrfColSelect(){
+  const sel=document.getElementById('trf-col');
+  sel.innerHTML=trfCols(_trfDest).map(c=>`<option value="${c.id}">${c.emoji} ${c.name}</option>`).join('');
+}
+function setTrfMode(mode){
+  _trfMode=mode;
+  document.getElementById('trf-mode-mover').classList.toggle('on',mode==='mover');
+  document.getElementById('trf-mode-copiar').classList.toggle('on',mode==='copiar');
+  updateTrfHint();
+}
+function updateTrfHint(){
+  const di=trfDestInfo(_trfDest);
+  document.getElementById('trf-hint').textContent=_trfMode==='copiar'
+    ?`Uma cópia será criada em ${di.emoji} ${di.label}. O card original continua onde está — os dois passam a ser acompanhados separadamente.`
+    :`O card sai do board atual e passa a existir só em ${di.emoji} ${di.label}.`;
+}
+
+// ── Conversões entre formatos de card ──
+function prToAlbData(card,col){
   const src=card.sourceId?opCards.find(o=>o.id===card.sourceId):null;
-  const nome=src?.nomePais||card.nomePais||'este projeto';
+  const titulo=src?.titulo||(src&&_nomesCriancas(src)?'Álbum — Festa de '+_nomesCriancas(src):'')||card.nomePais||'Álbum';
+  return {
+    id:uid(),
+    coluna:col,
+    titulo,
+    cliente:src?.nomePais||card.nomePais||'',
+    obs:card.obs||'',
+    dataEvento:card.dataEvento||src?.dataEvento||'',
+    criadoEm:Date.now(),
+    updatedAt:Date.now()
+  };
+}
+function albToPrData(card,col){
+  return {
+    id:uid(),
+    coluna:col,
+    sourceId:null,
+    nomePais:card.cliente||card.titulo||'Projeto',
+    nomeCrianca:'',idade:'',nomeCrianca2:'',idade2:'',
+    dataEvento:card.dataEvento||'',
+    freela:prCatOf(col)==='proj'?'':'sou-freela',
+    parceiroId:'',
+    obs:card.obs||'',
+    criadoEm:Date.now(),
+    updatedAt:Date.now()
+  };
+}
+
+function confirmTransfer(){
+  const kind=_trfKind,id=_trfId,dest=_trfDest,mode=_trfMode;
+  const col=document.getElementById('trf-col').value;
+  const card=trfFindCard(kind,id);
+  if(!card||!col){toast('⚠️ Nada para transferir','orange');return}
+  const origem=trfOrigemDest(kind,card);
+  const di=trfDestInfo(dest);
+  const colInfo=trfCols(dest).find(c=>c.id===col);
+  const nome=trfCardName(kind,card);
+
+  if(mode==='mover'&&origem===dest&&card.coluna===col){
+    toast('ℹ️ O card já está nessa fase','');closeMo('mo-trf');return;
+  }
+
   openCfm(
-    'Mover para Freelas?',
-    `"${nome}" será movido para o board de Freelas, na fase "Aguardando fotos". Deseja continuar?`,
+    mode==='copiar'?`Copiar para ${di.label}?`:`Mover para ${di.label}?`,
+    mode==='copiar'
+      ?`Será criada uma cópia de "${nome}" em ${di.label}, fase "${colInfo?.name||''}". O card original continua onde está.`
+      :`"${nome}" será movido para ${di.label}, fase "${colInfo?.name||''}". Deseja continuar?`,
     ()=>{
-      card.coluna='freela-aguardando-fotos';card.updatedAt=Date.now();
-      savPr();renderPr();
-      closeMo('mo-pr');
-      // Ir para aba Freelas
-      if(document.getElementById('ptab-freela'))switchProjTab('freela');
-      toast('🎥 Movido para Freelas!','green');
+      const destIsAlb=dest==='alb';
+      if(destIsAlb){
+        const novo=kind==='alb'?{...card,id:uid(),coluna:col,criadoEm:Date.now(),updatedAt:Date.now()}:prToAlbData(card,col);
+        if(mode==='copiar'){novo.copiaDe=card.id;albCards.push(novo);}
+        else if(kind==='alb'){card.coluna=col;card.updatedAt=Date.now();}
+        else{albCards.push(novo);prCards=prCards.filter(c=>c.id!==id);savPr();}
+        savAlb();
+      }else{
+        const novo=kind==='alb'?albToPrData(card,col):{...card,id:uid(),coluna:col,criadoEm:Date.now(),updatedAt:Date.now()};
+        if(mode==='copiar'){novo.copiaDe=card.id;prCards.push(novo);}
+        else if(kind==='alb'){prCards.push(novo);albCards=albCards.filter(c=>c.id!==id);savAlb();}
+        else{card.coluna=col;card.updatedAt=Date.now();}
+        savPr();
+      }
+      closeMo('mo-trf');
+      closeMo(kind==='alb'?'mo-alb':'mo-pr');
+      renderPr();renderAlb();renderAgenda();
+      switchProjTab(destIsAlb?'alb':dest);
+      toast(`${di.emoji} ${mode==='copiar'?'Cópia criada em':'Movido para'} ${di.label}!`,'green');
     }
   );
 }
-function moveAlbToProj(target){
-  const card=editingAlbId?albCards.find(c=>c.id===editingAlbId):null;
-  if(!card){toast('⚠️ Nenhum álbum selecionado','orange');return}
-  const nome=card.cliente||card.titulo||'este álbum';
-  const destino=target==='freela'?'Freelas':'Projetos';
-  const faseDestino=target==='freela'?'Aguardando fotos':'Festa para acontecer';
-  openCfm(
-    `Mover para ${destino}?`,
-    `"${nome}" será movido para o board de ${destino}, na fase "${faseDestino}". Deseja continuar?`,
-    ()=>{
-      const novoPr={
-        id:uid(),
-        coluna:target==='freela'?'freela-aguardando-fotos':'festa-acontecer',
-        sourceId:null,
-        nomePais:card.cliente||card.titulo||'Projeto',
-        nomeCrianca:'',
-        idade:'',
-        nomeCrianca2:'',
-        idade2:'',
-        dataEvento:card.dataEvento||'',
-        freela:target==='freela'?'sou-freela':'',
-        parceiroId:'',
-        obs:card.obs||'',
-        criadoEm:Date.now(),
-        updatedAt:Date.now()
-      };
-      prCards.push(novoPr);savPr();
-      albCards=albCards.filter(c=>c.id!==editingAlbId);savAlb();
-      closeMo('mo-alb');
-      switchProjTab(target==='freela'?'freela':'proj');
-      renderAlb();
-      toast(`${target==='freela'?'🎥':'📸'} Movido para ${destino}!`,'green');
-    }
-  );
-}
+
+// ── Compat: chamadas antigas continuam funcionando ──
+function moveToAlbum(){openTransfer('pr')}
+function moveToFreela(){openTransfer('pr')}
+function moveAlbToProj(){openTransfer('alb')}
 
 function saveAlbCard(){
   const titulo=document.getElementById('f-alb-titulo').value.trim();
@@ -3496,7 +3625,7 @@ function renderDashboard(){
   const endW=new Date(startW);endW.setDate(startW.getDate()+7); // próxima segunda (exclusive)
   const swStr=startW.toISOString().split('T')[0];const ewStr=endW.toISOString().split('T')[0];
   const evOp=opCards.filter(c=>(c.coluna==='confirmado'||c.coluna==='confirmado-pendencias')&&c.dataEvento&&c.dataEvento>=todayStr).map(c=>({...c,_type:'op'}));
-  const evPr=prCards.filter(c=>c.dataEvento&&c.dataEvento>=todayStr).filter(c=>{const srcOk=c.sourceId&&opCards.find(o=>o.id===c.sourceId&&(o.coluna==='confirmado'||o.coluna==='confirmado-pendencias'));return!srcOk}).map(c=>({...c,_type:'pr'}));
+  const evPr=prCards.filter(c=>!c.copiaDe&&c.dataEvento&&c.dataEvento>=todayStr).filter(c=>{const srcOk=c.sourceId&&opCards.find(o=>o.id===c.sourceId&&(o.coluna==='confirmado'||o.coluna==='confirmado-pendencias'));return!srcOk}).map(c=>({...c,_type:'pr'}));
   const evCards=[...evOp,...evPr].sort((a,b)=>a.dataEvento.localeCompare(b.dataEvento));
   document.getElementById('dash-ev-count').textContent=`${evCards.length} evento(s)`;
   const evEl=document.getElementById('dash-ev-list');
@@ -3612,27 +3741,31 @@ function renderPr(){
   const q=(document.getElementById('srch-pr')?.value||'').toLowerCase();
   const board=document.getElementById('board-pr');board.innerHTML='';
   const getEffDate=c=>{if(c.sourceId){const s=opCards.find(o=>o.id===c.sourceId);if(s?.dataEvento)return s.dataEvento;}return c.dataEvento||''};
-  PR_COLS.filter(col=>col.cat!=='freela').forEach(col=>{
+  PR_COLS.filter(col=>(col.cat||'proj')==='proj').forEach(col=>{
     let cs=prCards.filter(c=>c.coluna===col.id);
     if(q)cs=cs.filter(c=>{const d=c.sourceId?(opCards.find(o=>o.id===c.sourceId)||c):c;return(d.nomePais||'').toLowerCase().includes(q)||(d.nomeCrianca||'').toLowerCase().includes(q)||(d.nomeCrianca2||'').toLowerCase().includes(q)});
     const _hoje=new Date().toISOString().slice(0,10);
     cs.sort((a,b)=>{const da=getEffDate(a),db=getEffDate(b);if(!da&&!db)return 0;if(!da)return 1;if(!db)return-1;return da<db?-1:da>db?1:0;});
     board.appendChild(buildPrCol(col,cs));
   });
-  renderPrFreela();
+  renderPrVideo();renderPrFrl();
 }
-function renderPrFreela(){
-  const q=(document.getElementById('srch-pr-freela')?.value||'').toLowerCase();
-  const board=document.getElementById('board-pr-freela');if(!board)return;board.innerHTML='';
+// Renderiza um board de projetos filtrado por categoria (video / frl)
+function renderPrCat(cat,boardId,srchId){
+  const q=(document.getElementById(srchId)?.value||'').toLowerCase();
+  const board=document.getElementById(boardId);if(!board)return;board.innerHTML='';
   const getEffDate=c=>{if(c.sourceId){const s=opCards.find(o=>o.id===c.sourceId);if(s?.dataEvento)return s.dataEvento;}return c.dataEvento||''};
-  PR_COLS.filter(col=>col.cat==='freela').forEach(col=>{
+  PR_COLS.filter(col=>col.cat===cat).forEach(col=>{
     let cs=prCards.filter(c=>c.coluna===col.id);
     if(q)cs=cs.filter(c=>{const d=c.sourceId?(opCards.find(o=>o.id===c.sourceId)||c):c;return(d.nomePais||'').toLowerCase().includes(q)||(d.nomeCrianca||'').toLowerCase().includes(q)||(d.nomeCrianca2||'').toLowerCase().includes(q)});
-    const _hoje=new Date().toISOString().slice(0,10);
     cs.sort((a,b)=>{const da=getEffDate(a),db=getEffDate(b);if(!da&&!db)return 0;if(!da)return 1;if(!db)return-1;return da<db?-1:da>db?1:0;});
     board.appendChild(buildPrCol(col,cs));
   });
 }
+function renderPrVideo(){renderPrCat('video','board-pr-video','srch-pr-video')}
+function renderPrFrl(){renderPrCat('frl','board-pr-frl','srch-pr-frl')}
+// compat: nome antigo
+function renderPrFreela(){renderPrVideo()}
 function adjustHexColor(hex, amt){
   let c=(hex||'').replace('#','');
   if(c.length===3)c=c.split('').map(ch=>ch+ch).join('');
@@ -3645,7 +3778,7 @@ function adjustHexColor(hex, amt){
 
 function buildPrCol(col,cs){
   const div=document.createElement('div');div.className='col';div.dataset.col=col.id;
-  const addAction=col.cat==='freela'?`openPrModal(null,'${col.id}')`:`openOpModal(null,'confirmado',null,true)`;
+  const addAction=col.cat?`openPrModal(null,'${col.id}')`:`openOpModal(null,'confirmado',null,true)`;
   const hdrStart=adjustHexColor(col.color,10);
   const hdrEnd=adjustHexColor(col.color,-18);
   div.innerHTML=`<div class="col-hdr" style="background:linear-gradient(135deg, ${hdrStart} 0%, ${hdrEnd} 100%);box-shadow:inset 0 -1px 0 rgba(255,255,255,.06)">
@@ -3709,9 +3842,12 @@ function prCardHTML(c,cc){
   const pendBg=isPend?'background:#241e12;border:1.5px solid #c8972a;':freelaTipo==='contratei'?'background:#202A34;border:1.5px solid #71869A;':freelaTipo==='sou-freela'?'background:#241715;border:1.5px solid #b05a45;':planoBg;
   const planoBadge=_pi?(planoDeepActive?`<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;color:${_pi.deepText};background:rgba(255,255,255,.18);border-radius:20px;padding:2px 8px">${_pi.emoji} ${_pi.label}</span>`:`<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;color:${_pi.chipText};background:${_pi.chipBg};border:1px solid ${_pi.chipBorder};border-radius:20px;padding:2px 7px">${_pi.emoji} ${_pi.label}</span>`):'';
   const pendBadge=isPend?`<div style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:#d6b16a;background:#28231c;border:1px solid #8c7652;border-radius:20px;padding:2px 7px;margin-bottom:6px">⚠️ Pendências</div>`:freelaTipo==='contratei'?`<div style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:#d7dfe3;background:#22282d;border:1px solid #65727b;border-radius:20px;padding:2px 7px;margin-bottom:6px">🤝 Freela contratado${frlNome?' · '+esc(frlNome):''}</div>`:freelaTipo==='sou-freela'?`<div style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:#e0c6b9;background:#2b211d;border:1px solid #8f6f60;border-radius:20px;padding:2px 7px;margin-bottom:6px">📸 Sou o freela${parceiroNome?' · '+esc(parceiroNome):''}</div>`:isPast?`<div style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:#d7c6a7;background:#29251f;border:1px solid #887a63;border-radius:20px;padding:2px 7px;margin-bottom:6px">✅ Realizado</div>`:'';
-  const isFreelaCol=PR_COLS.find(pc=>pc.id===c.coluna)?.cat==='freela';
+  const _cat=prCatOf(c.coluna);
+  const isFreelaCol=_cat==='video';
+  const isCopia=!!c.copiaDe;
   return `<div class="proj-card${planoDeepActive?' plano-deep':''}" draggable="true" data-id="${c.id}" style="--cc:${cc};${pendBg}" ondragstart="onDS(event,'${c.id}','pr')" ondragend="onDE2(event)" onclick="openPrModal('${c.id}',null,event)">
-    <div class="card-actions"><button class="cab del" onclick="qDel('pr','${c.id}',event)">🗑</button><button class="cab">✏️</button></div>
+    <div class="card-actions"><button class="cab del" onclick="qDel('pr','${c.id}',event)">🗑</button><button class="cab" onclick="openTransfer('pr','${c.id}',event)" title="Mover ou copiar para outro board">🔀</button><button class="cab">✏️</button></div>
+    ${isCopia?`<div style="display:inline-flex;align-items:center;gap:4px;font-size:9.5px;font-weight:700;color:#B1C0CF;background:#20252A;border:1px solid #566370;border-radius:20px;padding:2px 7px;margin-bottom:6px">🔗 Cópia</div>`:''}
     ${(planoBadge||pendBadge)?`<div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-bottom:6px">${planoBadge}${pendBadge}</div>`:''}
     <div class="pc-name">${esc(nome)}</div>
     ${criancas.map(crianca=>`<div class="pc-child">🎈 ${esc(crianca.nome)}${crianca.idade?' · '+esc(crianca.idade):''}</div>`).join('')}
@@ -4109,7 +4245,8 @@ document.addEventListener('DOMContentLoaded',()=>{
   setupKbScroll('kb-op','kb-thumb-op');
   setupKbScroll('kb-pr','kb-thumb-pr');
   setupKbScroll('kb-alb','kb-thumb-alb');
-  setupKbScroll('kb-pr-freela','kb-thumb-pr-freela');
+  setupKbScroll('kb-pr-video','kb-thumb-pr-video');
+  setupKbScroll('kb-pr-frl','kb-thumb-pr-frl');
   _initTarefasChecks();
 });
 function clearFollowup(id){const c=opCards.find(o=>o.id===id);if(!c)return;c.followupDate='';savOp();renderOp();renderDashboard();toast('✅ Follow-up concluído!','green');}
@@ -4799,22 +4936,23 @@ function saveOpCard(){
 }
 function fillPrColSelect(selected){
   const opt=c=>`<option value="${c.id}"${c.id===selected?' selected':''}>${c.emoji} ${c.name}</option>`;
-  const proj=PR_COLS.filter(c=>c.cat!=='freela'),freela=PR_COLS.filter(c=>c.cat==='freela');
-  document.getElementById('f-pr-col').innerHTML=`<optgroup label="📸 Projetos">${proj.map(opt).join('')}</optgroup><optgroup label="🎥 Freelas">${freela.map(opt).join('')}</optgroup>`;
+  document.getElementById('f-pr-col').innerHTML=Object.values(PR_CATS).map(cat=>{
+    const cols=PR_COLS.filter(c=>(c.cat||'proj')===cat.key);
+    return cols.length?`<optgroup label="${cat.emoji} ${cat.label}">${cols.map(opt).join('')}</optgroup>`:'';
+  }).join('');
 }
 function openPrModal(cardId,defaultCol,event){
   if(event)event.stopPropagation();editingPrId=cardId;
   const card=cardId?prCards.find(c=>c.id===cardId):null;
   document.getElementById('mo-pr-title').textContent=card?'✏️ Editar Projeto':'➕ Novo Projeto';
   document.getElementById('btn-del-pr').style.display=card?'inline-flex':'none';
-  document.getElementById('btn-pr-to-alb').style.display=card?'inline-flex':'none';
-  document.getElementById('btn-pr-to-freela').style.display=(card&&PR_COLS.find(pc=>pc.id===card.coluna)?.cat!=='freela')?'inline-flex':'none';
+  document.getElementById('btn-pr-transfer').style.display=card?'inline-flex':'none';
   fillPrColSelect(card?card.coluna:(defaultCol||'festa-acontecer'));
   document.getElementById('f-pr-obs').value=card?.obs||'';
   const isStandalone=!card?.sourceId;
   document.getElementById('pr-standalone-sec').style.display=isStandalone?'':'none';
   document.getElementById('pr-linked-sec').style.display=isStandalone?'none':'';
-  if(isStandalone){document.getElementById('f-pr-nome').value=card?.nomePais||'';document.getElementById('f-pr-data').value=card?.dataEvento||'';const _defFreela=card?(card.freela||''):(PR_COLS.find(pc=>pc.id===(defaultCol||''))?.cat==='freela'?'sou-freela':'');setPrFreela(_defFreela);const pSel=document.getElementById('f-pr-parceiroId');if(pSel&&card?.parceiroId)setTimeout(()=>{pSel.value=card.parceiroId;},50);}
+  if(isStandalone){document.getElementById('f-pr-nome').value=card?.nomePais||'';document.getElementById('f-pr-data').value=card?.dataEvento||'';const _defCat=PR_COLS.find(pc=>pc.id===(defaultCol||''))?.cat;const _defFreela=card?(card.freela||''):((_defCat==='video'||_defCat==='frl')?'sou-freela':'');setPrFreela(_defFreela);const pSel=document.getElementById('f-pr-parceiroId');if(pSel&&card?.parceiroId)setTimeout(()=>{pSel.value=card.parceiroId;},50);}
   const src=card?.sourceId?opCards.find(o=>o.id===card.sourceId):null;
   const infoDiv=document.getElementById('pr-client-info');
   if(src){infoDiv.innerHTML=`<strong style="color:#172033;font-size:14px">${esc(src.nomePais)}</strong><br>${_getCriancas(src).map(crianca=>`🎈 ${esc(crianca.nome)}${crianca.idade?' · '+esc(crianca.idade):''}<br>`).join('')}${src.dataEvento?`📅 ${fmtDate(src.dataEvento)}${src.horario?' às '+src.horario:''}${src.horarioFim?' - '+src.horarioFim:''}<br>`:''}${src.local?`📍 ${esc(src.local)}<br>`:''}${src.tipo?`📷 ${esc(src.tipo)}<br>`:''}${src.galeria?`🔗 <a href="${src.galeria}" target="_blank" rel="noopener" style="color:var(--primary);font-weight:600">Ver Galeria</a>`:''}`}
@@ -5736,7 +5874,7 @@ function renderAgenda(){
   const firstDay=new Date(agYear,agMonth,1).getDay();const daysInMonth=new Date(agYear,agMonth+1,0).getDate();const today=new Date();
   const events={};
   opCards.filter(c=>c.coluna!=='perdido'&&c.dataEvento).forEach(c=>{if(!events[c.dataEvento])events[c.dataEvento]=[];events[c.dataEvento].push({...c,_type:'op'})});
-  prCards.filter(c=>c.dataEvento).forEach(c=>{const srcOk=c.sourceId&&opCards.find(o=>o.id===c.sourceId&&(o.coluna==='confirmado'||o.coluna==='confirmado-pendencias'));const srcAny=c.sourceId?opCards.find(o=>o.id===c.sourceId):null;if(!srcOk){if(!events[c.dataEvento])events[c.dataEvento]=[];events[c.dataEvento].push({...c,_type:'pr',titulo:srcAny?.titulo||c.titulo||c.nomePais})}});
+  prCards.filter(c=>c.dataEvento&&!c.copiaDe).forEach(c=>{const srcOk=c.sourceId&&opCards.find(o=>o.id===c.sourceId&&(o.coluna==='confirmado'||o.coluna==='confirmado-pendencias'));const srcAny=c.sourceId?opCards.find(o=>o.id===c.sourceId):null;if(!srcOk){if(!events[c.dataEvento])events[c.dataEvento]=[];events[c.dataEvento].push({...c,_type:'pr',titulo:srcAny?.titulo||c.titulo||c.nomePais})}});
   const prevDays=new Date(agYear,agMonth,0).getDate();
   for(let i=firstDay-1;i>=0;i--)grid.innerHTML+=`<div class="ag-day other-month"><div class="ag-day-num">${prevDays-i}</div></div>`;
   for(let d=1;d<=daysInMonth;d++){
