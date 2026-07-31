@@ -1066,6 +1066,23 @@ td { padding: 13px 16px; font-size: 13.5px; }
 .gtasks-url-inp:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(44,122,123,.1)}
 .gtasks-url-inp::placeholder{color:var(--n400)}
 
+/* ── Remover conta: escolha do escopo de meses ── */
+.delconta-opt{display:flex;flex-direction:column;gap:3px;text-align:left;width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:11px 14px;cursor:pointer;transition:.15s;font-family:'Montserrat',sans-serif}
+.delconta-opt:hover{border-color:var(--primary);background:var(--primary-light)}
+.delconta-opt.danger:hover{border-color:var(--danger);background:var(--danger-light)}
+.delconta-opt-t{font-size:13px;font-weight:700;color:var(--text)}
+.delconta-opt-s{font-size:11px;color:var(--muted);line-height:1.5}
+
+/* ── Vigência ao cadastrar conta / item ── */
+.ci-scope{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.ci-scope-btn{background:var(--surface);border:1.5px solid var(--border);color:var(--muted);border-radius:16px;padding:4px 11px;font:700 11px 'Montserrat',sans-serif;cursor:pointer;transition:.15s}
+.ci-scope-btn:hover{border-color:var(--primary-mid);color:var(--text)}
+.ci-scope-btn.on{background:var(--primary);border-color:var(--primary);color:#1A1410}
+.ci-range{display:none;align-items:center;gap:6px;flex-wrap:wrap;margin-top:6px}
+.ci-range.on{display:flex}
+.ci-range select{width:auto;min-width:120px;max-width:170px;flex:0 0 auto;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font:600 12px 'Montserrat',sans-serif;color:var(--n900);background:var(--surface)}
+.ci-range-lbl{font-size:11px;color:var(--muted);white-space:nowrap}
+
 /* ── Mover / Copiar entre boards ── */
 .trf-chips{display:flex;flex-wrap:wrap;gap:8px}
 .trf-chip{background:var(--surface);border:1.5px solid var(--border);color:var(--muted);border-radius:22px;padding:9px 15px;font:700 12.5px 'Montserrat',sans-serif;cursor:pointer;transition:.15s}
@@ -1760,6 +1777,7 @@ td { padding: 13px 16px; font-size: 13.5px; }
           <input type="text" id="fin-conta-n" placeholder="Nome da conta (ex: Nubank, MEI...)">
           <input type="number" id="fin-conta-d" placeholder="Dia vencimento (1–31)" min="1" max="31">
         </div>
+        <div id="fin-conta-scope" style="margin:8px 0 10px"></div>
         <button class="fin-save-btn" onclick="saveFinConta()">Salvar</button>
         <button class="fin-cancel-btn" onclick="toggleFinForm('fin-contas-f')">Cancelar</button>
       </div>
@@ -2020,6 +2038,7 @@ td { padding: 13px 16px; font-size: 13.5px; }
           <input type="text" id="pess-conta-n" placeholder="Nome da conta (ex: Vivo, Spotify...)">
           <input type="number" id="pess-conta-d" placeholder="Dia vencimento (1–31)" min="1" max="31">
         </div>
+        <div id="pess-conta-scope" style="margin:8px 0 10px"></div>
         <button class="fin-save-btn" onclick="savePessConta()">Salvar</button>
         <button class="fin-cancel-btn" onclick="toggleFinForm('pess-contas-f')">Cancelar</button>
       </div>
@@ -2553,6 +2572,20 @@ td { padding: 13px 16px; font-size: 13.5px; }
       <button class="btn btn-g" onclick="closeMo('mo-alb')">Cancelar</button>
       <button class="btn btn-p" onclick="saveAlbCard()">💾 Salvar</button>
     </div>
+  </div>
+</div>
+
+<!-- REMOVER CONTA / ITEM — escopo de meses -->
+<div class="mo hidden" id="mo-delconta" onclick="moOverlay(event,'mo-delconta')">
+  <div class="mo-box sm">
+    <div class="mo-hdr"><h2>🗑️ Remover de quais meses?</h2><button class="mo-close" onclick="closeMo('mo-delconta')">✕</button></div>
+    <div class="mo-body">
+      <div class="fs">
+        <div id="delconta-alvo" style="background:#20252A;border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;line-height:1.7"></div>
+      </div>
+      <div class="fs"><div id="delconta-opts" style="display:flex;flex-direction:column;gap:8px"></div></div>
+    </div>
+    <div class="mo-ftr"><button class="btn btn-g" onclick="closeMo('mo-delconta')">Cancelar</button></div>
   </div>
 </div>
 
@@ -5967,11 +6000,18 @@ function _itemAtivoNoMes(x,mes){
   const idxMes=_idxMesContas(mes);
   if(x.mesInicio&&_idxMesContas(x.mesInicio)>idxMes)return false;
   if(x.mesFim&&_idxMesContas(x.mesFim)<idxMes)return false;
+  if(Array.isArray(x.mesesExcluidos)&&x.mesesExcluidos.includes(mes))return false;
   return true;
 }
-function _contaAtivaNoMes(c,mes){
-  if(!_itemAtivoNoMes(c,mes))return false;
-  return !Array.isArray(c.mesesExcluidos)||!c.mesesExcluidos.includes(mes);
+function _contaAtivaNoMes(c,mes){return _itemAtivoNoMes(c,mes)}
+// Rótulo do período de vigência de uma conta/item ('' quando vale para todos os meses)
+function _periodoLabel(x){
+  const ini=x.mesInicio?_rotuloMesContas(x.mesInicio):'';
+  const fim=x.mesFim?_rotuloMesContas(x.mesFim):'';
+  if(ini&&fim)return ini===fim?`só em ${ini}`:`${ini} → ${fim}`;
+  if(ini)return `a partir de ${ini}`;
+  if(fim)return `até ${fim}`;
+  return '';
 }
 let _contasMesSel=null;
 function _contasMesAtivo(){
@@ -6028,6 +6068,47 @@ function _contasDoMes(contas,mes){
 function _rotuloMesContas(m){
   return m.includes('/')?m:m+'/26';
 }
+/* ── Vigência: bloco "só este mês × vários meses" dos formulários ── */
+function _scopeHTML(pfx){
+  const lbl=_rotuloMesContas(_contasMesAtivo());
+  const opts=MESES_CONTAS_SHOW.map(x=>`<option value="${x}">${_rotuloMesContas(x)}</option>`).join('');
+  return `<div class="ci-scope">
+    <span class="ci-range-lbl">Vigência:</span>
+    <button type="button" class="ci-scope-btn" id="${pfx}-sc-mes" onclick="setContaScope('${pfx}','mes')">Só em ${lbl}</button>
+    <button type="button" class="ci-scope-btn on" id="${pfx}-sc-varios" onclick="setContaScope('${pfx}','varios')">Vários meses</button>
+  </div>
+  <div class="ci-range on" id="${pfx}-range">
+    <span class="ci-range-lbl">De:</span>
+    <select id="${pfx}-mes"><option value="">Todos os meses</option>${opts}</select>
+    <span class="ci-range-lbl">até:</span>
+    <select id="${pfx}-fim"><option value="">Sem prazo</option>${opts}</select>
+  </div>`;
+}
+function setContaScope(pfx,modo){
+  document.getElementById(pfx+'-sc-mes')?.classList.toggle('on',modo==='mes');
+  document.getElementById(pfx+'-sc-varios')?.classList.toggle('on',modo==='varios');
+  document.getElementById(pfx+'-range')?.classList.toggle('on',modo==='varios');
+}
+function _lerScope(pfx){
+  if(document.getElementById(pfx+'-sc-mes')?.classList.contains('on')){
+    const m=_contasMesAtivo();return{mesInicio:m,mesFim:m};
+  }
+  return{mesInicio:document.getElementById(pfx+'-mes')?.value||'',
+         mesFim:document.getElementById(pfx+'-fim')?.value||''};
+}
+function _resetScope(pfx){
+  setContaScope(pfx,'varios');
+  const a=document.getElementById(pfx+'-mes'),b=document.getElementById(pfx+'-fim');
+  if(a)a.value='';if(b)b.value='';
+}
+// Monta o bloco de vigência do formulário de conta; refaz só quando o mês ativo muda
+function _mountScope(pfx,contId){
+  const el=document.getElementById(contId);if(!el)return;
+  const mes=_contasMesAtivo();
+  if(el.dataset.mes===mes)return;
+  el.dataset.mes=mes;
+  el.innerHTML=_scopeHTML(pfx);
+}
 function _renderContasMeses(id){
   const cont=document.getElementById(id);if(!cont)return;
   const mes=_contasMesAtivo();
@@ -6052,7 +6133,8 @@ function _calcFinMes(mes){
   const prevF=festas.filter(f=>!f.p).reduce((s,f)=>s+(f.liq??f.v),0);
   const totalAReceber=festas.reduce((s,f)=>s+f.rest,0);
   const sobrou=vg;
-  return{totalF,totalAReceber,totalG,pendG,totalD,vg,autoVg,prevF,sobrou,festas,D};
+  // G = contas a pagar do mês (substituíram os antigos "gastos fixos")
+  return{totalF,totalAReceber,totalG,pendG,totalD,vg,autoVg,prevF,sobrou,festas,D,G:contasMes};
 }
 
 function switchFinTab(tab,btn){
@@ -7906,6 +7988,7 @@ function renderFinContas(){
   if(!tb)return;
   const mes=_contasMesAtivo();
   _renderContasMeses('fin-contas-mes-sel');
+  _mountScope('fin-conta','fin-conta-scope');
   const contasVisiveis=_contasDoMes(finContas,mes);
   if(!contasVisiveis.length){tb.innerHTML='<p style="color:var(--muted);text-align:center;padding:20px 0">Nenhuma conta cadastrada neste mês.</p>';return;}
   tb.innerHTML=contasVisiveis.map(c=>{
@@ -7913,15 +7996,16 @@ function renderFinContas(){
     const itens=c.itens||[];
     const itensAtivos=itens.filter(x=>_itemAtivoNoMes(x,mes));
     const val=_contaValor(c,mes);
+    const pend=_contaValorPendente(c,mes);
     const temItens=itensAtivos.length>0;
     const pag=_contaPagoMes(c,mes);
     return`<div class="conta-card" style="${pag?'opacity:.6':''}">
       <div class="conta-card-hdr" onclick="toggleContaItens('fin',${i})">
         <span class="conta-toggle" id="fin-ctog-${i}">▶</span>
         <span class="conta-card-nome" style="${pag?'text-decoration:line-through':''}">${esc(c.nome)}</span>
-        <span class="conta-card-valor" style="color:${pag?'var(--success,#6E879F)':'var(--accent)'}${!temItens?';cursor:pointer;text-decoration:underline dotted':''}" title="${!temItens?'Clique para editar':''}" onclick="event.stopPropagation();${!temItens?`editContaValor('fin',${i},this)`:''}">${fmtMoney(val)}${!temItens?` <span style="font-size:10px;opacity:.4">✏️</span>`:''}</span>
+        <span class="conta-card-valor" style="color:${pag?'var(--success,#6E879F)':'var(--accent)'}${!temItens?';cursor:pointer;text-decoration:underline dotted':''}" title="${!temItens?'Clique para editar o valor':'Falta pagar neste mês'}" onclick="event.stopPropagation();${!temItens?`editContaValor('fin',${i},this)`:''}">${fmtMoney(pend)}${!temItens?` <span style="font-size:10px;opacity:.4">✏️</span>`:''}</span>${pend!==val?`<span style="font-size:10.5px;color:var(--muted);white-space:nowrap;margin-left:6px">de ${fmtMoney(val)}</span>`:''}
         ${c.dia?`<span class="conta-card-dia">Dia ${c.dia}</span>`:''}
-        ${c.mesInicio?`<span style="font-size:10px;font-weight:700;color:#e0a14e;background:#2a2113;border-radius:5px;padding:2px 7px">a partir de ${c.mesInicio}</span>`:''}
+        ${_periodoLabel(c)?`<span style="font-size:10px;font-weight:700;color:#e0a14e;background:#2a2113;border-radius:5px;padding:2px 7px">${_periodoLabel(c)}</span>`:''}
         <button class="conta-card-pag ${pag?'sim':'nao'}" onclick="event.stopPropagation();pagarFinConta(${i})">${pag?'✓ Pago':'Pagar'}</button>
         <button class="fin-del" onclick="event.stopPropagation();delFinConta(${i})">×</button>
       </div>
@@ -7932,7 +8016,7 @@ function renderFinContas(){
           <span class="conta-drag-handle">⠿</span>
           <button class="ci-pag-btn${xPago?' pago':''}" onclick="pagarContaItem('fin',${i},${j})" title="${xPago?'Desfazer':'Marcar como pago'}">${xPago?'✓':''}</button>
           <span class="conta-item-nome" style="${xPago?'text-decoration:line-through;color:var(--muted)':''}">${esc(x.nome)}</span>
-          ${x.mesInicio?`<span style="font-size:9px;font-weight:700;color:#92400e;background:#2a2113;border-radius:4px;padding:1px 5px;flex-shrink:0">▶ ${x.mesInicio}</span>`:''}
+          ${_periodoLabel(x)?`<span style="font-size:9px;font-weight:700;color:#e0a14e;background:#2a2113;border-radius:4px;padding:1px 5px;flex-shrink:0">▶ ${_periodoLabel(x)}</span>`:''}
           <span class="conta-item-val" style="${xPago?'color:var(--success,#6E879F)':''}cursor:pointer;text-decoration:underline dotted" title="Clique para editar" onclick="event.stopPropagation();editContaItemValor('fin',${i},${j},this)">${fmtMoney(xVal)} <span style="font-size:10px;opacity:.4">✏️</span></span>
           <button class="fin-del" onclick="delContaItem('fin',${i},${j})" title="Remover">×</button>
         </div>`}).join('')}
@@ -7943,17 +8027,11 @@ function renderFinContas(){
             <button class="conta-item-btn-add" onclick="addContaItem('fin',${i})">+</button>
             <button class="conta-item-btn-cancel" onclick="document.getElementById('fin-ciadd-${i}').style.display='none'">✕</button>
           </div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:11px;color:var(--muted);white-space:nowrap">A partir de:</span>
-            <select id="fin-ci-mes-${i}" style="flex:1;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font:600 12px 'Montserrat',sans-serif;color:var(--n900);background:var(--surface)">
-              <option value="">Todos os meses</option>
-              ${MESES_CONTAS_SHOW.map(m=>`<option value="${m}">${_rotuloMesContas(m)}</option>`).join('')}
-            </select>
-          </div>
+          ${_scopeHTML('fin-ci-'+i)}
         </div>
         <div style="padding:8px 14px;border-top:1px dashed var(--border);display:flex;gap:8px;align-items:center">
           <button class="fin-add-btn" style="margin:0;flex:1;padding:6px" onclick="document.getElementById('fin-ciadd-${i}').style.display='flex';document.getElementById('fin-ci-n-${i}').focus()">+ Adicionar item</button>
-          ${temItens?`<span style="font-size:11px;color:var(--muted)">${itensAtivos.length} item(ns) · ${fmtMoney(val)}</span>`:''}
+          ${temItens?`<span style="font-size:11px;color:var(--muted)">${itensAtivos.length} item(ns) · falta ${fmtMoney(pend)} de ${fmtMoney(val)}</span>`:''}
         </div>
       </div>
     </div>`;
@@ -8053,13 +8131,15 @@ function saveFinConta(){
   const dia=parseInt(document.getElementById('fin-conta-d').value)||0;
   if(!nome){alert('Informe o nome da conta!');return;}
   if(dia<1||dia>31){alert('Dia inválido (1–31)!');return;}
-  finContas.push({id:Date.now(),nome,valor:0,dia,itens:[]});
+  const vig=_lerScope('fin-conta');
+  finContas.push({id:Date.now(),nome,valor:0,dia,itens:[],mesInicio:vig.mesInicio,mesFim:vig.mesFim});
   ['fin-conta-n','fin-conta-d'].forEach(id=>document.getElementById(id).value='');
+  _resetScope('fin-conta');
   toggleFinForm('fin-contas-f');
   saveFinData();
   renderFinContas();
 }
-function delFinConta(i){if(!confirm('Excluir conta?'))return;finContas.splice(i,1);saveFinData();renderFinContas();}
+function delFinConta(i){openDelConta('fin',i,null)}
 function limparFinContas(){if(!confirm('Excluir TODAS as contas a pagar de Empresa?'))return;finContas=[];saveFinData();renderFinContas();}
 function _initFinVG(mes){
   // Se finVG[mes] ainda não foi definido manualmente, inicializa com o valor automático (reservas das festas)
@@ -8187,17 +8267,17 @@ function pagarContaItem(tipo,ci,ii){
 function addContaItem(tipo,i){
   var nEl=document.getElementById(tipo+'-ci-n-'+i);
   var vEl=document.getElementById(tipo+'-ci-v-'+i);
-  var mEl=document.getElementById(tipo+'-ci-mes-'+i);
   var nome=(nEl?.value||'').trim();
   var valor=parseFloat(vEl?.value)||0;
-  var mesInicio=mEl?.value||'';
+  var vig=_lerScope(tipo+'-ci-'+i);
   if(!nome){alert('Informe o nome do item!');return;}
   if(!valor){alert('Informe o valor do item!');return;}
   var arr=tipo==='fin'?finContas:pessContas;
   var c=arr[i];if(!c)return;
   if(!c.itens)c.itens=[];
-  c.itens.push({id:Date.now(),nome,valor,mesInicio});
-  if(nEl)nEl.value='';if(vEl)vEl.value='';if(mEl)mEl.value='';
+  c.itens.push({id:Date.now(),nome,valor,mesInicio:vig.mesInicio,mesFim:vig.mesFim});
+  if(nEl)nEl.value='';if(vEl)vEl.value='';
+  _resetScope(tipo+'-ci-'+i);
   if(tipo==='fin'){saveFinData();renderFinContas();}
   else{savePessData();renderPessContas();}
   // Re-abre o accordion
@@ -8208,19 +8288,85 @@ function addContaItem(tipo,i){
   },50);
   toast('✅ Item adicionado!');
 }
-function delContaItem(tipo,i,j){
-  if(!confirm('Remover este item?'))return;
-  var arr=tipo==='fin'?finContas:pessContas;
-  var c=arr[i];if(!c||!c.itens)return;
-  c.itens.splice(j,1);
-  if(tipo==='fin'){saveFinData();renderFinContas();}
-  else{savePessData();renderPessContas();}
-  setTimeout(()=>{
-    var el=document.getElementById(tipo+'-citens-'+i);
-    var tog=document.getElementById(tipo+'-ctog-'+i);
+/* ══════════ REMOVER CONTA / ITEM — escolha do escopo de meses ══════════
+   Uma conta pode valer só para um mês ou repetir por vários. Ao remover,
+   pergunta de quais meses a remoção vale, em vez de apagar tudo sempre.
+──────────────────────────────────────────────────────────────────────── */
+let _delContaCtx=null; // {tipo, ci, ii} — ii null = a conta inteira
+
+function openDelConta(tipo,ci,ii,event){
+  if(event)event.stopPropagation();
+  const arr=tipo==='fin'?finContas:pessContas;
+  const c=arr[ci];if(!c)return;
+  const isItem=(ii!==null&&ii!==undefined);
+  const alvo=isItem?(c.itens||[])[ii]:c;
+  if(!alvo)return;
+  _delContaCtx={tipo,ci,ii:isItem?ii:null};
+  const mes=_contasMesAtivo(),mesLbl=_rotuloMesContas(mes);
+  const idx=MESES_CONTAS_SHOW.indexOf(mes);
+  const per=_periodoLabel(alvo);
+  document.getElementById('delconta-alvo').innerHTML=
+    `<strong style="color:var(--text);font-size:14px">${esc(alvo.nome||'')}</strong>`+
+    `<span style="font-size:11px;color:var(--muted);margin-left:8px">${isItem?'item de '+esc(c.nome||''):'conta'}</span><br>`+
+    `<span style="font-size:12px;color:var(--muted)">${per?'Vigência: '+esc(per):'Vale para todos os meses'} · valor em ${esc(mesLbl)}: ${fmtMoney(isItem?_itemValorMes(alvo,mes):_contaValor(alvo,mes))}</span>`;
+  document.getElementById('delconta-opts').innerHTML=[
+    {k:'mes',    t:`🗓️ Só de ${mesLbl}`,                s:'Continua existindo nos demais meses.'},
+    {k:'diante', t:`➡️ De ${mesLbl} em diante`,          s:'Mantém o histórico dos meses anteriores.', off:idx<=0},
+    {k:'outros', t:`↩️ De todos os outros meses`,        s:`Passa a existir só em ${mesLbl}.`},
+    {k:'todos',  t:`🗑️ De todos os meses`,               s:'Apaga por completo, sem volta.', danger:true},
+  ].filter(o=>!o.off).map(o=>
+    `<button type="button" class="delconta-opt${o.danger?' danger':''}" onclick="delContaEscopo('${o.k}')">
+       <span class="delconta-opt-t">${o.t}</span><span class="delconta-opt-s">${o.s}</span></button>`
+  ).join('');
+  document.getElementById('mo-delconta').classList.remove('hidden');
+}
+
+function delContaEscopo(escopo){
+  if(!_delContaCtx)return;
+  const {tipo,ci,ii}=_delContaCtx;
+  const arr=tipo==='fin'?finContas:pessContas;
+  const c=arr[ci];
+  const isItem=ii!==null;
+  const alvo=c?(isItem?(c.itens||[])[ii]:c):null;
+  if(!alvo){closeMo('mo-delconta');_delContaCtx=null;return}
+  const mes=_contasMesAtivo();
+  const apagar=()=>{if(isItem)c.itens.splice(ii,1);else arr.splice(ci,1)};
+  let msg='';
+
+  if(escopo==='todos'){apagar();msg='🗑️ Removido de todos os meses';}
+  else if(escopo==='mes'){
+    if(!Array.isArray(alvo.mesesExcluidos))alvo.mesesExcluidos=[];
+    if(!alvo.mesesExcluidos.includes(mes))alvo.mesesExcluidos.push(mes);
+    msg=`🗓️ Removido só de ${_rotuloMesContas(mes)}`;
+  }
+  else if(escopo==='diante'){
+    const idx=MESES_CONTAS_SHOW.indexOf(mes);
+    if(idx<=0){apagar();msg='🗑️ Removido de todos os meses';}
+    else{
+      alvo.mesFim=MESES_CONTAS_SHOW[idx-1];
+      if(alvo.mesInicio&&_idxMesContas(alvo.mesInicio)>_idxMesContas(alvo.mesFim)){apagar();msg='🗑️ Removido de todos os meses';}
+      else msg=`➡️ Removido de ${_rotuloMesContas(mes)} em diante`;
+    }
+  }
+  else if(escopo==='outros'){
+    alvo.mesInicio=mes;alvo.mesFim=mes;alvo.mesesExcluidos=[];
+    msg=`↩️ Mantido só em ${_rotuloMesContas(mes)}`;
+  }
+
+  closeMo('mo-delconta');
+  const reabrir=isItem?ci:null;
+  _delContaCtx=null;
+  if(tipo==='fin'){saveFinData();renderFinContas();renderFinResumo();}
+  else{savePessData();renderPessContas();renderPessResumo();}
+  if(reabrir!==null)setTimeout(()=>{
+    const el=document.getElementById(tipo+'-citens-'+reabrir);
+    const tog=document.getElementById(tipo+'-ctog-'+reabrir);
     if(el&&!el.classList.contains('open')){el.classList.add('open');if(tog)tog.classList.add('open');}
   },50);
+  toast(msg,'green');
 }
+
+function delContaItem(tipo,i,j){openDelConta(tipo,i,j)}
 
 // ── Edição inline de valores das Contas ───────────────────────────────
 function editContaValor(tipo,i,el){
@@ -8412,6 +8558,7 @@ function renderPessContas(){
   if(!tb)return;
   const mes=_contasMesAtivo();
   _renderContasMeses('pess-contas-mes-sel');
+  _mountScope('pess-conta','pess-conta-scope');
   const contasVisiveis=_contasDoMes(pessContas,mes);
   if(!contasVisiveis.length){tb.innerHTML='<p style="color:var(--muted);text-align:center;padding:20px 0">Nenhuma conta cadastrada neste mês.</p>';return;}
   tb.innerHTML=contasVisiveis.map(c=>{
@@ -8419,15 +8566,16 @@ function renderPessContas(){
     const itens=c.itens||[];
     const itensAtivos=itens.filter(x=>_itemAtivoNoMes(x,mes));
     const val=_contaValor(c,mes);
+    const pend=_contaValorPendente(c,mes);
     const temItens=itensAtivos.length>0;
     const pag=_contaPagoMes(c,mes);
     return`<div class="conta-card" style="${pag?'opacity:.6':''}">
       <div class="conta-card-hdr" onclick="toggleContaItens('pess',${i})">
         <span class="conta-toggle" id="pess-ctog-${i}">▶</span>
         <span class="conta-card-nome" style="${pag?'text-decoration:line-through':''}">${esc(c.nome)}</span>
-        <span class="conta-card-valor" style="color:${pag?'var(--success,#6E879F)':'var(--accent)'}${!temItens?';cursor:pointer;text-decoration:underline dotted':''}" title="${!temItens?'Clique para editar':''}" onclick="event.stopPropagation();${!temItens?`editContaValor('pess',${i},this)`:''}">${fmtMoney(val)}${!temItens?` <span style="font-size:10px;opacity:.4">✏️</span>`:''}</span>
+        <span class="conta-card-valor" style="color:${pag?'var(--success,#6E879F)':'var(--accent)'}${!temItens?';cursor:pointer;text-decoration:underline dotted':''}" title="${!temItens?'Clique para editar o valor':'Falta pagar neste mês'}" onclick="event.stopPropagation();${!temItens?`editContaValor('pess',${i},this)`:''}">${fmtMoney(pend)}${!temItens?` <span style="font-size:10px;opacity:.4">✏️</span>`:''}</span>${pend!==val?`<span style="font-size:10.5px;color:var(--muted);white-space:nowrap;margin-left:6px">de ${fmtMoney(val)}</span>`:''}
         ${c.dia?`<span class="conta-card-dia">Dia ${c.dia}</span>`:''}
-        ${c.mesInicio?`<span style="font-size:10px;font-weight:700;color:#e0a14e;background:#2a2113;border-radius:5px;padding:2px 7px">a partir de ${c.mesInicio}</span>`:''}
+        ${_periodoLabel(c)?`<span style="font-size:10px;font-weight:700;color:#e0a14e;background:#2a2113;border-radius:5px;padding:2px 7px">${_periodoLabel(c)}</span>`:''}
         <button class="conta-card-pag ${pag?'sim':'nao'}" onclick="event.stopPropagation();pagarPessConta(${i})">${pag?'✓ Pago':'Pagar'}</button>
         <button class="fin-del" onclick="event.stopPropagation();delPessConta(${i})">×</button>
       </div>
@@ -8438,7 +8586,7 @@ function renderPessContas(){
           <span class="conta-drag-handle">⠿</span>
           <button class="ci-pag-btn${xPago?' pago':''}" onclick="pagarContaItem('pess',${i},${j})" title="${xPago?'Desfazer':'Marcar como pago'}">${xPago?'✓':''}</button>
           <span class="conta-item-nome" style="${xPago?'text-decoration:line-through;color:var(--muted)':''}">${esc(x.nome)}</span>
-          ${x.mesInicio?`<span style="font-size:9px;font-weight:700;color:#92400e;background:#2a2113;border-radius:4px;padding:1px 5px;flex-shrink:0">▶ ${x.mesInicio}</span>`:''}
+          ${_periodoLabel(x)?`<span style="font-size:9px;font-weight:700;color:#e0a14e;background:#2a2113;border-radius:4px;padding:1px 5px;flex-shrink:0">▶ ${_periodoLabel(x)}</span>`:''}
           <span class="conta-item-val" style="${xPago?'color:var(--success,#6E879F)':''}cursor:pointer;text-decoration:underline dotted" title="Clique para editar" onclick="event.stopPropagation();editContaItemValor('pess',${i},${j},this)">${fmtMoney(xVal)} <span style="font-size:10px;opacity:.4">✏️</span></span>
           <button class="fin-del" onclick="delContaItem('pess',${i},${j})" title="Remover">×</button>
         </div>`}).join('')}
@@ -8449,17 +8597,11 @@ function renderPessContas(){
             <button class="conta-item-btn-add" onclick="addContaItem('pess',${i})">+</button>
             <button class="conta-item-btn-cancel" onclick="document.getElementById('pess-ciadd-${i}').style.display='none'">✕</button>
           </div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:11px;color:var(--muted);white-space:nowrap">A partir de:</span>
-            <select id="pess-ci-mes-${i}" style="flex:1;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font:600 12px 'Montserrat',sans-serif;color:var(--n900);background:var(--surface)">
-              <option value="">Todos os meses</option>
-              ${MESES_CONTAS_SHOW.map(m=>`<option value="${m}">${_rotuloMesContas(m)}</option>`).join('')}
-            </select>
-          </div>
+          ${_scopeHTML('pess-ci-'+i)}
         </div>
         <div style="padding:8px 14px;border-top:1px dashed var(--border);display:flex;gap:8px;align-items:center">
           <button class="fin-add-btn" style="margin:0;flex:1;padding:6px" onclick="document.getElementById('pess-ciadd-${i}').style.display='flex';document.getElementById('pess-ci-n-${i}').focus()">+ Adicionar item</button>
-          ${temItens?`<span style="font-size:11px;color:var(--muted)">${itensAtivos.length} item(ns) · ${fmtMoney(val)}</span>`:''}
+          ${temItens?`<span style="font-size:11px;color:var(--muted)">${itensAtivos.length} item(ns) · falta ${fmtMoney(pend)} de ${fmtMoney(val)}</span>`:''}
         </div>
       </div>
     </div>`;
@@ -8470,13 +8612,15 @@ function savePessConta(){
   const dia=parseInt(document.getElementById('pess-conta-d').value)||0;
   if(!nome){alert('Informe o nome da conta!');return;}
   if(dia<1||dia>31){alert('Dia inválido (1–31)!');return;}
-  pessContas.push({id:Date.now(),nome,valor:0,dia,itens:[]});
+  const vig=_lerScope('pess-conta');
+  pessContas.push({id:Date.now(),nome,valor:0,dia,itens:[],mesInicio:vig.mesInicio,mesFim:vig.mesFim});
   ['pess-conta-n','pess-conta-d'].forEach(id=>document.getElementById(id).value='');
+  _resetScope('pess-conta');
   toggleFinForm('pess-contas-f');
   savePessData();
   renderPessContas();
 }
-function delPessConta(i){if(!confirm('Excluir conta?'))return;pessContas.splice(i,1);savePessData();renderPessContas();}
+function delPessConta(i){openDelConta('pess',i,null)}
 function limparPessContas(){if(!confirm('Excluir TODAS as contas a pagar de Pessoal?'))return;pessContas=[];savePessData();renderPessContas();}
 function pagarPessConta(i){
   var c=pessContas[i]; if(!c)return;
