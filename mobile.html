@@ -152,6 +152,26 @@ select{background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;c
 </style>
 </head>
 <body>
+<div id="login-overlay" style="display:none;position:fixed;inset:0;background:#12161B;z-index:10000;align-items:center;justify-content:center;padding:18px">
+  <div style="width:100%;max-width:340px;background:#1B2027;border:1.5px solid #2E353E;border-radius:16px;padding:26px 22px">
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="font-size:34px;line-height:1">📸</div>
+      <div style="font-size:16px;font-weight:800;color:#EAEEF2;margin-top:6px">CRM André Vitor</div>
+      <div style="font-size:12px;color:#8B97A5;margin-top:3px">Entre para acessar seus dados</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <input type="email" id="login-email" placeholder="E-mail" autocomplete="username"
+        style="width:100%;padding:12px 14px;border:1.5px solid #2E353E;border-radius:10px;font-size:15px;color:#EAEEF2;background:#20252A;outline:none">
+      <input type="password" id="login-senha" placeholder="Senha" autocomplete="current-password"
+        onkeydown="if(event.key==='Enter')fazerLogin()"
+        style="width:100%;padding:12px 14px;border:1.5px solid #2E353E;border-radius:10px;font-size:15px;color:#EAEEF2;background:#20252A;outline:none">
+      <div id="login-erro" style="display:none;font-size:12px;color:#E06B5A;background:#2E1A18;border:1px solid #7A3A32;border-radius:9px;padding:9px 12px;line-height:1.5"></div>
+      <button id="login-btn" onclick="fazerLogin()"
+        style="width:100%;padding:13px;background:#E0A14E;color:#1A1410;border:none;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer">Entrar</button>
+    </div>
+  </div>
+</div>
+
 
 <div id="mob-load">
   <div class="spinner"></div>
@@ -269,6 +289,7 @@ select{background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;c
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script>
 // ── CONSTANTES ──────────────────────────────
 const MESES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
@@ -453,14 +474,37 @@ function checkReady(){
 }
 
 // ── FIREBASE INIT ─────────────────────────────
-(function(){
-  const cfg={apiKey:'AIzaSyC0K0T5hwySXMlFGfDAcjwLo73InsEfuEg',authDomain:'crm---2026.firebaseapp.com',
+const MOB_CFG={apiKey:'AIzaSyC0K0T5hwySXMlFGfDAcjwLo73InsEfuEg',authDomain:'crm---2026.firebaseapp.com',
     databaseURL:'https://crm---2026-default-rtdb.firebaseio.com',projectId:'crm---2026',
     storageBucket:'crm---2026.firebasestorage.app',messagingSenderId:'274783220531',
     appId:'1:274783220531:web:ee50e424b5a2af2bfc0446'};
+let _mobApp=null,_mobSync=false;
+function mobApp(){
+  if(_mobApp)return _mobApp;
+  try{_mobApp=firebase.app('mob')}catch(e){_mobApp=firebase.initializeApp(MOB_CFG,'mob')}
+  return _mobApp;
+}
+function fazerLogin(){
+  const email=(document.getElementById('login-email')?.value||'').trim();
+  const senha=document.getElementById('login-senha')?.value||'';
+  const err=document.getElementById('login-erro');
+  const show=m=>{if(err){err.textContent=m;err.style.display='block'}};
+  if(!email||!senha){show('Preencha e-mail e senha.');return}
+  const btn=document.getElementById('login-btn');
+  if(btn){btn.disabled=true;btn.textContent='Entrando...'}
+  const back=()=>{if(btn){btn.disabled=false;btn.textContent='Entrar'}};
   try{
-    const aF=firebase.initializeApp(cfg,'mob-fin');
-    _finDb=firebase.database(aF);
+    firebase.auth(mobApp()).signInWithEmailAndPassword(email,senha)
+      .then(back)
+      .catch(e=>{back();const c=e&&e.code||'';
+        show(c==='auth/invalid-credential'||c==='auth/wrong-password'||c==='auth/user-not-found'
+          ?'E-mail ou senha incorretos.':'Não consegui entrar: '+(e&&e.message||c));});
+  }catch(e){back();show('Autenticação indisponível.')}
+}
+function initMobSync(){
+  if(_mobSync)return;_mobSync=true;
+  try{
+    _finDb=firebase.database(mobApp());
 
     _finDb.ref('dados26').on('value',snap=>{
       const d=snap.val();
@@ -486,6 +530,17 @@ function checkReady(){
     console.error('Firebase:',e);
     _rDados=true;checkReady();
   }
+}
+(function initMobAuth(){
+  const ov=document.getElementById('login-overlay');
+  if(typeof firebase==='undefined'||!firebase.auth){ initMobSync(); return; }
+  let auth;
+  try{auth=firebase.auth(mobApp())}catch(e){ initMobSync(); return; }
+  try{auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)}catch(e){}
+  auth.onAuthStateChanged(u=>{
+    if(u){ if(ov)ov.style.display='none'; initMobSync(); }
+    else if(!_mobSync&&ov){ ov.style.display='flex'; }
+  });
 })();
 
 // ── AGENDA ────────────────────────────────────

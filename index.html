@@ -525,6 +525,7 @@ tr:hover td{background:var(--n50)}
 <!-- Firebase para integração financeira -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <style>
 /* ── Financeiro integrado ── */
 .fin-subtabs{display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:4px;margin-bottom:20px;flex-wrap:wrap}
@@ -1345,6 +1346,7 @@ td { padding: 13px 16px; font-size: 13.5px; }
     <button class="sb-btn" data-tab="mensagens" data-label="Mensagens" onclick="switchTab('mensagens',this)">💬<span class="sb-btn-label">Mensagens</span></button>
   </nav>
   <button class="sb-foot" onclick="openBackupModal()" title="Backup & Restaurar"><span class="sb-foot-icon">💾</span>AVF</button>
+  <button class="sb-foot" onclick="sairDaConta()" title="Sair da conta" id="btn-sair"><span class="sb-foot-icon">🚪</span><span id="conta-email" style="font-size:9px;opacity:.7"></span></button>
 </aside>
 
 <main class="main">
@@ -1354,6 +1356,7 @@ td { padding: 13px 16px; font-size: 13.5px; }
     <div><div class="pg-title" id="dash-greeting">Olá, André! 📸</div><div class="pg-sub" id="dash-date"></div></div>
   </div>
   <div class="dash-wrap">
+    <div id="modo-offline-aviso" style="display:none;align-items:center;gap:9px;background:#2A2113;border:1.5px solid #8C7652;border-radius:10px;padding:9px 14px;margin-bottom:10px;font-size:12px;font-weight:600;color:#E9C88A"><span>📴</span><span>Modo offline — alterações ficam só neste aparelho, sem sincronizar.</span></div>
     <div id="bk-banner" class="bk-banner" style="display:none" onclick="openBackupModal()"><span class="bk-banner-icon">⚠️</span><span class="bk-banner-text" id="bk-banner-text">Você nunca fez um backup!</span><span style="font-size:11px;font-weight:700;background:var(--danger);color:#fff;padding:3px 10px;border-radius:6px;white-space:nowrap;pointer-events:none">Fazer agora</span></div>
     <div class="dash-grid">
       <div class="dash-section">
@@ -3038,6 +3041,33 @@ td { padding: 13px 16px; font-size: 13.5px; }
   </div>
 </div>
 
+<!-- TELA DE LOGIN -->
+<div id="login-overlay" style="display:none;position:fixed;inset:0;background:#12161B;z-index:10000;align-items:center;justify-content:center;padding:20px">
+  <div style="width:100%;max-width:370px;background:var(--surface);border:1.5px solid var(--border);border-radius:18px;padding:32px 28px;box-shadow:0 20px 60px rgba(0,0,0,.5)">
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="font-size:38px;line-height:1">📸</div>
+      <div style="font-size:17px;font-weight:800;color:var(--text);margin-top:8px">CRM André Vitor</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:3px">Entre para acessar seus dados</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <input type="email" id="login-email" placeholder="E-mail" autocomplete="username"
+        onkeydown="if(event.key==='Enter')document.getElementById('login-senha').focus()"
+        style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font:600 14px 'Montserrat',sans-serif;color:var(--text);background:#20252A;outline:none">
+      <input type="password" id="login-senha" placeholder="Senha" autocomplete="current-password"
+        onkeydown="if(event.key==='Enter')fazerLogin()"
+        style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font:600 14px 'Montserrat',sans-serif;color:var(--text);background:#20252A;outline:none">
+      <div id="login-erro" style="display:none;font-size:12px;color:#E06B5A;background:#2E1A18;border:1px solid #7A3A32;border-radius:9px;padding:9px 12px;line-height:1.5"></div>
+      <button id="login-btn" onclick="fazerLogin()"
+        style="width:100%;padding:13px;background:var(--primary);color:#1A1410;border:none;border-radius:10px;font:800 14px 'Montserrat',sans-serif;cursor:pointer">Entrar</button>
+      <button onclick="entrarOffline()"
+        style="width:100%;padding:10px;background:transparent;color:var(--muted);border:1.5px solid var(--border);border-radius:10px;font:600 12.5px 'Montserrat',sans-serif;cursor:pointer">📴 Usar offline neste aparelho</button>
+    </div>
+    <div style="margin-top:18px;font-size:11px;color:var(--muted);line-height:1.6;text-align:center">
+      No modo offline o CRM usa só os dados guardados neste navegador e nada é sincronizado.
+    </div>
+  </div>
+</div>
+
 <div class="mo hidden" id="mo-backup" onclick="moOverlay(event,'mo-backup')">
   <div class="mo-box sm">
     <div class="mo-hdr"><h2>💾 Backup & Restaurar</h2><button class="mo-close" onclick="closeMo('mo-backup')">✕</button></div>
@@ -4294,6 +4324,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   setupKbScroll('kb-pr-frl','kb-thumb-pr-frl');
   _initTarefasChecks();
   initAutoBackup();
+  initAuthGate();
 });
 function clearFollowup(id){const c=opCards.find(o=>o.id===id);if(!c)return;c.followupDate='';savOp();renderOp();renderDashboard();toast('✅ Follow-up concluído!','green');}
 function abrirGaleria(){const url=document.getElementById('f-galeria').value.trim();if(url)window.open(url,'_blank');}
@@ -5945,6 +5976,11 @@ const MESES_CONTAS_SHOW=[
   ...MESES_FIN.slice(6),
   ...MESES_FIN.map(m=>m+'/27')
 ];
+// Custo de transporte por evento, usado nos indicadores de quanto depositar
+// na conta do transporte. (As declarações se perderam quando os custos
+// automáticos foram removidos, mas os indicadores continuaram usando.)
+const TRANSP_IDA=55.40;   // Uber + passagem + metrô — pago pela empresa
+const TRANSP_VOLTA=55.40; // metrô + passagem + Uber até em casa — pago pelo André
 let finGD={}, finDD={}, finVG={};
 let finRG=0, _finRGEditing=false;
 let finContas=[];
@@ -7152,13 +7188,118 @@ function loadFinLocal(){
   // Re-run smart category migration DEPOIS de carregar finCustomCats
   _migrateGastosCat(finGD,'Assinaturas');
 }
-(function initFinFirebase(){
+/* ═══════════════════════ LOGIN E SINCRONIZAÇÃO ═══════════════════════
+   Um único app do Firebase serve as três conexões (financeiro, pessoal e
+   leads), para que um login só autentique todas. A sincronização só começa
+   depois que a sessão existe — sem isso o banco precisaria ficar aberto
+   para qualquer um, que é como estava antes.
+   Se o Firebase não carregar, o CRM continua funcionando offline pelo
+   localStorage: nunca ficar trancado para fora dos próprios dados.
+──────────────────────────────────────────────────────────────────────── */
+const FB_CFG={apiKey:'AIzaSyC0K0T5hwySXMlFGfDAcjwLo73InsEfuEg',authDomain:'crm---2026.firebaseapp.com',
+  databaseURL:'https://crm---2026-default-rtdb.firebaseio.com',projectId:'crm---2026',
+  storageBucket:'crm---2026.firebasestorage.app',messagingSenderId:'274783220531',
+  appId:'1:274783220531:web:ee50e424b5a2af2bfc0446'};
+let _fbAppCache=null,_syncIniciada=false,_authUser=null;
+
+function fbApp(){
+  if(_fbAppCache)return _fbAppCache;
+  try{_fbAppCache=firebase.app('crm')}catch(e){_fbAppCache=firebase.initializeApp(FB_CFG,'crm')}
+  return _fbAppCache;
+}
+function iniciarSincronizacao(){
+  if(_syncIniciada)return;_syncIniciada=true;
+  window._fbOffline=false;
+  try{initFinFirebase()}catch(e){console.warn(e)}
+  try{initPessFirebase()}catch(e){console.warn(e)}
+  try{initLeadsFirebase()}catch(e){console.warn(e)}
+}
+function iniciarSomenteLocal(){
+  if(_syncIniciada)return;_syncIniciada=true;
+  window._fbOffline=true;           // faz os inits caírem no caminho local
+  try{initFinFirebase()}catch(e){}
+  try{initPessFirebase()}catch(e){}
+  try{initLeadsFirebase()}catch(e){}
+  const av=document.getElementById('modo-offline-aviso');
+  if(av)av.style.display='flex';
+}
+
+function mostrarLogin(msg){
+  const ov=document.getElementById('login-overlay');if(!ov)return;
+  ov.style.display='flex';
+  const e=document.getElementById('login-erro');
+  if(e){e.textContent=msg||'';e.style.display=msg?'block':'none'}
+  setTimeout(()=>document.getElementById('login-email')?.focus(),100);
+}
+function esconderLogin(){
+  const ov=document.getElementById('login-overlay');if(ov)ov.style.display='none';
+}
+function fazerLogin(){
+  const email=(document.getElementById('login-email')?.value||'').trim();
+  const senha=document.getElementById('login-senha')?.value||'';
+  if(!email||!senha){mostrarLogin('Preencha e-mail e senha.');return}
+  const btn=document.getElementById('login-btn');
+  if(btn){btn.disabled=true;btn.textContent='Entrando...'}
+  const restaura=()=>{if(btn){btn.disabled=false;btn.textContent='Entrar'}};
   try{
-    const cfg={apiKey:'AIzaSyC0K0T5hwySXMlFGfDAcjwLo73InsEfuEg',authDomain:'crm---2026.firebaseapp.com',
-      databaseURL:'https://crm---2026-default-rtdb.firebaseio.com',projectId:'crm---2026',
-      storageBucket:'crm---2026.firebasestorage.app',messagingSenderId:'274783220531',
-      appId:'1:274783220531:web:ee50e424b5a2af2bfc0446'};
-    const app=firebase.initializeApp(cfg,'financeiro');
+    firebase.auth(fbApp()).signInWithEmailAndPassword(email,senha)
+      .then(()=>{restaura()})
+      .catch(err=>{
+        restaura();
+        const c=err&&err.code||'';
+        const m=c==='auth/invalid-credential'||c==='auth/wrong-password'||c==='auth/user-not-found'
+          ?'E-mail ou senha incorretos.'
+          :c==='auth/too-many-requests'?'Muitas tentativas. Aguarde alguns minutos.'
+          :c==='auth/network-request-failed'?'Sem conexão. Você pode usar o modo offline.'
+          :'Não consegui entrar: '+(err&&err.message||c);
+        mostrarLogin(m);
+      });
+  }catch(e){restaura();mostrarLogin('Autenticação indisponível. Use o modo offline.')}
+}
+function entrarOffline(){
+  esconderLogin();
+  iniciarSomenteLocal();
+  toast('📴 Modo offline — as alterações ficam só neste aparelho','orange');
+}
+function sairDaConta(){
+  openCfm('Sair da conta?','Os dados continuam salvos no servidor. Você precisará entrar de novo neste aparelho.',()=>{
+    try{firebase.auth(fbApp()).signOut()}catch(e){}
+    setTimeout(()=>location.reload(),300);
+  });
+}
+function initAuthGate(){
+  if(typeof firebase==='undefined'||!firebase.auth){
+    console.warn('Firebase Auth indisponível — seguindo offline');
+    iniciarSomenteLocal();return;
+  }
+  let auth;
+  try{auth=firebase.auth(fbApp())}catch(e){iniciarSomenteLocal();return}
+  try{auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)}catch(e){}
+  auth.onAuthStateChanged(u=>{
+    if(u){
+      _authUser=u;
+      esconderLogin();
+      const em=document.getElementById('conta-email');
+      if(em)em.textContent=u.email||'';
+      iniciarSincronizacao();
+    }else{
+      _authUser=null;
+      if(!_syncIniciada)mostrarLogin();
+    }
+  });
+  // Se o Firebase não responder em 8s, não deixa o CRM preso na tela de login
+  setTimeout(()=>{
+    if(!_syncIniciada&&!_authUser){
+      const e=document.getElementById('login-erro');
+      if(e&&!e.textContent){e.textContent='O servidor está demorando. Você pode usar o modo offline.';e.style.display='block'}
+    }
+  },8000);
+}
+
+function initFinFirebase(){
+  try{
+    if(window._fbOffline)throw new Error('modo offline');
+    const app=fbApp();
     window._finDb=firebase.database(app);
     loadFinLocal(); // carrega localStorage imediatamente como fallback
     _finDb.ref('crm26').on('value',snap=>{
@@ -7227,7 +7368,7 @@ function loadFinLocal(){
     _finReady=true;
     _tryVerificarContasHoje();
   }
-})();
+}
 
 // ══════════════════════════════════════════════
 // FINANCEIRO — switchFinMain
@@ -9096,13 +9237,10 @@ function zerarMesPess(){
   renderPessAp();
   toast('✅ Mês zerado com sucesso!','green');
 }
-(function initPessFirebase(){
+function initPessFirebase(){
   try{
-    const cfg={apiKey:'AIzaSyC0K0T5hwySXMlFGfDAcjwLo73InsEfuEg',authDomain:'crm---2026.firebaseapp.com',
-      databaseURL:'https://crm---2026-default-rtdb.firebaseio.com',projectId:'crm---2026',
-      storageBucket:'crm---2026.firebasestorage.app',messagingSenderId:'274783220531',
-      appId:'1:274783220531:web:ee50e424b5a2af2bfc0446'};
-    const app=firebase.initializeApp(cfg,'pessoais');
+    if(window._fbOffline)throw new Error('modo offline');
+    const app=fbApp();
     window._pessDb=firebase.database(app);
     loadPessLocal();
     _pessDb.ref('pess26').on('value',snap=>{
@@ -9158,15 +9296,12 @@ function zerarMesPess(){
     console.warn('Firebase pessoais não conectado:',e.message);
     loadPessLocal();_pessReady=true;syncAllDistrib();syncAllFreelancersToAndre();_tryVerificarContasHoje();
   }
-})();
+}
 // ── LEADS DA LANDPAGE (Firebase leads26) ──
-(function initLeadsFirebase(){
+function initLeadsFirebase(){
   try{
-    const cfg={apiKey:'AIzaSyC0K0T5hwySXMlFGfDAcjwLo73InsEfuEg',authDomain:'crm---2026.firebaseapp.com',
-      databaseURL:'https://crm---2026-default-rtdb.firebaseio.com',projectId:'crm---2026',
-      storageBucket:'crm---2026.firebasestorage.app',messagingSenderId:'274783220531',
-      appId:'1:274783220531:web:ee50e424b5a2af2bfc0446'};
-    const app=firebase.initializeApp(cfg,'leads');
+    if(window._fbOffline)throw new Error('modo offline');
+    const app=fbApp();
     window._leadsDb=firebase.database(app);
     _leadsDb.ref('leads26').on('child_added',snap=>{
       const lead=snap.val();
@@ -9180,7 +9315,7 @@ function zerarMesPess(){
       setTimeout(()=>{ try{snap.ref.remove();}catch(_){} },2000);
     });
   }catch(e){console.warn('Firebase leads não conectado:',e.message);}
-})();
+}
 function closeMo(id){document.getElementById(id).classList.add('hidden')}
 function moOverlay(e,id){if(e.target===document.getElementById(id))closeMo(id)}
 function confirmDel(type){

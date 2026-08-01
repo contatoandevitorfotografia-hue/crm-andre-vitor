@@ -1,0 +1,15 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "crm26":       { ".read": "auth != null", ".write": "auth != null" },
+    "dados26":     { ".read": "auth != null", ".write": "auth != null" },
+    "pess26":      { ".read": "auth != null", ".write": "auth != null" },
+    "snapshots26": { ".read": "auth != null", ".write": "auth != null" },
+
+    "leads26":     { ".read": "auth != null", ".write": true },
+
+    "pushSubs":    { ".read": false, ".write": true }
+  }
+}

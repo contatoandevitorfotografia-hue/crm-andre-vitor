@@ -3,6 +3,11 @@ import webpush from 'web-push';
 const VAPID_PUBLIC  = process.env.VAPID_PUBLIC_KEY;
 const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY;
 const FB_DB  = 'https://crm---2026-default-rtdb.firebaseio.com';
+// Segredo do banco (Firebase Console → Contas de serviço → Segredos do
+// banco de dados) guardado como variável de ambiente no Netlify. Sem ele,
+// as regras fechadas do Realtime Database bloqueiam esta função.
+const FB_SECRET = process.env.FB_DB_SECRET || '';
+const auth = FB_SECRET ? `?auth=${encodeURIComponent(FB_SECRET)}` : '';
 const AVISO_MIN = {'na-hora':0,'15min':15,'30min':30,'1h':60,'2h':120,'1dia':1440};
 
 export default async (req, context) => {
@@ -14,9 +19,11 @@ export default async (req, context) => {
   webpush.setVapidDetails('mailto:crm@andrevitorfotografia.com.br', VAPID_PUBLIC, VAPID_PRIVATE);
 
   // Buscar lembretes e assinaturas do Firebase
+  if(!FB_SECRET) console.warn('⚠️ FB_DB_SECRET ausente — o banco vai recusar a leitura');
+
   const [lemRes, subsRes] = await Promise.all([
-    fetch(`${FB_DB}/dados26/lem.json`),
-    fetch(`${FB_DB}/pushSubs.json`)
+    fetch(`${FB_DB}/dados26/lem.json${auth}`),
+    fetch(`${FB_DB}/pushSubs.json${auth}`)
   ]);
 
   const lembretes = await lemRes.json().catch(() => []) || [];
@@ -63,7 +70,7 @@ export default async (req, context) => {
   // Limpar assinaturas inválidas
   if(invalidos.length) {
     await Promise.all(invalidos.map(devId =>
-      fetch(`${FB_DB}/pushSubs/${devId}.json`, {method:'DELETE'})
+      fetch(`${FB_DB}/pushSubs/${devId}.json${auth}`, {method:'DELETE'})
     ));
     console.log(`🗑️ ${invalidos.length} assinaturas removidas`);
   }
