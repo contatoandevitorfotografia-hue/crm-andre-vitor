@@ -3030,7 +3030,7 @@ td { padding: 13px 16px; font-size: 13.5px; }
   <div style="background:var(--surface);border-radius:20px;padding:36px 32px;max-width:380px;width:90%;box-shadow:var(--sh-lg);text-align:center;animation:heroIn .4s cubic-bezier(.34,1.2,.64,1) both">
     <div style="font-size:3rem;margin-bottom:12px">💾</div>
     <h2 style="font-size:18px;font-weight:800;color:var(--n900);margin-bottom:8px" id="bk-reminder-title">Faça um backup!</h2>
-    <p style="font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:24px" id="bk-reminder-text">Você não faz um backup há mais de 7 dias. Salve seus dados agora para não perder nada.</p>
+    <p style="font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:24px" id="bk-reminder-text">Faz mais de 7 dias que você não baixa o arquivo de backup. As cópias automáticas ajudam, mas ficam no mesmo servidor — guarde uma fora dele.</p>
     <div style="display:flex;flex-direction:column;gap:10px">
       <button onclick="document.getElementById('mo-backup-reminder').style.display='none';openBackupModal()" style="width:100%;padding:14px;background:var(--primary);color:#fff;border:none;border-radius:12px;font:700 14px 'Montserrat',sans-serif;cursor:pointer;transition:.2s" onmouseover="this.style.background='var(--primary-dark)'" onmouseout="this.style.background='var(--primary)'">💾 Fazer backup agora</button>
       <button onclick="document.getElementById('mo-backup-reminder').style.display='none';localStorage.setItem('crm_backup_snooze',Date.now().toString())" style="width:100%;padding:12px;background:transparent;color:var(--muted);border:1.5px solid var(--border);border-radius:12px;font:600 13px 'Montserrat',sans-serif;cursor:pointer">Lembrar amanhã</button>
@@ -3044,11 +3044,21 @@ td { padding: 13px 16px; font-size: 13.5px; }
     <div class="mo-body">
       <div id="bk-status-area" style="margin-bottom:14px"></div>
       <div class="bk-btn-row">
-        <div class="bk-action" onclick="exportBackup()"><div class="bk-action-icon">⬇️</div><div class="bk-action-label">Exportar Backup</div><div class="bk-action-sub">Salva arquivo .json com todos os dados</div></div>
+        <div class="bk-action" onclick="exportBackup()"><div class="bk-action-icon">⬇️</div><div class="bk-action-label">Exportar Backup</div><div class="bk-action-sub">Baixa um .json com tudo — guarde no Drive</div></div>
         <div class="bk-action" onclick="document.getElementById('bk-file-input').click()"><div class="bk-action-icon">⬆️</div><div class="bk-action-label">Importar Backup</div><div class="bk-action-sub">Substitui todos os dados pelo arquivo</div></div>
       </div>
       <input type="file" id="bk-file-input" accept=".json" style="display:none" onchange="importBackup(this)">
       <input type="file" id="bk-merge-input" accept=".json" style="display:none" onchange="mergeBackup(this)">
+      <div style="margin:16px 0 12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px">
+          <div>
+            <div style="font-size:13px;font-weight:800;color:var(--text)">🔄 Cópias automáticas</div>
+            <div style="font-size:11px;color:var(--muted);line-height:1.5">Uma por dia, guardadas no navegador (💻) e no servidor (☁️).</div>
+          </div>
+          <button class="btn btn-g btn-sm" onclick="autoBackupRun(true,'manual')&&toast('✅ Cópia criada!','green');renderSnapshots()">Criar agora</button>
+        </div>
+        <div id="bk-snap-list"></div>
+      </div>
       <div style="background:var(--warning-light);border:1.5px solid var(--warning);border-radius:var(--r-sm);padding:12px 14px;font-size:12px;color:#E0A14E;line-height:1.6"><strong>⚠️ Atenção:</strong> Importar substitui <strong>todos os dados atuais.</strong> Sempre exporte antes de importar!</div>
     </div>
     <div class="mo-ftr"><button class="btn btn-g" onclick="closeMo('mo-backup')">Fechar</button></div>
@@ -4283,6 +4293,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   setupKbScroll('kb-pr-video','kb-thumb-pr-video');
   setupKbScroll('kb-pr-frl','kb-thumb-pr-frl');
   _initTarefasChecks();
+  initAutoBackup();
 });
 function clearFollowup(id){const c=opCards.find(o=>o.id===id);if(!c)return;c.followupDate='';savOp();renderOp();renderDashboard();toast('✅ Follow-up concluído!','green');}
 function abrirGaleria(){const url=document.getElementById('f-galeria').value.trim();if(url)window.open(url,'_blank');}
@@ -9672,8 +9683,10 @@ function openBackupModal(){
   updateBackupBanner();
   const last=localStorage.getItem('crm_last_backup');
   const area=document.getElementById('bk-status-area');
-  if(last){const d=new Date(parseInt(last));const ds=d.toLocaleDateString('pt-BR')+' às '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});area.innerHTML=`<div class="bk-banner safe" style="cursor:default"><span class="bk-banner-icon">✅</span><span class="bk-banner-text">Último backup: ${ds}</span></div>`}
-  else{area.innerHTML=`<div class="bk-banner"><span class="bk-banner-icon">⚠️</span><span class="bk-banner-text">Nenhum backup encontrado. Exporte agora!</span></div>`}
+  if(last){const d=new Date(parseInt(last));const ds=d.toLocaleDateString('pt-BR')+' às '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});area.innerHTML=`<div class="bk-banner safe" style="cursor:default"><span class="bk-banner-icon">✅</span><span class="bk-banner-text">Último arquivo baixado: ${ds}</span></div>`}
+  else{area.innerHTML=`<div class="bk-banner"><span class="bk-banner-icon">⚠️</span><span class="bk-banner-text">Você ainda não baixou nenhum arquivo de backup.</span></div>`}
+  renderSnapshots();
+  _bkCarregaNuvem().then(list=>{_bkSnapsNuvem=list;renderSnapshots();});
   document.getElementById('mo-backup').classList.remove('hidden');
 }
 // Estado do Financeiro (Empresa + Pessoal) que também precisa entrar no backup.
@@ -9707,20 +9720,60 @@ function _bkAplica(data){
   });
   return n;
 }
-function exportBackup(){
-  const payload={version:'avf_crm_v2',exportedAt:Date.now(),
+function _bkPayload(){
+  return {version:'avf_crm_v2',exportedAt:Date.now(),
     counts:{oportunidades:opCards.length,projetos:prCards.length,albuns:albCards.length,pacotes:packages.length,clientes:clients.length,templates:templates.length,
             contas:(finContas||[]).length+(pessContas||[]).length,freelancers:(freelancers||[]).length},
     data:{opCards,prCards,albCards,packages,clients,templates,indicData,
           freelancers,tarefas,conteudos,pendencias,pendenciasGerais,freelaCards,
           ..._bkColeta()}};
+}
+// Restaura um payload completo sobre o estado atual. Usado tanto pelo
+// arquivo .json quanto pelos snapshots automáticos.
+function _bkRestaura(d){
+  if(!d||!d.data)return false;
+  if(d.data.opCards)opCards=d.data.opCards;
+  if(d.data.prCards)prCards=d.data.prCards;
+  if(d.data.albCards)albCards=d.data.albCards;
+  if(d.data.packages)packages=d.data.packages;
+  if(d.data.clients)clients=d.data.clients;
+  if(d.data.templates&&d.data.templates.length)templates=d.data.templates;
+  if(d.data.indicData&&typeof d.data.indicData==='object'){indicData=d.data.indicData;savIndic();}
+  if(Array.isArray(d.data.freelancers))freelancers=d.data.freelancers;
+  if(Array.isArray(d.data.tarefas))tarefas=d.data.tarefas;
+  if(Array.isArray(d.data.conteudos))conteudos=d.data.conteudos;
+  if(Array.isArray(d.data.pendencias))pendencias=d.data.pendencias;
+  if(Array.isArray(d.data.pendenciasGerais))pendenciasGerais=d.data.pendenciasGerais;
+  if(Array.isArray(d.data.freelaCards))freelaCards=d.data.freelaCards;
+  const nFin=_bkAplica(d.data);
+  ensureIndicTemplate();
+  savOp();savPr();savAlb();savPac();savCl();savTemplates();
+  savFrl();savTar();savCnt();savPen();savPgr();savFreela();
+  if(nFin){try{saveFinData()}catch(e){}try{savePessData()}catch(e){}}
+  syncAllDistrib();
+  return true;
+}
+function _bkRedesenha(){
+  renderDashboard();
+  if(currentTab==='oportunidades')renderOp();
+  else if(currentTab==='projetos'){renderPr();renderAlb();}
+  else if(currentTab==='clientes')renderClientes();
+  else if(currentTab==='financeiro')renderFin();
+  else if(currentTab==='pacotes')renderPac();
+  else if(currentTab==='mensagens')renderMensagens();
+  else if(currentTab==='agenda')renderAgenda();
+  else if(currentTab==='listas')renderListas();
+  else if(currentTab==='freelancers')renderFrl();
+}
+function exportBackup(){
+  const payload=_bkPayload();
   const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);const a=document.createElement('a');
   const _bd=new Date();const _bName=`backup-${String(_bd.getDate()).padStart(2,'0')}.${String(_bd.getMonth()+1).padStart(2,'0')}-${String(_bd.getHours()).padStart(2,'0')}h${String(_bd.getMinutes()).padStart(2,'0')}.json`;a.href=url;a.download=_bName;a.click();
   URL.revokeObjectURL(url);localStorage.setItem('crm_last_backup',Date.now().toString());
   updateBackupBanner();toast('💾 Backup exportado!','green');
   const area=document.getElementById('bk-status-area');
-  if(area){const d=new Date();area.innerHTML=`<div class="bk-banner safe" style="cursor:default"><span class="bk-banner-icon">✅</span><span class="bk-banner-text">Backup exportado: ${d.toLocaleDateString('pt-BR')} às ${d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</span></div>`}
+  if(area){const d=new Date();area.innerHTML=`<div class="bk-banner safe" style="cursor:default"><span class="bk-banner-icon">✅</span><span class="bk-banner-text">Arquivo baixado: ${d.toLocaleDateString('pt-BR')} às ${d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</span></div>`}
 }
 function importBackup(input){
   const file=input.files[0];if(!file)return;
@@ -9730,35 +9783,11 @@ function importBackup(input){
       const d=JSON.parse(e.target.result);if(!d.version||!d.data)throw new Error();
       const info=`${d.counts?.oportunidades||0} oportunidades, ${d.counts?.clientes||0} clientes${d.counts?.albuns?', '+d.counts.albuns+' álbuns':''}.`;
       openCfm('Restaurar Backup?',`Substituirá todos os dados atuais por: ${info} Tem certeza?`,()=>{
-        if(d.data.opCards)opCards=d.data.opCards;
-        if(d.data.prCards)prCards=d.data.prCards;
-        if(d.data.albCards)albCards=d.data.albCards;
-        if(d.data.packages)packages=d.data.packages;
-        if(d.data.clients)clients=d.data.clients;
-        if(d.data.templates&&d.data.templates.length)templates=d.data.templates;
-        if(d.data.indicData&&typeof d.data.indicData==='object'){indicData=d.data.indicData;savIndic();}
-        if(Array.isArray(d.data.freelancers))freelancers=d.data.freelancers;
-        if(Array.isArray(d.data.tarefas))tarefas=d.data.tarefas;
-        if(Array.isArray(d.data.conteudos))conteudos=d.data.conteudos;
-        if(Array.isArray(d.data.pendencias))pendencias=d.data.pendencias;
-        if(Array.isArray(d.data.pendenciasGerais))pendenciasGerais=d.data.pendenciasGerais;
-        if(Array.isArray(d.data.freelaCards))freelaCards=d.data.freelaCards;
-        const _nFin=_bkAplica(d.data);
-        ensureIndicTemplate();
-        savOp();savPr();savAlb();savPac();savCl();savTemplates();
-        savFrl();savTar();savCnt();savPen();savPgr();savFreela();
-        if(_nFin){try{saveFinData()}catch(e){}try{savePessData()}catch(e){}}
-        syncAllDistrib();
+        autoBackupRun(true,'antes de restaurar');   // rede de segurança
+        _bkRestaura(d);
         localStorage.setItem('crm_last_backup',Date.now().toString());
         closeMo('mo-backup');
-        renderDashboard();
-        if(currentTab==='oportunidades')renderOp();
-        else if(currentTab==='projetos'){renderPr();renderAlb();}
-        else if(currentTab==='clientes')renderClientes();
-        else if(currentTab==='financeiro')renderFin();
-        else if(currentTab==='pacotes')renderPac();
-        else if(currentTab==='mensagens')renderMensagens();
-        else if(currentTab==='agenda')renderAgenda();
+        _bkRedesenha();
         toast('✅ Backup restaurado!','green');
       });
     }catch{toast('❌ Arquivo inválido!','orange')}
@@ -9809,11 +9838,152 @@ function mergeBackup(input){
     input.value='';
   };reader.readAsText(file);
 }
+/* ═══════════════════ BACKUP AUTOMÁTICO (snapshots) ═══════════════════
+   A cada 24h o CRM guarda sozinho uma cópia completa dos dados em dois
+   lugares: no navegador (últimas 5) e no Firebase, num nó separado
+   (snapshots26, últimas 30). Como o nó é separado dos dados vivos, um
+   apagamento acidental ou uma importação errada não leva as cópias junto.
+──────────────────────────────────────────────────────────────────────── */
+const BK_AUTO_INTERVALO=24*60*60*1000;  // 1 cópia por dia
+const BK_AUTO_LOCAIS=5;                 // quantas ficam no navegador
+const BK_AUTO_NUVEM=30;                 // quantas ficam no Firebase
+const BK_AUTO_MAX_LOCAL=1.5*1024*1024;  // acima disso, só vai para a nuvem
+let _bkSnapsNuvem=[], _bkAutoTimer=null;
+
+function _bkSnapsLocais(){
+  try{const v=JSON.parse(localStorage.getItem('crm_snapshots')||'[]');return Array.isArray(v)?v:[]}catch{return[]}
+}
+function _bkTemDados(p){
+  const c=p&&p.counts||{};
+  return (c.oportunidades||0)+(c.projetos||0)+(c.clientes||0)+(c.contas||0)+(c.albuns||0)>0;
+}
+function _bkResumo(c){
+  if(!c)return '';
+  const partes=[];
+  if(c.oportunidades)partes.push(c.oportunidades+' clientes');
+  if(c.projetos)partes.push(c.projetos+' projetos');
+  if(c.albuns)partes.push(c.albuns+' álbuns');
+  if(c.contas)partes.push(c.contas+' contas');
+  return partes.join(' · ')||'sem itens';
+}
+function _bkQuando(ts){
+  const d=new Date(ts);
+  return d.toLocaleDateString('pt-BR')+' às '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+}
+
+// Executa uma cópia automática. force=true ignora o intervalo de 24h.
+function autoBackupRun(force,motivo){
+  try{
+    const ultimo=parseInt(localStorage.getItem('crm_snapshot_ts')||'0');
+    if(!force&&Date.now()-ultimo<BK_AUTO_INTERVALO)return false;
+    const p=_bkPayload();
+    // Nunca guarda uma cópia vazia — seria capaz de expulsar as boas.
+    if(!_bkTemDados(p))return false;
+    p.motivo=motivo||'automático';
+    const txt=JSON.stringify(p);
+
+    // navegador
+    if(txt.length<=BK_AUTO_MAX_LOCAL){
+      let arr=_bkSnapsLocais();
+      arr.unshift({id:'l'+Date.now(),ts:p.exportedAt,counts:p.counts,motivo:p.motivo,payload:p});
+      arr=arr.slice(0,BK_AUTO_LOCAIS);
+      // se estourar a cota do navegador, vai cortando as mais antigas
+      while(arr.length){
+        try{localStorage.setItem('crm_snapshots',JSON.stringify(arr));break}
+        catch(e){arr.pop();}
+      }
+    }
+
+    // nuvem (nó separado dos dados vivos)
+    if(window._finDb){
+      try{
+        const id='s'+p.exportedAt;
+        window._finDb.ref('snapshots26/'+id).set({ts:p.exportedAt,counts:p.counts,motivo:p.motivo,payload:txt});
+        window._finDb.ref('snapshots26').once('value').then(snap=>{
+          const v=snap.val()||{};
+          const ids=Object.keys(v).sort((a,b)=>(v[b].ts||0)-(v[a].ts||0));
+          ids.slice(BK_AUTO_NUVEM).forEach(k=>{try{window._finDb.ref('snapshots26/'+k).remove()}catch(e){}});
+        }).catch(()=>{});
+      }catch(e){console.warn('snapshot na nuvem falhou',e);}
+    }
+
+    localStorage.setItem('crm_snapshot_ts',String(p.exportedAt));
+    return true;
+  }catch(e){console.warn('backup automático falhou',e);return false}
+}
+
+function _bkCarregaNuvem(){
+  return new Promise(res=>{
+    if(!window._finDb)return res([]);
+    try{
+      window._finDb.ref('snapshots26').once('value').then(snap=>{
+        const v=snap.val()||{};
+        res(Object.keys(v).map(k=>({id:k,ts:v[k].ts,counts:v[k].counts,motivo:v[k].motivo,raw:v[k].payload}))
+                  .sort((a,b)=>(b.ts||0)-(a.ts||0)));
+      }).catch(()=>res([]));
+    }catch(e){res([])}
+  });
+}
+
+function renderSnapshots(){
+  const box=document.getElementById('bk-snap-list');if(!box)return;
+  const locais=_bkSnapsLocais().map(s=>({...s,origem:'local'}));
+  const nuvem=_bkSnapsNuvem.map(s=>({...s,origem:'nuvem'}));
+  const todos=[...locais,...nuvem].sort((a,b)=>(b.ts||0)-(a.ts||0)).slice(0,20);
+  if(!todos.length){
+    box.innerHTML='<div style="font-size:12px;color:var(--muted);padding:10px 2px">Nenhuma cópia automática ainda. A primeira é criada alguns segundos depois de abrir o CRM.</div>';
+    return;
+  }
+  box.innerHTML=todos.map(s=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border:1.5px solid var(--border);border-radius:9px;background:var(--surface);margin-bottom:7px">
+      <span style="font-size:15px">${s.origem==='nuvem'?'☁️':'💻'}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12.5px;font-weight:700;color:var(--text)">${_bkQuando(s.ts)}</div>
+        <div style="font-size:11px;color:var(--muted)">${esc(_bkResumo(s.counts))}${s.motivo&&s.motivo!=='automático'?' · '+esc(s.motivo):''}</div>
+      </div>
+      <button class="btn btn-g btn-sm" onclick="restaurarSnapshot('${s.origem}','${s.id}')">Restaurar</button>
+    </div>`).join('');
+}
+
+function restaurarSnapshot(origem,id){
+  let payload=null;
+  if(origem==='local'){
+    payload=(_bkSnapsLocais().find(s=>s.id===id)||{}).payload;
+  }else{
+    const s=_bkSnapsNuvem.find(x=>x.id===id);
+    if(s&&s.raw){try{payload=JSON.parse(s.raw)}catch(e){}}
+  }
+  if(!payload){toast('❌ Não consegui ler essa cópia','orange');return}
+  openCfm('Restaurar esta cópia?',
+    `Todos os dados atuais serão substituídos pela cópia de ${_bkQuando(payload.exportedAt)} (${_bkResumo(payload.counts)}). Antes de trocar, o CRM guarda uma cópia do estado de agora.`,
+    ()=>{
+      autoBackupRun(true,'antes de restaurar');
+      _bkRestaura(payload);
+      closeMo('mo-backup');
+      _bkRedesenha();
+      toast('✅ Cópia restaurada!','green');
+    });
+}
+
+function baixarSnapshot(){ exportBackup(); }
+
+// Agenda: primeira tentativa 12s após abrir (dá tempo do Firebase sincronizar)
+// e depois de 6 em 6 horas enquanto a aba ficar aberta.
+let _bkAutoIniciado=false;
+function initAutoBackup(){
+  if(_bkAutoIniciado)return;
+  _bkAutoIniciado=true;
+  _bkAutoTimer=setTimeout(()=>{
+    autoBackupRun(false);
+    setInterval(()=>autoBackupRun(false),6*60*60*1000);
+  },12000);
+}
+
 function updateBackupBanner(){
   const banner=document.getElementById('bk-banner');if(!banner)return;
   const last=localStorage.getItem('crm_last_backup');
-  if(!last){banner.style.display='flex';banner.className='bk-banner';const t=document.getElementById('bk-banner-text');if(t)t.textContent='Você nunca fez um backup! Clique para salvar seus dados.';}
-  else{const diff=Math.floor((Date.now()-parseInt(last))/864e5);if(diff>7){banner.style.display='flex';banner.className='bk-banner';const t=document.getElementById('bk-banner-text');const ds=new Date(parseInt(last)).toLocaleDateString('pt-BR');if(t)t.textContent=`Último backup há ${diff} dias (${ds}). Faça um novo!`;}else{banner.style.display='none'}}
+  if(!last){banner.style.display='flex';banner.className='bk-banner';const t=document.getElementById('bk-banner-text');if(t)t.textContent='Você nunca baixou o arquivo de backup. As cópias automáticas ficam no servidor — baixe uma para fora dele.';}
+  else{const diff=Math.floor((Date.now()-parseInt(last))/864e5);if(diff>7){banner.style.display='flex';banner.className='bk-banner';const t=document.getElementById('bk-banner-text');const ds=new Date(parseInt(last)).toLocaleDateString('pt-BR');if(t)t.textContent=`Último arquivo de backup baixado há ${diff} dias (${ds}). Baixe um novo e guarde no Drive.`;}else{banner.style.display='none'}}
 }
 
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!document.getElementById('cfm').classList.contains('hidden')){closeCfm();return}['mo-contract','mo-op','mo-pr','mo-alb','mo-pac','mo-cl','mo-cl-det','mo-tpl-edit','mo-tpl-send','mo-backup'].forEach(id=>{if(!document.getElementById(id).classList.contains('hidden'))closeMo(id)})}});
