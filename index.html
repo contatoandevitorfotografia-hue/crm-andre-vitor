@@ -3111,6 +3111,12 @@ td { padding: 13px 16px; font-size: 13.5px; }
   <div class="agp-body" id="agp-body"></div>
   <div class="agp-ftr"><button class="agp-btn agp-btn-edit" onclick="agPreviewEdit()">✏️ Editar</button><button class="agp-btn agp-btn-del" onclick="agPreviewDel()">🗑️ Excluir</button></div>
 </div>
+<div class="mo hidden" id="mo-ag-day" onclick="moOverlay(event,'mo-ag-day')">
+  <div class="mo-box sm">
+    <div class="mo-hdr"><h2 id="ag-day-title">📅 Eventos do dia</h2><button class="mo-close" onclick="closeMo('mo-ag-day')">✕</button></div>
+    <div class="mo-body"><div id="ag-day-list" style="display:flex;flex-direction:column;gap:8px"></div></div>
+  </div>
+</div>
 <div class="mo hidden" id="mo-import" onclick="moOverlay(event,'mo-import')">
   <div class="mo-box sm">
     <div class="mo-hdr"><h2>📥 Importar Formulário</h2><button class="mo-close" onclick="closeMo('mo-import')">✕</button></div>
@@ -5911,6 +5917,23 @@ function getEventColor(c){
   return'#C49A6A';
 }
 let _agPrevId=null,_agPrevType=null;
+let _agDayEvents={}; // eventos do mês em exibição, por data — usado pelo "+N mais"
+function openAgendaDayList(ds){
+  const de=_agDayEvents[ds]||[];
+  if(!de.length)return;
+  const [y,m,d]=ds.split('-');
+  document.getElementById('ag-day-title').textContent=`📅 ${d}/${m}/${y} — ${de.length} evento${de.length>1?'s':''}`;
+  document.getElementById('ag-day-list').innerHTML=de.map(c=>{
+    const ec=getEventColor(c);
+    const isConf=c.coluna==='confirmado'||c.coluna==='confirmado-pendencias'||c._type==='pr';
+    const agData=c._type==='pr'&&c.sourceId?(opCards.find(o=>o.id===c.sourceId)||c):c;
+    const hora=agData.horario?`${esc(agData.horario)} · `:'';
+    const crianca=_resumoCriancas(agData)?esc(_resumoCriancas(agData)):esc(c.titulo||agData.nomePais||'?');
+    const style=isConf?`background:${ec}22;color:${ec}`:`background:transparent;color:${ec};border:1.5px dashed ${ec};opacity:.9`;
+    return `<div class="ag-event" style="position:static;white-space:normal;overflow:visible;text-overflow:clip;padding:9px 12px;font-size:12.5px;border-radius:8px;${style}" onclick="closeMo('mo-ag-day');openAgendaPreview('${c.id}','${c._type}',event)">${isConf?'':'⏳ '}${hora}${crianca}</div>`;
+  }).join('');
+  document.getElementById('mo-ag-day').classList.remove('hidden');
+}
 function agPreviewEdit(){closeAgPreview();if(_agPrevType==='pr')openPrModal(_agPrevId,null,null);else openOpModal(_agPrevId,null,null);}
 function agPreviewDel(){closeAgPreview();openCfm('Excluir evento?','Esta ação não pode ser desfeita.',()=>{if(_agPrevType==='pr'){prCards=prCards.filter(c=>c.id!==_agPrevId);savPr();renderPr();renderAgenda();}else{const delId=_agPrevId;opCards=opCards.filter(c=>c.id!==delId);MESES_FIN.forEach(m=>{if(pessFD[m])pessFD[m]=pessFD[m].filter(e=>e._opId!==delId&&e._opFrlId!==delId);if(pessDD[m])pessDD[m]=pessDD[m].filter(e=>e._opId!==delId);if(finDD[m])finDD[m]=finDD[m].filter(e=>e._opId!==delId);});savOp();savePessData();saveFinData();renderOp();renderPr();renderFin();renderAgenda();}toast('🗑️ Removido','');});}
 function openAgendaPreview(id,type,evt){
@@ -5968,6 +5991,7 @@ function renderAgenda(){
   const events={};
   opCards.filter(c=>c.coluna!=='perdido'&&c.dataEvento).forEach(c=>{if(!events[c.dataEvento])events[c.dataEvento]=[];events[c.dataEvento].push({...c,_type:'op'})});
   prCards.filter(c=>c.dataEvento&&!c.copiaDe).forEach(c=>{const srcOk=c.sourceId&&opCards.find(o=>o.id===c.sourceId&&(o.coluna==='confirmado'||o.coluna==='confirmado-pendencias'));const srcAny=c.sourceId?opCards.find(o=>o.id===c.sourceId):null;if(!srcOk){if(!events[c.dataEvento])events[c.dataEvento]=[];events[c.dataEvento].push({...c,_type:'pr',titulo:srcAny?.titulo||c.titulo||c.nomePais})}});
+  _agDayEvents=events;
   const prevDays=new Date(agYear,agMonth,0).getDate();
   for(let i=firstDay-1;i>=0;i--)grid.innerHTML+=`<div class="ag-day other-month"><div class="ag-day-num">${prevDays-i}</div></div>`;
   for(let d=1;d<=daysInMonth;d++){
@@ -5975,7 +5999,7 @@ function renderAgenda(){
     const isT=today.getFullYear()===agYear&&today.getMonth()===agMonth&&today.getDate()===d;
     const de=events[ds]||[];
     const numH=isT?`<div class="ag-day-num"><span>${d}</span></div>`:`<div class="ag-day-num">${d}</div>`;
-    const evH=de.slice(0,3).map(c=>{const ec=getEventColor(c);const isConf=c.coluna==='confirmado'||c.coluna==='confirmado-pendencias'||c._type==='pr';const agData=c._type==='pr'&&c.sourceId?(opCards.find(o=>o.id===c.sourceId)||c):c;const hora=agData.horario?`${esc(agData.horario)} · `:'';const crianca=_resumoCriancas(agData)?esc(_resumoCriancas(agData)):esc(c.titulo||agData.nomePais||'?');const chip=hora+crianca;const style=isConf?`background:${ec}22;color:${ec}`:`background:transparent;color:${ec};border:1.5px dashed ${ec};opacity:.75`;return`<div class="ag-event" style="${style}" onclick="openAgendaPreview('${c.id}','${c._type}',event)">${isConf?'':'⏳ '}${chip}</div>`}).join('')+(de.length>3?`<div style="font-size:10px;color:var(--muted)">+${de.length-3} mais</div>`:'');
+    const evH=de.slice(0,3).map(c=>{const ec=getEventColor(c);const isConf=c.coluna==='confirmado'||c.coluna==='confirmado-pendencias'||c._type==='pr';const agData=c._type==='pr'&&c.sourceId?(opCards.find(o=>o.id===c.sourceId)||c):c;const hora=agData.horario?`${esc(agData.horario)} · `:'';const crianca=_resumoCriancas(agData)?esc(_resumoCriancas(agData)):esc(c.titulo||agData.nomePais||'?');const chip=hora+crianca;const style=isConf?`background:${ec}22;color:${ec}`:`background:transparent;color:${ec};border:1.5px dashed ${ec};opacity:.75`;return`<div class="ag-event" style="${style}" onclick="openAgendaPreview('${c.id}','${c._type}',event)">${isConf?'':'⏳ '}${chip}</div>`}).join('')+(de.length>3?`<div style="font-size:10px;color:var(--muted);cursor:pointer;text-decoration:underline dotted" onclick="event.stopPropagation();openAgendaDayList('${ds}')">+${de.length-3} mais</div>`:'');
     grid.innerHTML+=`<div class="ag-day${isT?' today':''}">${numH}${evH}</div>`;
   }
   const rem=(firstDay+daysInMonth)%7===0?0:7-((firstDay+daysInMonth)%7);
@@ -10137,7 +10161,7 @@ function updateBackupBanner(){
   else{const diff=Math.floor((Date.now()-parseInt(last))/864e5);if(diff>7){banner.style.display='flex';banner.className='bk-banner';const t=document.getElementById('bk-banner-text');const ds=new Date(parseInt(last)).toLocaleDateString('pt-BR');if(t)t.textContent=`Último arquivo de backup baixado há ${diff} dias (${ds}). Baixe um novo e guarde no Drive.`;}else{banner.style.display='none'}}
 }
 
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!document.getElementById('cfm').classList.contains('hidden')){closeCfm();return}['mo-contract','mo-op','mo-pr','mo-alb','mo-pac','mo-cl','mo-cl-det','mo-tpl-edit','mo-tpl-send','mo-backup'].forEach(id=>{if(!document.getElementById(id).classList.contains('hidden'))closeMo(id)})}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!document.getElementById('cfm').classList.contains('hidden')){closeCfm();return}['mo-contract','mo-op','mo-pr','mo-alb','mo-pac','mo-cl','mo-cl-det','mo-tpl-edit','mo-tpl-send','mo-backup','mo-ag-day'].forEach(id=>{if(!document.getElementById(id).classList.contains('hidden'))closeMo(id)})}});
 var freelaBoardOpen=localStorage.getItem('freelaBoardOpen')!=='false';
 function applyFreelaToggle(){
   var wrap=document.getElementById('freela-board-wrap');
