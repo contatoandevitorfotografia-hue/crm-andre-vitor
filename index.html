@@ -1094,27 +1094,27 @@ td { padding: 13px 16px; font-size: 13.5px; }
 #freela-section{margin-bottom:0;background:#1A212A;border-bottom:2px solid var(--border);padding:16px 20px 0}
 .freela-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:12px;flex-wrap:wrap}
 .freela-hdr-left{display:flex;align-items:center;gap:10px}
-.freela-hdr-title{font-size:13px;font-weight:700;color:#2C7A7B;letter-spacing:.02em}
+.freela-hdr-title{font-size:13px;font-weight:700;color:var(--text);letter-spacing:.02em}
 .freela-count{background:#69737E;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px}
-.freela-toggle{background:none;border:1px solid #BFC7D0;color:#69737E;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer}
-.freela-toggle:hover{background:#E4F0F0}
+.freela-toggle{background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer}
+.freela-toggle:hover{background:rgba(255,255,255,.05)}
 .freela-board{display:flex;gap:14px;overflow-x:auto;padding-bottom:14px;min-height:120px}
 .freela-col{min-width:260px;max-width:260px;display:flex;flex-direction:column;gap:0;flex-shrink:0}
 .freela-col-hdr{border-radius:10px 10px 0 0;padding:10px 13px;font-size:11.5px;font-weight:700;color:#fff;letter-spacing:.03em;display:flex;align-items:center;justify-content:space-between}
-.freela-col-body{background:var(--surface);border:1.5px solid #DBE1E8;border-top:none;border-radius:0 0 10px 10px;padding:8px;display:flex;flex-direction:column;gap:7px;min-height:80px}
-.freela-card{background:var(--surface);border:1.5px solid #DBE1E8;border-radius:9px;padding:10px 12px;cursor:pointer;transition:box-shadow .15s,transform .1s;position:relative}
+.freela-col-body{background:var(--surface);border:1.5px solid var(--border);border-top:none;border-radius:0 0 10px 10px;padding:8px;display:flex;flex-direction:column;gap:7px;min-height:80px}
+.freela-card{background:var(--surface);border:1.5px solid var(--border);border-radius:9px;padding:10px 12px;cursor:pointer;transition:box-shadow .15s,transform .1s;position:relative}
 .freela-card:hover{box-shadow:0 3px 12px rgba(30,41,59,.18);transform:translateY(-1px)}
-.freela-card-nome{font-size:12.5px;font-weight:700;color:#20272F;margin-bottom:4px}
-.freela-card-info{font-size:11px;color:#69737E;line-height:1.6}
-.freela-card-dias{font-size:10px;font-weight:600;color:#69737E;margin-top:5px;padding-top:5px;border-top:1px solid #f0e0d0}
+.freela-card-nome{font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:4px}
+.freela-card-info{font-size:11px;color:var(--muted);line-height:1.6}
+.freela-card-dias{font-size:10px;font-weight:600;color:var(--muted);margin-top:5px;padding-top:5px;border-top:1px solid var(--border)}
 .freela-card-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
 .freela-btn{border:none;border-radius:6px;padding:4px 9px;font-size:10px;font-weight:700;cursor:pointer;transition:opacity .15s}
 .freela-btn:hover{opacity:.82}
 .freela-btn-ok{background:#66798D;color:#fff}
 .freela-btn-no{background:#9A5656;color:#fff}
 .freela-btn-mv{background:#2C7A7B;color:#fff}
-.freela-btn-ed{background:#E4F0F0;color:#2C7A7B;border:1px solid #BFC7D0}
-.freela-btn-del{background:#F4F6F8;color:#69737E;border:1px solid #DBE1E8}
+.freela-btn-ed{background:#1D2630;color:#9FB5CB;border:1px solid #3A434F}
+.freela-btn-del{background:#2E1A18;color:#E06B5A;border:1px solid #5c2a26}
 .freela-board-wrap{overflow:hidden}.freela-board-wrap.collapsed{display:none}
 </style>
 <style>
@@ -10417,7 +10417,7 @@ function renderFreela(){
       actions.push(`<button class="freela-btn freela-btn-ed" onclick="event.stopPropagation();openFreelaModal('${c.id}')">✏️</button>`);
       actions.push(`<button class="freela-btn freela-btn-del" onclick="event.stopPropagation();deleteFreelaCardById('${c.id}')">🗑</button>`);
       const isFechado=c.status==='freela-fechado';
-      const cardStyle=isFechado?'background:#f0f2ee;border-color:#8a9980;':'';
+      const cardStyle=isFechado?'background:var(--success-light);border-color:var(--success);':'';
       return `<div class="freela-card" style="${cardStyle}" onclick="openFreelaModal('${c.id}')">
         <div class="freela-card-nome">${esc(c.nomeCliente||'Sem nome')}${isFechado?'<span style="font-size:9px;background:#526579;color:#fff;border-radius:4px;padding:1px 5px;margin-left:6px;font-weight:700">FECHADO</span>':''}</div>
         <div class="freela-card-info">
@@ -10428,8 +10428,8 @@ function renderFreela(){
         <div class="freela-card-actions">${actions.join('')}</div>
       </div>`;
     }).join('');
-    colDiv.innerHTML=`<div class="freela-col-hdr" style="background:${col.color}"><span>${col.emoji} ${col.name}</span><span style="background:rgba(255,255,255,.25);border-radius:8px;padding:1px 7px;font-size:10px">${cs.length}</span></div>
-    <div class="freela-col-body">${cards||'<div style="font-size:11px;color:#b0a090;text-align:center;padding:12px 0">Nenhuma consulta</div>'}</div>`;
+    colDiv.innerHTML=`<div class="freela-col-hdr" style="background:${OP_HDR_COLOR}"><span>${col.emoji} ${col.name}</span><span style="background:rgba(255,255,255,.25);border-radius:8px;padding:1px 7px;font-size:10px">${cs.length}</span></div>
+    <div class="freela-col-body">${cards||'<div style="font-size:11px;color:var(--muted);text-align:center;padding:12px 0">Nenhuma consulta</div>'}</div>`;
     board.appendChild(colDiv);
   });
   const badge=document.getElementById('freela-total-badge');
