@@ -848,7 +848,7 @@ function agGetFestas(mes,ano){
     const d=new Date(c.dataEvento+'T12:00:00');
     return{id:c.id,day:d.getDate(),nome:c.nomePais||c.titulo||'Evento',tipo:c.tipo||'festa',
       data:c.dataEvento,coluna:c.coluna,kind:'festa',tipoExecucao:c.tipoExecucao||'proprio',
-      horario:c.horario||'',horarioFim:c.horarioFim||'',local:c.local||''};
+      horario:c.horario||'',horarioFim:c.horarioFim||'',local:c.local||'',pendencias:c.pendencias||[]};
   });
 }
 
@@ -904,6 +904,26 @@ function renderAgenda(){
   checkNotifBanner();
 }
 
+/* ── Checklist de pendências do cliente (Assinar contrato, Pagar sinal...)
+   O mesmo checklist que existe na ficha do cliente no CRM completo —
+   aqui só para ver e marcar, sem duplicar o cadastro. ── */
+function _pendChecklistHTML(cardId,lista){
+  if(!lista||!lista.length)return'';
+  return `<div style="margin-top:6px;display:flex;flex-direction:column;gap:3px">
+    ${lista.map((p,i)=>`
+      <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:${p.done?'var(--mut)':'var(--txt)'};${p.done?'text-decoration:line-through':''};cursor:pointer">
+        <input type="checkbox" ${p.done?'checked':''} onchange="event.stopPropagation();toggleAgPend('${cardId}',${i})" style="accent-color:var(--acc);width:14px;height:14px;flex-shrink:0">
+        ${esc(p.label)}
+      </label>`).join('')}
+  </div>`;
+}
+function toggleAgPend(cardId,idx){
+  const c=opCards.find(x=>x.id===cardId);
+  if(!c||!c.pendencias||!c.pendencias[idx])return;
+  c.pendencias[idx].done=!c.pendencias[idx].done;
+  saveD();
+  renderAgenda();
+}
 function agSelectDay(day){
   _agSelDay=(_agSelDay===day)?null:day;
   renderAgenda();
@@ -941,6 +961,7 @@ function agRenderEvents(allEvents){
               ${e.obs?`<br>📝 ${esc(e.obs)}`:''}
               ${!isFesta&&e.aviso&&e.aviso!=='nunca'?`<br>🔔 ${AVISO_LBL[e.aviso]}`:''}
             </div>
+            ${isFesta?_pendChecklistHTML(e.id,e.pendencias):''}
           </div>
           ${!isFesta?`<button class="btn-del" style="align-self:flex-start" onclick="delLembrete('${e.id}')">✕</button>`:''}
         </div>`;
@@ -989,6 +1010,7 @@ function renderAgUnconfirmed(){
               ${c.pendObs?`<br>📝 ${esc(c.pendObs)}`:''}
               ${frlLine}
             </div>
+            ${_pendChecklistHTML(c.id,c.pendencias)}
           </div>
         </div>`;
       }).join('')}
