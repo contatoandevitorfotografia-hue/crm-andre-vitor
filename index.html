@@ -4334,6 +4334,12 @@ function openOpModal(cardId,defaultCol,event,fromProj){
     const _idsToLoad=card.pacoteIds||(card.pacoteId?[card.pacoteId]:[]);
     fillFilmmakerSelect(_idsToLoad,_filmNome);
     updateFrlWrap();
+    // updateFrlWrap() reconstrói as opções do <select> de freelancer e usa o
+    // valor ATUAL do campo para marcar a selecionada — mas nesse momento o
+    // campo ainda estava vazio (as opções não existiam quando ele foi
+    // preenchido lá em cima), então a freela escolhida se perdia ao reabrir
+    // o card. Preenche de novo agora que a lista já existe.
+    if(card.tipoExecucao==='freelancer')fillFrlSelect(card.freelancerId||'');
     document.getElementById('f-motivo').value=card.motivo||'';
     document.getElementById('f-detalhe').value=card.detalhe||'';
     document.getElementById('f-pend-obs').value=card.pendObs||'';
@@ -6398,7 +6404,7 @@ function renderFinResumo(){
     <div class="stat-card sc-reservas"><div class="stat-icon">✅</div><div class="stat-label">Festas líquido — ${curMesFin}</div><div class="stat-value">${fmtMoney(cCurFin.totalF)}</div><div class="stat-sub">Parte líquida da empresa</div></div>
     <div class="stat-card sc-receber"><div class="stat-icon">⏳</div><div class="stat-label">A Receber — ${curMesFin}</div><div class="stat-value">${fmtMoney(cCurFin.totalAReceber)}</div><div class="stat-sub">Restante das festas do mês</div></div>
     <div class="stat-card" style="background:${dfGrad}"><div class="stat-icon">💸</div><div class="stat-label">Pode gastar — ${curMesFin}</div><div class="stat-value">${fmtMoney(dispFin)}</div><div class="stat-sub" style="opacity:.8">Festas − contas − gastos + ${fmtMoney(cCurFin.vg)} banco</div></div>
-    <div class="stat-card" style="background:linear-gradient(135deg,#312e81,#1e1b4b)"><div class="stat-icon">🏦</div><div class="stat-label">Reserva Guardada</div><div class="stat-value" style="cursor:text" onclick="startFinRGEdit()" title="Clique para editar o valor guardado">${fmtMoney(finRG+(finVG[curMesFin]||0))}</div><div class="stat-sub" style="opacity:.8">${fmtMoney(finRG)} guardado + ${fmtMoney(finVG[curMesFin]||0)} banco</div></div>`;
+    <div class="stat-card" style="background:linear-gradient(135deg,#312e81,#1e1b4b)"><div class="stat-icon">🏦</div><div class="stat-label">Reserva Guardada</div><div class="stat-value" style="cursor:text" onclick="startFinRGEdit()" title="Clique para editar o valor guardado">${fmtMoney(finRG+(finVG[curMesFin]||0))}</div><div class="stat-sub" style="opacity:.8"><span style="cursor:text;text-decoration:underline dotted" onclick="startFinRGEdit()" title="Clique para editar o valor guardado">${fmtMoney(finRG)} guardado</span> + ${fmtMoney(finVG[curMesFin]||0)} banco</div></div>`;
   // Fluxo de caixa
   const tbody=document.getElementById('fin-resumo-body');if(!tbody)return;
   let rows='';
@@ -7642,7 +7648,7 @@ function renderPessResumo(){
     <div class="stat-card sc-reservas"><div class="stat-icon">✅</div><div class="stat-label">Festas líquido — ${curMes}</div><div class="stat-value">${fmtMoney(pessLiqMes)}</div><div class="stat-sub">Depois dos gastos pessoais</div></div>
     <div class="stat-card sc-receber"><div class="stat-icon">⏳</div><div class="stat-label">A Receber — ${curMes}</div><div class="stat-value">${fmtMoney(aReceberCur)}</div><div class="stat-sub">Restante das festas do mês</div></div>
     <div class="stat-card" style="background:${dGrad}"><div class="stat-icon">💸</div><div class="stat-label">Pode gastar — ${curMes}</div><div class="stat-value">${fmtMoney(disponivel)}</div><div class="stat-sub" style="opacity:.8">Festas − contas − gastos + ${fmtMoney(cCur.vg)} banco</div></div>
-    <div class="stat-card" style="background:linear-gradient(135deg,#312e81,#1e1b4b)"><div class="stat-icon">🏦</div><div class="stat-label">Reserva Guardada</div><div class="stat-value" style="cursor:text" onclick="startPessRGEdit()" title="Clique para editar o valor guardado">${fmtMoney(pessRG+(pessVG[curMes]||0))}</div><div class="stat-sub" style="opacity:.8">${fmtMoney(pessRG)} guardado + ${fmtMoney(pessVG[curMes]||0)} banco</div></div>`;
+    <div class="stat-card" style="background:linear-gradient(135deg,#312e81,#1e1b4b)"><div class="stat-icon">🏦</div><div class="stat-label">Reserva Guardada</div><div class="stat-value" style="cursor:text" onclick="startPessRGEdit()" title="Clique para editar o valor guardado">${fmtMoney(pessRG+(pessVG[curMes]||0))}</div><div class="stat-sub" style="opacity:.8"><span style="cursor:text;text-decoration:underline dotted" onclick="startPessRGEdit()" title="Clique para editar o valor guardado">${fmtMoney(pessRG)} guardado</span> + ${fmtMoney(pessVG[curMes]||0)} banco</div></div>`;
 
   // ── Fluxo de caixa ──
   const tbody=document.getElementById('p-resumo-body');if(!tbody)return;
