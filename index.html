@@ -1533,17 +1533,27 @@ td { padding: 13px 16px; font-size: 13.5px; }
         <div style="padding:6px 0;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
           <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap">
             <input type="checkbox" id="pen-rec-ativa" onchange="togglePenRec()" style="width:14px;height:14px;accent-color:var(--primary);cursor:pointer">
-            🔁 Repetir a cada
+            🔁 Repetir
           </label>
-          <div id="pen-rec-extras" style="display:none;align-items:center;gap:4px;flex-wrap:wrap">
-            <span style="font-size:11px;color:var(--muted);font-weight:700">Dias:</span>
-            <button type="button" class="_rdia" data-dia="0" onclick="_rdiaClick(this)" style="padding:5px 8px;border:1.5px solid var(--border);border-radius:7px;font:700 11px 'Montserrat',sans-serif;cursor:pointer;background:var(--surface);color:var(--muted)">Dom</button>
-            <button type="button" class="_rdia" data-dia="1" onclick="_rdiaClick(this)" style="padding:5px 8px;border:1.5px solid var(--border);border-radius:7px;font:700 11px 'Montserrat',sans-serif;cursor:pointer;background:var(--surface);color:var(--muted)">Seg</button>
-            <button type="button" class="_rdia" data-dia="2" onclick="_rdiaClick(this)" style="padding:5px 8px;border:1.5px solid var(--border);border-radius:7px;font:700 11px 'Montserrat',sans-serif;cursor:pointer;background:var(--surface);color:var(--muted)">Ter</button>
-            <button type="button" class="_rdia" data-dia="3" onclick="_rdiaClick(this)" style="padding:5px 8px;border:1.5px solid var(--border);border-radius:7px;font:700 11px 'Montserrat',sans-serif;cursor:pointer;background:var(--surface);color:var(--muted)">Qua</button>
-            <button type="button" class="_rdia" data-dia="4" onclick="_rdiaClick(this)" style="padding:5px 8px;border:1.5px solid var(--border);border-radius:7px;font:700 11px 'Montserrat',sans-serif;cursor:pointer;background:var(--surface);color:var(--muted)">Qui</button>
-            <button type="button" class="_rdia" data-dia="5" onclick="_rdiaClick(this)" style="padding:5px 8px;border:1.5px solid var(--border);border-radius:7px;font:700 11px 'Montserrat',sans-serif;cursor:pointer;background:var(--surface);color:var(--muted)">Sex</button>
-            <button type="button" class="_rdia" data-dia="6" onclick="_rdiaClick(this)" style="padding:5px 8px;border:1.5px solid var(--border);border-radius:7px;font:700 11px 'Montserrat',sans-serif;cursor:pointer;background:var(--surface);color:var(--muted)">Sáb</button>
+          <div id="pen-rec-extras" style="display:none;align-items:center;gap:6px;flex-wrap:wrap">
+            <select id="pen-rec-tipo" onchange="_recTipoChangeAdd('pen')" style="padding:5px 8px;border:1.5px solid var(--border);border-radius:7px;font:600 11px 'Montserrat',sans-serif;color:var(--n700);background:var(--surface);outline:none">
+              <option value="semanal">Semanalmente</option>
+              <option value="mensal">Mensalmente</option>
+            </select>
+            <div id="pen-rec-dias" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+              <button type="button" class="_rdia" data-dia="0" onclick="_rdiaClick(this)" style="padding:5px 8px;border:1.5px solid var(--border);border-radius:7px;font:700 11px 'Montserrat',sans-serif;cursor:pointer;background:var(--surface);color:var(--muted)">Dom</button>
+              <button type="button" class="_rdia" data-dia="1" onclick="_rdiaClick(this)" style="padding:5px 8px;border:1.5px solid var(--border);border-radius:7px;font:700 11px 'Montserrat',sans-serif;cursor:pointer;background:var(--surface);color:var(--muted)">Seg</button>
+              <button type="button" class="_rdia" data-dia="2" onclick="_rdiaClick(this)" style="padding:5px 8px;border:1.5px solid var(--border);border-radius:7px;font:700 11px 'Montserrat',sans-serif;cursor:pointer;background:var(--surface);color:var(--muted)">Ter</button>
+              <button type="button" class="_rdia" data-dia="3" onclick="_rdiaClick(this)" style="padding:5px 8px;border:1.5px solid var(--border);border-radius:7px;font:700 11px 'Montserrat',sans-serif;cursor:pointer;background:var(--surface);color:var(--muted)">Qua</button>
+              <button type="button" class="_rdia" data-dia="4" onclick="_rdiaClick(this)" style="padding:5px 8px;border:1.5px solid var(--border);border-radius:7px;font:700 11px 'Montserrat',sans-serif;cursor:pointer;background:var(--surface);color:var(--muted)">Qui</button>
+              <button type="button" class="_rdia" data-dia="5" onclick="_rdiaClick(this)" style="padding:5px 8px;border:1.5px solid var(--border);border-radius:7px;font:700 11px 'Montserrat',sans-serif;cursor:pointer;background:var(--surface);color:var(--muted)">Sex</button>
+              <button type="button" class="_rdia" data-dia="6" onclick="_rdiaClick(this)" style="padding:5px 8px;border:1.5px solid var(--border);border-radius:7px;font:700 11px 'Montserrat',sans-serif;cursor:pointer;background:var(--surface);color:var(--muted)">Sáb</button>
+            </div>
+            <div id="pen-rec-diames" style="display:none;align-items:center;gap:6px">
+              <span style="font-size:11px;color:var(--muted);font-weight:700">Dia</span>
+              <input type="number" min="1" max="31" id="pen-rec-diames-input" value="1" style="width:56px;padding:5px 6px;border:1.5px solid var(--border);border-radius:7px;font:600 12px 'Montserrat',sans-serif;color:var(--n700);background:var(--surface);outline:none">
+              <span style="font-size:11px;color:var(--muted);font-weight:700">de cada mês</span>
+            </div>
           </div>
         </div>
         <div id="pen-list"></div>
@@ -1558,6 +1568,32 @@ td { padding: 13px 16px; font-size: 13.5px; }
           <input type="date" id="pgr-data" title="Data" style="max-width:155px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font:500 13px 'Montserrat',sans-serif;color:var(--n700);outline:none">
           <input type="time" id="pgr-hora" title="Hora" style="max-width:120px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font:500 13px 'Montserrat',sans-serif;color:var(--n700);outline:none">
           <button class="btn btn-p btn-sm" onclick="addPendenciaGeral()">＋ Adicionar</button>
+        </div>
+        <div style="padding:6px 0;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap">
+            <input type="checkbox" id="pgr-rec-ativa" onchange="togglePgrRec()" style="width:14px;height:14px;accent-color:var(--primary);cursor:pointer">
+            🔁 Repetir
+          </label>
+          <div id="pgr-rec-extras" style="display:none;align-items:center;gap:6px;flex-wrap:wrap">
+            <select id="pgr-rec-tipo" onchange="_recTipoChangeAdd('pgr')" style="padding:5px 8px;border:1.5px solid var(--border);border-radius:7px;font:600 11px 'Montserrat',sans-serif;color:var(--n700);background:var(--surface);outline:none">
+              <option value="semanal">Semanalmente</option>
+              <option value="mensal">Mensalmente</option>
+            </select>
+            <div id="pgr-rec-dias" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+              <button type="button" class="_rdia" data-dia="0" onclick="_rdiaClick(this)" style="padding:5px 8px;border:1.5px solid var(--border);border-radius:7px;font:700 11px 'Montserrat',sans-serif;cursor:pointer;background:var(--surface);color:var(--muted)">Dom</button>
+              <button type="button" class="_rdia" data-dia="1" onclick="_rdiaClick(this)" style="padding:5px 8px;border:1.5px solid var(--border);border-radius:7px;font:700 11px 'Montserrat',sans-serif;cursor:pointer;background:var(--surface);color:var(--muted)">Seg</button>
+              <button type="button" class="_rdia" data-dia="2" onclick="_rdiaClick(this)" style="padding:5px 8px;border:1.5px solid var(--border);border-radius:7px;font:700 11px 'Montserrat',sans-serif;cursor:pointer;background:var(--surface);color:var(--muted)">Ter</button>
+              <button type="button" class="_rdia" data-dia="3" onclick="_rdiaClick(this)" style="padding:5px 8px;border:1.5px solid var(--border);border-radius:7px;font:700 11px 'Montserrat',sans-serif;cursor:pointer;background:var(--surface);color:var(--muted)">Qua</button>
+              <button type="button" class="_rdia" data-dia="4" onclick="_rdiaClick(this)" style="padding:5px 8px;border:1.5px solid var(--border);border-radius:7px;font:700 11px 'Montserrat',sans-serif;cursor:pointer;background:var(--surface);color:var(--muted)">Qui</button>
+              <button type="button" class="_rdia" data-dia="5" onclick="_rdiaClick(this)" style="padding:5px 8px;border:1.5px solid var(--border);border-radius:7px;font:700 11px 'Montserrat',sans-serif;cursor:pointer;background:var(--surface);color:var(--muted)">Sex</button>
+              <button type="button" class="_rdia" data-dia="6" onclick="_rdiaClick(this)" style="padding:5px 8px;border:1.5px solid var(--border);border-radius:7px;font:700 11px 'Montserrat',sans-serif;cursor:pointer;background:var(--surface);color:var(--muted)">Sáb</button>
+            </div>
+            <div id="pgr-rec-diames" style="display:none;align-items:center;gap:6px">
+              <span style="font-size:11px;color:var(--muted);font-weight:700">Dia</span>
+              <input type="number" min="1" max="31" id="pgr-rec-diames-input" value="1" style="width:56px;padding:5px 6px;border:1.5px solid var(--border);border-radius:7px;font:600 12px 'Montserrat',sans-serif;color:var(--n700);background:var(--surface);outline:none">
+              <span style="font-size:11px;color:var(--muted);font-weight:700">de cada mês</span>
+            </div>
+          </div>
         </div>
         <div id="pgr-list"></div>
       </div>
@@ -5417,8 +5453,10 @@ function addPendencia(){
   const customHora=(document.getElementById('pen-notif-hora')||{}).value||'';
   const notif=_calcNotifDt(prazo,hora,opcao,customData,customHora);
   const recAtiva=document.getElementById('pen-rec-ativa')?.checked||false;
-  const dias=_getRecDias('#pen-rec-extras');
-  const rec={ativa:recAtiva,dias};
+  const recTipo=document.getElementById('pen-rec-tipo')?.value||'semanal';
+  const dias=recTipo==='semanal'?_getRecDias('#pen-rec-extras'):[];
+  const diaMes=recTipo==='mensal'?(parseInt(document.getElementById('pen-rec-diames-input')?.value)||1):null;
+  const rec={ativa:recAtiva,tipo:recTipo,dias,diaMes};
   pendencias.unshift({id:uid(),texto:txt,clienteId,clienteNome,prazo,hora,notifOpcao:opcao,notifDt:notif,status:'pendente',criadoEm:Date.now(),rec});
   savPen();renderPendencias();renderDashListas();
   inp.value='';
@@ -5426,7 +5464,10 @@ function addPendencia(){
   const sel=document.getElementById('pen-notif');if(sel)sel.value='nenhum';
   const recCb=document.getElementById('pen-rec-ativa');if(recCb)recCb.checked=false;
   const recExtras=document.getElementById('pen-rec-extras');if(recExtras)recExtras.style.display='none';
+  const recTipoSel=document.getElementById('pen-rec-tipo');if(recTipoSel)recTipoSel.value='semanal';
+  const recDiaMesInp=document.getElementById('pen-rec-diames-input');if(recDiaMesInp)recDiaMesInp.value='1';
   _resetRecDias('#pen-rec-extras');
+  _recTipoChangeAdd('pen');
   togglePenNotifCustom();
   inp.focus();
 }
@@ -5452,6 +5493,19 @@ function togglePendencia(id){
 }
 function delPendencia(id){pendencias=pendencias.filter(x=>x.id!==id);savPen();renderPendencias();renderDashListas();}
 function setPenPrazo(id,val){const p=pendencias.find(x=>x.id===id);if(!p)return;p.prazo=val;savPen();renderPendencias();renderDashListas();}
+function setPenHora(id,val){const p=pendencias.find(x=>x.id===id);if(!p)return;p.hora=val;savPen();renderPendencias();renderDashListas();}
+function editRecPen(id){const box=document.getElementById('pen-rec-edit-'+id);if(box)box.style.display=box.style.display==='none'?'block':'none';}
+function saveRecPen(id){
+  const p=pendencias.find(x=>x.id===id);if(!p)return;
+  const ativa=document.getElementById('pen-rec-edit-ativa-'+id)?.checked||false;
+  const tipo=document.getElementById('pen-rec-edit-tipo-'+id)?.value||'semanal';
+  const diasEl=document.getElementById('pen-rec-edit-dias-'+id);
+  const dias=tipo==='semanal'?_getRecDiasFromEl(diasEl):[];
+  const diaMes=tipo==='mensal'?(parseInt(document.getElementById('pen-rec-edit-diames-input-'+id)?.value)||1):null;
+  p.rec={ativa,tipo,dias,diaMes};
+  savPen();renderPendencias();
+  toast('🔁 Recorrência atualizada!','green');
+}
 function editNotifPen(id){const box=document.getElementById('pen-notif-edit-'+id);if(box)box.style.display=box.style.display==='none'?'block':'none';}
 function togglePenNotifEditCustom(id){
   const sel=document.getElementById('pen-notif-sel-'+id);
@@ -5494,17 +5548,19 @@ function _penRow(p){
     <div class="lista-check${feito?' checked':''}" onclick="togglePendencia('${p.id}')">${feito?'✓':''}</div>
     <div style="flex:1;min-width:0">
       <div class="lista-item-text">${esc(p.texto)}</div>
-      ${p.rec&&p.rec.ativa&&p.rec.dias&&p.rec.dias.length?`<div style="font-size:10px;color:#7B5FA0;font-weight:700;margin-top:2px">🔁 ${p.rec.dias.map(d=>_DIAS_PT[d]).join(' · ')}</div>`:''}
+      ${p.rec&&p.rec.ativa&&_recLabel(p.rec)?`<div style="font-size:10px;color:#7B5FA0;font-weight:700;margin-top:2px">🔁 ${_recLabel(p.rec)}</div>`:''}
       ${p.clienteNome?`<div style="font-size:11px;color:var(--muted);margin-top:2px">👤 ${esc(p.clienteNome)}</div>`:''}
       <div style="margin-top:5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
         <input type="date" value="${p.prazo||''}" onchange="setPenPrazo('${p.id}',this.value)"
           style="font:500 11px 'Montserrat',sans-serif;color:${vencida?'var(--danger)':'var(--n700)'};border:1px solid ${vencida?'var(--danger)':'var(--border)'};border-radius:6px;padding:3px 7px;background:${vencida?'#fff5f5':'var(--n50)'};outline:none;cursor:pointer">
-        ${p.hora?`<span style="font-size:11px;color:var(--muted);font-weight:600">⏱ ${p.hora}</span>`:''}
+        <input type="time" value="${p.hora||''}" onchange="setPenHora('${p.id}',this.value)"
+          style="font:500 11px 'Montserrat',sans-serif;color:var(--n700);border:1px solid var(--border);border-radius:6px;padding:3px 7px;background:var(--n50);outline:none;cursor:pointer">
         ${p.prazo?`<button onclick="setPenPrazo('${p.id}','')" style="font-size:10px;color:var(--muted);background:none;border:none;cursor:pointer;padding:0" title="Remover prazo">✕</button>`:''}
       </div>
       ${notifStr?`<div style="font-size:10px;color:var(--muted);margin-top:3px">${notifStr}</div>`:(!feito?`<div style="font-size:10px;color:var(--muted);margin-top:3px;opacity:.5">🔕 Sem lembrete</div>`:'')}
     </div>
     <span class="lista-badge pill-${p.status}">${feito?'Feito':'Pendente'}</span>
+    <button onclick="editRecPen('${p.id}')" title="Configurar recorrência" style="background:none;border:1.5px solid ${p.rec&&p.rec.ativa?'#7B5FA0':'var(--border)'};border-radius:7px;padding:4px 7px;cursor:pointer;font-size:13px;flex-shrink:0">🔁</button>
     ${!feito?`<button onclick="editNotifPen('${p.id}')" title="Configurar lembrete" style="background:none;border:1.5px solid var(--border);border-radius:7px;padding:4px 7px;cursor:pointer;font-size:13px;flex-shrink:0">🔔</button>`:''}
     <button class="lista-item-edit" onclick="startEdit('pen','${p.id}')" title="Editar">✏️</button>
     <button class="lista-item-del" onclick="delPendencia('${p.id}')">✕</button>
@@ -5530,7 +5586,8 @@ function _penRow(p){
       <button onclick="saveNotifPen('${p.id}')" style="background:var(--primary);color:#fff;border:none;border-radius:7px;padding:5px 14px;font:700 12px 'Montserrat',sans-serif;cursor:pointer">Salvar</button>
       <button onclick="document.getElementById('pen-notif-edit-${p.id}').style.display='none'" style="background:var(--n200);color:var(--n700);border:none;border-radius:7px;padding:5px 12px;font:700 12px 'Montserrat',sans-serif;cursor:pointer">Cancelar</button>
     </div>
-  </div>`;
+  </div>
+  ${_recEditorBoxHTML(p.id,p.rec,'pen')}`;
 }
 function renderPendencias(){
   const el=document.getElementById('pen-list');if(!el)return;
@@ -5556,36 +5613,73 @@ function addPendenciaGeral(){
   const inp=document.getElementById('pgr-input');const txt=(inp?.value||'').trim();if(!txt)return;
   const prazo=document.getElementById('pgr-data')?.value||'';
   const hora=document.getElementById('pgr-hora')?.value||'';
-  pendenciasGerais.unshift({id:uid(),texto:txt,prazo,hora,status:'pendente',criadoEm:Date.now()});
+  const recAtiva=document.getElementById('pgr-rec-ativa')?.checked||false;
+  const recTipo=document.getElementById('pgr-rec-tipo')?.value||'semanal';
+  const dias=recTipo==='semanal'?_getRecDias('#pgr-rec-extras'):[];
+  const diaMes=recTipo==='mensal'?(parseInt(document.getElementById('pgr-rec-diames-input')?.value)||1):null;
+  const rec={ativa:recAtiva,tipo:recTipo,dias,diaMes};
+  pendenciasGerais.unshift({id:uid(),texto:txt,prazo,hora,status:'pendente',criadoEm:Date.now(),rec});
   savPgr();renderPendenciasGerais();
   inp.value='';
   ['pgr-data','pgr-hora'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const recCb=document.getElementById('pgr-rec-ativa');if(recCb)recCb.checked=false;
+  const recExtras=document.getElementById('pgr-rec-extras');if(recExtras)recExtras.style.display='none';
+  const recTipoSel=document.getElementById('pgr-rec-tipo');if(recTipoSel)recTipoSel.value='semanal';
+  const recDiaMesInp=document.getElementById('pgr-rec-diames-input');if(recDiaMesInp)recDiaMesInp.value='1';
+  _resetRecDias('#pgr-rec-extras');
+  _recTipoChangeAdd('pgr');
   inp.focus();
 }
 function togglePendenciaGeral(id){
   const p=pendenciasGerais.find(x=>x.id===id);if(!p)return;
+  if(p.status==='pendente'&&p.rec&&p.rec.ativa){
+    const novaData=_calcProximaData(p.prazo,p.hora,p.rec);
+    if(novaData){
+      p.prazo=novaData;
+      savPgr();renderPendenciasGerais();
+      const dtFmt=new Date(novaData+'T12:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+      toast('🔁 Recorrência renovada! Próxima: '+dtFmt,'green');
+      return;
+    }
+  }
   p.status=p.status==='pendente'?'feito':'pendente';
   savPgr();renderPendenciasGerais();
 }
 function delPendenciaGeral(id){pendenciasGerais=pendenciasGerais.filter(x=>x.id!==id);savPgr();renderPendenciasGerais();}
 function setPgrPrazo(id,val){const p=pendenciasGerais.find(x=>x.id===id);if(!p)return;p.prazo=val;savPgr();renderPendenciasGerais();}
 function setPgrHora(id,val){const p=pendenciasGerais.find(x=>x.id===id);if(!p)return;p.hora=val;savPgr();renderPendenciasGerais();}
+function editRecPgr(id){const box=document.getElementById('pgr-rec-edit-'+id);if(box)box.style.display=box.style.display==='none'?'block':'none';}
+function saveRecPgr(id){
+  const p=pendenciasGerais.find(x=>x.id===id);if(!p)return;
+  const ativa=document.getElementById('pgr-rec-edit-ativa-'+id)?.checked||false;
+  const tipo=document.getElementById('pgr-rec-edit-tipo-'+id)?.value||'semanal';
+  const diasEl=document.getElementById('pgr-rec-edit-dias-'+id);
+  const dias=tipo==='semanal'?_getRecDiasFromEl(diasEl):[];
+  const diaMes=tipo==='mensal'?(parseInt(document.getElementById('pgr-rec-edit-diames-input-'+id)?.value)||1):null;
+  p.rec={ativa,tipo,dias,diaMes};
+  savPgr();renderPendenciasGerais();
+  toast('🔁 Recorrência atualizada!','green');
+}
 function _pgrRow(p){
   const feito=p.status==='feito';
   const hoje=new Date().toISOString().slice(0,10);
   const atrasado=!feito&&p.prazo&&p.prazo<hoje;
   const isEdit=_editingTipo==='pgr'&&_editingId===p.id;
   const dt=p.prazo?fmtDate(p.prazo):'';
-  return `<div class="pend-item${feito?' done':''}" style="${atrasado?'border-color:var(--danger-light);background:#2E1A18':''}">
+  const recAtiva=p.rec&&p.rec.ativa;
+  return `<div class="pend-item${feito?' done':''}" style="${atrasado?'border-color:var(--danger-light);background:#2E1A18':''};flex-wrap:wrap">
     <input type="checkbox" ${feito?'checked':''} onchange="togglePendenciaGeral('${p.id}')">
     ${isEdit
       ? `<input type="text" id="edit-inp-${p.id}" value="${esc(p.texto)}" onblur="saveEditPgr('${p.id}')" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit()" style="flex:1;border:1.5px solid var(--primary);border-radius:6px;padding:5px 8px;font:600 13px 'Montserrat',sans-serif;color:var(--n900);outline:none">`
-      : `<label ondblclick="startEditPgr('${p.id}')">${esc(p.texto)}</label>`}
+      : `<label ondblclick="startEditPgr('${p.id}')" style="flex:1">${esc(p.texto)}${recAtiva&&_recLabel(p.rec)?`<span style="display:block;font-size:10px;color:#7B5FA0;font-weight:700;margin-top:2px">🔁 ${_recLabel(p.rec)}</span>`:''}</label>`}
     <input type="date" value="${p.prazo||''}" onchange="setPgrPrazo('${p.id}',this.value)" title="Data" style="padding:4px 7px;border:1.5px solid var(--border);border-radius:6px;font:600 11px 'Montserrat',sans-serif;color:${atrasado?'var(--danger)':'var(--n700)'};outline:none;background:var(--surface);max-width:135px">
     <input type="time" value="${p.hora||''}" onchange="setPgrHora('${p.id}',this.value)" title="Hora" style="padding:4px 7px;border:1.5px solid var(--border);border-radius:6px;font:600 11px 'Montserrat',sans-serif;color:var(--n700);outline:none;background:var(--surface);max-width:95px">
     ${atrasado?`<span class="pend-badge warn" style="background:var(--danger-light);color:var(--danger)">Atrasado</span>`:dt?`<span class="pend-badge ok" style="background:var(--n100);color:var(--muted)">${dt}</span>`:''}
+    <button class="pend-rm" onclick="editRecPgr('${p.id}')" title="Configurar recorrência" style="background:none;border:1.5px solid ${recAtiva?'#7B5FA0':'var(--border)'};border-radius:6px;color:${recAtiva?'#7B5FA0':'var(--muted)'};width:auto;padding:4px 7px">🔁</button>
+    <button class="lista-item-edit" onclick="startEditPgr('${p.id}')" title="Editar texto">✏️</button>
     <button class="pend-rm" onclick="delPendenciaGeral('${p.id}')" title="Remover">✕</button>
-  </div>`;
+  </div>
+  ${_recEditorBoxHTML(p.id,p.rec,'pgr')}`;
 }
 function startEditPgr(id){
   _editingId=id;_editingTipo='pgr';
@@ -10686,6 +10780,18 @@ function _calcNotifDt(data,hora,opcao,customData,customHora){
 const _DIAS_PT=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 function _calcProximaData(data,hora,rec){
   if(!rec||!rec.ativa)return null;
+  if(rec.tipo==='mensal'&&rec.diaMes){
+    const hoje=new Date();hoje.setHours(0,0,0,0);
+    let ano=hoje.getFullYear(),mes=hoje.getMonth();
+    for(let i=0;i<3;i++){
+      const diasNoMes=new Date(ano,mes+1,0).getDate();
+      const dia=Math.min(rec.diaMes,diasNoMes);
+      const cand=new Date(ano,mes,dia);
+      if(cand>hoje)return cand.toISOString().slice(0,10);
+      mes++;if(mes>11){mes=0;ano++;}
+    }
+    return null;
+  }
   if(rec.dias&&rec.dias.length){
     const hoje=new Date();
     for(let i=1;i<=7;i++){const dt=new Date(hoje);dt.setDate(hoje.getDate()+i);if(rec.dias.includes(dt.getDay()))return dt.toISOString().slice(0,10);}
@@ -10699,17 +10805,75 @@ function _calcProximaData(data,hora,rec){
   else if(rec.tipo==='meses')dt.setMonth(dt.getMonth()+rec.n);
   return dt.toISOString().slice(0,10);
 }
+function _recLabel(rec){
+  if(!rec||!rec.ativa)return'';
+  if(rec.tipo==='mensal'&&rec.diaMes)return`Dia ${rec.diaMes} de cada mês`;
+  if(rec.dias&&rec.dias.length)return rec.dias.map(d=>_DIAS_PT[d]).join(' · ');
+  return'';
+}
 function _rdiaClick(btn){
   const on=btn.classList.toggle('_on');
-  Object.assign(btn.style,on?{background:'var(--primary)',color:'#fff',borderColor:'var(--primary)'}:{background:'#fff',color:'var(--muted)',borderColor:'var(--border)'});
+  Object.assign(btn.style,on?{background:'var(--primary)',color:'#fff',borderColor:'var(--primary)'}:{background:'var(--surface)',color:'var(--muted)',borderColor:'var(--border)'});
 }
 function _resetRecDias(containerSelector){
   document.querySelectorAll(containerSelector+' ._rdia._on').forEach(b=>{
-    b.classList.remove('_on');Object.assign(b.style,{background:'#fff',color:'var(--muted)',borderColor:'var(--border)'});
+    b.classList.remove('_on');Object.assign(b.style,{background:'var(--surface)',color:'var(--muted)',borderColor:'var(--border)'});
   });
 }
 function _getRecDias(containerSelector){
   return[...(document.querySelectorAll(containerSelector+' ._rdia._on')||[])].map(b=>parseInt(b.dataset.dia));
+}
+function _getRecDiasFromEl(el){
+  return el?[...el.querySelectorAll('._rdia._on')].map(b=>parseInt(b.dataset.dia)):[];
+}
+function _recTipoChangeAdd(prefix){
+  const tipo=document.getElementById(prefix+'-rec-tipo')?.value||'semanal';
+  const diasBox=document.getElementById(prefix+'-rec-dias');
+  const mesBox=document.getElementById(prefix+'-rec-diames');
+  if(diasBox)diasBox.style.display=tipo==='semanal'?'flex':'none';
+  if(mesBox)mesBox.style.display=tipo==='mensal'?'flex':'none';
+}
+function _recEditToggle(prefix,id){
+  const cb=document.getElementById(prefix+'-rec-edit-ativa-'+id);
+  const extras=document.getElementById(prefix+'-rec-edit-extras-'+id);
+  if(extras)extras.style.display=cb&&cb.checked?'flex':'none';
+}
+function _recEditTipoChange(prefix,id){
+  const tipo=document.getElementById(prefix+'-rec-edit-tipo-'+id)?.value||'semanal';
+  const diasBox=document.getElementById(prefix+'-rec-edit-dias-'+id);
+  const mesBox=document.getElementById(prefix+'-rec-edit-diames-'+id);
+  if(diasBox)diasBox.style.display=tipo==='semanal'?'flex':'none';
+  if(mesBox)mesBox.style.display=tipo==='mensal'?'flex':'none';
+}
+function _recEditorBoxHTML(id,rec,prefix){
+  rec=rec||{};
+  const tipo=rec.tipo||(rec.dias&&rec.dias.length?'semanal':'semanal');
+  const dias=rec.dias||[];
+  const saveFn=prefix==='pen'?'saveRecPen':'saveRecPgr';
+  return `<div id="${prefix}-rec-edit-${id}" style="display:none;margin:-6px 0 4px;background:var(--n100);border-radius:0 0 8px 8px;padding:10px 12px;border:1px solid var(--border);border-top:none">
+    <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px;cursor:pointer">
+      <input type="checkbox" id="${prefix}-rec-edit-ativa-${id}" ${rec.ativa?'checked':''} onchange="_recEditToggle('${prefix}','${id}')" style="width:14px;height:14px;accent-color:var(--primary);cursor:pointer">
+      🔁 Repetir
+    </label>
+    <div id="${prefix}-rec-edit-extras-${id}" style="display:${rec.ativa?'flex':'none'};align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+      <select id="${prefix}-rec-edit-tipo-${id}" onchange="_recEditTipoChange('${prefix}','${id}')" style="padding:5px 8px;border:1.5px solid var(--border);border-radius:7px;font:600 12px 'Montserrat',sans-serif;color:var(--n900);background:var(--surface);outline:none">
+        <option value="semanal" ${tipo==='semanal'?'selected':''}>Semanalmente</option>
+        <option value="mensal" ${tipo==='mensal'?'selected':''}>Mensalmente</option>
+      </select>
+      <div id="${prefix}-rec-edit-dias-${id}" style="display:${tipo==='semanal'?'flex':'none'};gap:4px;flex-wrap:wrap">
+        ${[0,1,2,3,4,5,6].map(d=>`<button type="button" class="_rdia${dias.includes(d)?' _on':''}" data-dia="${d}" onclick="_rdiaClick(this)" style="padding:5px 8px;border:1.5px solid ${dias.includes(d)?'var(--primary)':'var(--border)'};border-radius:7px;font:700 11px 'Montserrat',sans-serif;cursor:pointer;background:${dias.includes(d)?'var(--primary)':'var(--surface)'};color:${dias.includes(d)?'#fff':'var(--muted)'}">${_DIAS_PT[d]}</button>`).join('')}
+      </div>
+      <div id="${prefix}-rec-edit-diames-${id}" style="display:${tipo==='mensal'?'flex':'none'};align-items:center;gap:6px">
+        <span style="font-size:11px;color:var(--muted);font-weight:700">Dia</span>
+        <input type="number" min="1" max="31" id="${prefix}-rec-edit-diames-input-${id}" value="${rec.diaMes||1}" style="width:56px;padding:5px 6px;border:1.5px solid var(--border);border-radius:7px;font:600 12px 'Montserrat',sans-serif;color:var(--n700);background:var(--surface);outline:none">
+        <span style="font-size:11px;color:var(--muted);font-weight:700">de cada mês</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px">
+      <button onclick="${saveFn}('${id}')" style="background:var(--primary);color:#fff;border:none;border-radius:7px;padding:5px 14px;font:700 12px 'Montserrat',sans-serif;cursor:pointer">Salvar</button>
+      <button onclick="document.getElementById('${prefix}-rec-edit-${id}').style.display='none'" style="background:var(--n200);color:var(--n700);border:none;border-radius:7px;padding:5px 12px;font:700 12px 'Montserrat',sans-serif;cursor:pointer">Cancelar</button>
+    </div>
+  </div>`;
 }
 function togglePendRec(){
   const ativa=document.getElementById('pend-rec-ativa')?.checked;
@@ -10719,6 +10883,11 @@ function togglePendRec(){
 function togglePenRec(){
   const ativa=document.getElementById('pen-rec-ativa')?.checked;
   const extras=document.getElementById('pen-rec-extras');
+  if(extras)extras.style.display=ativa?'flex':'none';
+}
+function togglePgrRec(){
+  const ativa=document.getElementById('pgr-rec-ativa')?.checked;
+  const extras=document.getElementById('pgr-rec-extras');
   if(extras)extras.style.display=ativa?'flex':'none';
 }
 function savePendencia(){
