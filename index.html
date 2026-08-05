@@ -7568,7 +7568,7 @@ let contaSP=0;
 function _calcPessAReceber(mes){
   const F=pessFD[mes]||[];
   return F.reduce((s,f)=>{
-    const op=f._opId?opCards.find(o=>o.id===f._opId):null;
+    const op=f._opId?opCardsPess.find(o=>o.id===f._opId):null;
     const gp=(op?.gastosItens||[]).filter(g=>g.tipo==='pessoal').reduce((ss,g)=>ss+(g.val||0),0);
     const liq=Math.max(0,f.v-gp);
     return s+Math.max(0,liq-(op?.valorReserva||0));
@@ -7624,7 +7624,7 @@ function renderPessResumo(){
   const cCur=_calcPessMes(curMes);
   const aReceberCur=_calcPessAReceber(curMes);
   const pessLiqMes=(pessFD[curMes]||[]).reduce((s,f)=>{
-    const op=f._opId?opCards.find(o=>o.id===f._opId):null;
+    const op=f._opId?opCardsPess.find(o=>o.id===f._opId):null;
     const gp=(op?.gastosItens||[]).filter(g=>g.tipo==='pessoal').reduce((ss,g)=>ss+(g.val||0),0);
     return s+Math.max(0,f.v-gp);
   },0);
@@ -7775,7 +7775,7 @@ function renderPessEntradas(){
   const totPaid=F.filter(f=>{
     const _op=f._opId?opCardsPess.find(o=>o.id===f._opId):null;
     const _gp=(_op?.gastosItens||[]).filter(g=>g.tipo==='pessoal').reduce((ss,g)=>ss+(g.val||0),0);
-    const _vPago=_op?(op?.valorReserva??0):(f.pago||0);
+    const _vPago=_op?(_op.valorReserva??0):(f.pago||0);
     const _andLiq=Math.max(0,f.v-_gp);
     const _andFalt=Math.max(0,_andLiq-_vPago);
     return _andFalt<=0&&_andLiq>0;
@@ -7787,7 +7787,7 @@ function renderPessEntradas(){
   const totRest=F.reduce((s,f)=>{
     const _op=f._opId?opCardsPess.find(o=>o.id===f._opId):null;
     const _gp=(_op?.gastosItens||[]).filter(g=>g.tipo==='pessoal').reduce((ss,g)=>ss+(g.val||0),0);
-    const _vPago=_op?(op?.valorReserva??0):(f.pago||0);
+    const _vPago=_op?(_op.valorReserva??0):(f.pago||0);
     const _liq=Math.max(0,f.v-_gp);
     return s+Math.max(0,_liq-_vPago);
   },0);
@@ -9061,7 +9061,7 @@ function renderHistMes(){
     bruto=festas.reduce((s,f)=>s+f.v,0);
     // líquido = bruto - gastos pessoais de cada festa
     liquido=festas.reduce((s,f)=>{
-      const op=f._opId?opCards.find(o=>o.id===f._opId):null;
+      const op=f._opId?opCardsPess.find(o=>o.id===f._opId):null;
       const gp=(op?.gastosItens||[]).filter(g=>g.tipo==='pessoal').reduce((ss,g)=>ss+(g.val||0),0);
       return s+Math.max(0,f.v-gp);
     },0);
