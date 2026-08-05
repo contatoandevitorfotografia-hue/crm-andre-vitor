@@ -7571,7 +7571,12 @@ function _calcPessAReceber(mes){
     const op=f._opId?opCardsPess.find(o=>o.id===f._opId):null;
     const gp=(op?.gastosItens||[]).filter(g=>g.tipo==='pessoal').reduce((ss,g)=>ss+(g.val||0),0);
     const liq=Math.max(0,f.v-gp);
-    return s+Math.max(0,liq-(op?.valorReserva||0));
+    // Quando a festa não está vinculada a um card (o caso comum), o valor já
+    // recebido é o campo "pago" da própria entrada — antes essa parte era
+    // ignorada aqui (mas não na aba Festas), fazendo o "A receber" do Resumo
+    // vir maior do que o real.
+    const vPago=op?(op.valorReserva??0):(f.pago||0);
+    return s+Math.max(0,liq-vPago);
   },0);
 }
 
