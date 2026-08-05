@@ -737,7 +737,13 @@ function delCnt(id){conteudos=conteudos.filter(x=>x.id!==id);saveD();renderCnt()
 // ── FIREBASE SAVE ─────────────────────────────
 function saveD(){
   if(!_finDb)return;_dadosTs=Date.now();
-  clearTimeout(_dadosTmr);_dadosTmr=setTimeout(()=>{_finDb.ref('dados26').update({cnt:conteudos,op:opCards,pac:packages,lem:lembretes,pendencias,pgr:pendenciasGerais,pessoais,cefaleias});},1500);
+  clearTimeout(_dadosTmr);_dadosTmr=setTimeout(()=>{
+    // O Firebase recusa o update() inteiro se algum campo, em qualquer
+    // profundidade, for undefined — passar por JSON evita que um registro
+    // antigo corrompido derrube a sincronização inteira, silenciosamente.
+    const payload=JSON.parse(JSON.stringify({cnt:conteudos,op:opCards,pac:packages,lem:lembretes,pendencias,pgr:pendenciasGerais,pessoais,cefaleias}));
+    _finDb.ref('dados26').update(payload);
+  },1500);
 }
 
 // ── READY CHECK ───────────────────────────────

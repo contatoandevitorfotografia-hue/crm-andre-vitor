@@ -3312,7 +3312,7 @@ function _flushDadosFirebase(){
   if(!window._finDb||!_dadosPending)return;
   clearTimeout(_dadosSaveTimer);_dadosSaveTimer=null;
   _dadosPending=false;
-  const payload={
+  const payloadRaw={
     op:opCards,pr:prCards,pac:packages,cl:clients,
     alb:albCards,frl:freelancers,tar:tarefas,cnt:conteudos,tpl:templates,
     frl_cards:freelaCards,
@@ -3320,6 +3320,11 @@ function _flushDadosFirebase(){
     pendencias:pendencias,
     indic:indicData
   };
+  // O Firebase recusa o update() inteiro se QUALQUER campo, em qualquer
+  // profundidade, for undefined (ex.: contrato.acceptedAt de um card antigo).
+  // Passar por JSON remove/objetos undefined e evita que um único registro
+  // corrompido derrube a sincronização de tudo, silenciosamente, para sempre.
+  const payload=JSON.parse(JSON.stringify(payloadRaw));
   try{
     window._finDb.ref('dados26').update(payload).then(()=>{
       // Só marca como "sincronizado" quando o Firebase CONFIRMA que recebeu.
@@ -3425,7 +3430,7 @@ function savTar(){localStorage.setItem('crm_tar_v1',JSON.stringify(tarefas));_sa
 function savCnt(){localStorage.setItem('crm_cnt_v1',JSON.stringify(conteudos));_saveDadosFirebase()}
 function savPen(){
   localStorage.setItem('crm_pen_v1',JSON.stringify(pendencias));
-  if(typeof _finDb!=='undefined')_finDb.ref('crm26').update({pendencias});
+  if(typeof _finDb!=='undefined')_finDb.ref('crm26').update(JSON.parse(JSON.stringify({pendencias})));
 }
 function savPgr(){localStorage.setItem('crm_pgr_v1',JSON.stringify(pendenciasGerais));_saveDadosFirebase()}
 
@@ -7212,7 +7217,8 @@ function saveFinData(){
     localStorage.setItem('crm_fin_contas',JSON.stringify(finContas));
   }catch(e){}
   if(typeof _finDb!=='undefined'){
-    _finDb.ref('crm26').update({vg:finVG,gd:finGD,dd:finDD,contaSpEmp,finCustomCats,finContas,rg:finRG})
+    const _finPayload=JSON.parse(JSON.stringify({vg:finVG,gd:finGD,dd:finDD,contaSpEmp,finCustomCats,finContas,rg:finRG}));
+    _finDb.ref('crm26').update(_finPayload)
       .then(()=>setSyncFinStatus('saved'))
       .catch(()=>setSyncFinStatus('err'));
   } else setSyncFinStatus('saved');
@@ -9197,7 +9203,8 @@ function savePessData(){
     localStorage.setItem('crm_pess_pedreiro',JSON.stringify(pessPedreiro));
   }catch(e){}
   if(typeof _pessDb!=='undefined'){
-    _pessDb.ref('pess26').update({vg:pessVG,gd:pessGD,dd:pessDD,fd:pessFD,ap:pessAP,pc:pessPC,hugo:pessHUGO,dv:pessDV,agar:pessAP_gar,an:pessAP_n,anap:pessAnaP,alug:pessAlug,reftotal:pessRefTotal,contaSP,pessCustomCats,pessContas,pedreiro:pessPedreiro,refitens:pessRefItens,refpend:pessRefPend,rg:pessRG});
+    const _pessPayload=JSON.parse(JSON.stringify({vg:pessVG,gd:pessGD,dd:pessDD,fd:pessFD,ap:pessAP,pc:pessPC,hugo:pessHUGO,dv:pessDV,agar:pessAP_gar,an:pessAP_n,anap:pessAnaP,alug:pessAlug,reftotal:pessRefTotal,contaSP,pessCustomCats,pessContas,pedreiro:pessPedreiro,refitens:pessRefItens,refpend:pessRefPend,rg:pessRG}));
+    _pessDb.ref('pess26').update(_pessPayload);
   }
 }
 function _guessCat(nome, tipo){
@@ -10537,7 +10544,7 @@ function loadTarefasData(){
 function saveTarefasData(){
   localStorage.setItem('crm_tarefas',JSON.stringify(crmTarefas));
   localStorage.setItem('crm_pendencias',JSON.stringify(crmPendencias));
-  if(typeof _pessDb!=='undefined')_pessDb.ref('pess26').update({crmTarefas,crmPendencias});
+  if(typeof _pessDb!=='undefined')_pessDb.ref('pess26').update(JSON.parse(JSON.stringify({crmTarefas,crmPendencias})));
 }
 
 function renderCrmTrf(){
