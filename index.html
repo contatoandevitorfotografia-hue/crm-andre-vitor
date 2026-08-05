@@ -8322,7 +8322,7 @@ function renderFinContas(){
         <span class="conta-toggle" id="fin-ctog-${i}">▶</span>
         <span class="conta-card-nome" style="${pag?'text-decoration:line-through':''}">${esc(c.nome)}</span>
         <span class="conta-card-valor" style="color:${pag?'var(--success,#6E879F)':'var(--accent)'}${!temItens?';cursor:pointer;text-decoration:underline dotted':''}" title="${!temItens?'Clique para editar o valor':'Falta pagar neste mês'}" onclick="event.stopPropagation();${!temItens?`editContaValor('fin',${i},this)`:''}">${fmtMoney(pend)}${!temItens?` <span style="font-size:10px;opacity:.4">✏️</span>`:''}</span>${pend!==val?`<span style="font-size:10.5px;color:var(--muted);white-space:nowrap;margin-left:6px">de ${fmtMoney(val)}</span>`:''}
-        ${c.dia?`<span class="conta-card-dia">Dia ${c.dia}</span>`:''}
+        <span class="conta-card-dia" style="cursor:pointer" title="Clique para ${c.dia?'editar':'definir'} o dia do vencimento" onclick="event.stopPropagation();editContaDia('fin',${i},this)">${c.dia?`Dia ${c.dia}`:'+ Dia'} <span style="font-size:10px;opacity:.4">✏️</span></span>
         ${_periodoLabel(c)?`<span style="font-size:10px;font-weight:700;color:#e0a14e;background:#2a2113;border-radius:5px;padding:2px 7px">${_periodoLabel(c)}</span>`:''}
         <button class="conta-card-pag ${pag?'sim':'nao'}" onclick="event.stopPropagation();pagarFinConta(${i})">${pag?'✓ Pago':'Pagar'}</button>
         <button class="fin-del" onclick="event.stopPropagation();delFinConta(${i})">×</button>
@@ -8711,6 +8711,32 @@ function saveContaValor(tipo,i){
   if(tipo==='fin'){saveFinData();renderFinContas();renderFinResumo();}
   else{savePessData();renderPessContas();renderPessResumo();}
 }
+function editContaDia(tipo,i,el){
+  if(el.querySelector('input'))return;
+  var arr=tipo==='fin'?finContas:pessContas;
+  var cur=arr[i]?arr[i].dia||'':'';
+  var uid='cd-'+tipo+'-'+i;
+  el.outerHTML=`<input type="number" id="${uid}" value="${cur}" min="1" max="31" placeholder="Dia"
+    style="width:56px;border:2px solid var(--accent);border-radius:6px;padding:3px 7px;font:700 12px 'Montserrat',sans-serif;color:var(--accent);background:var(--surface)"
+    onclick="event.stopPropagation()"
+    onkeydown="if(event.key==='Enter')saveContaDia('${tipo}',${i});if(event.key==='Escape')${tipo==='fin'?'renderFinContas':'renderPessContas'}()"
+    onblur="saveContaDia('${tipo}',${i})">`;
+  var inp=document.getElementById(uid);
+  if(inp){inp.focus();inp.select();}
+}
+function saveContaDia(tipo,i){
+  var uid='cd-'+tipo+'-'+i;
+  var inp=document.getElementById(uid);if(!inp)return;
+  var arr=tipo==='fin'?finContas:pessContas;
+  if(!arr[i])return;
+  var raw=inp.value.trim();
+  var v=raw===''?null:parseInt(raw);
+  if(v!==null&&(isNaN(v)||v<1||v>31)){tipo==='fin'?renderFinContas():renderPessContas();return;}
+  arr[i].dia=v;
+  if(tipo==='fin'){saveFinData();renderFinContas();}
+  else{savePessData();renderPessContas();}
+  toast(v?'📅 Dia de vencimento definido!':'Dia de vencimento removido.','green');
+}
 function editContaItemValor(tipo,ci,ii,el){
   if(el.querySelector('input'))return;
   var arr=tipo==='fin'?finContas:pessContas;
@@ -8892,7 +8918,7 @@ function renderPessContas(){
         <span class="conta-toggle" id="pess-ctog-${i}">▶</span>
         <span class="conta-card-nome" style="${pag?'text-decoration:line-through':''}">${esc(c.nome)}</span>
         <span class="conta-card-valor" style="color:${pag?'var(--success,#6E879F)':'var(--accent)'}${!temItens?';cursor:pointer;text-decoration:underline dotted':''}" title="${!temItens?'Clique para editar o valor':'Falta pagar neste mês'}" onclick="event.stopPropagation();${!temItens?`editContaValor('pess',${i},this)`:''}">${fmtMoney(pend)}${!temItens?` <span style="font-size:10px;opacity:.4">✏️</span>`:''}</span>${pend!==val?`<span style="font-size:10.5px;color:var(--muted);white-space:nowrap;margin-left:6px">de ${fmtMoney(val)}</span>`:''}
-        ${c.dia?`<span class="conta-card-dia">Dia ${c.dia}</span>`:''}
+        <span class="conta-card-dia" style="cursor:pointer" title="Clique para ${c.dia?'editar':'definir'} o dia do vencimento" onclick="event.stopPropagation();editContaDia('pess',${i},this)">${c.dia?`Dia ${c.dia}`:'+ Dia'} <span style="font-size:10px;opacity:.4">✏️</span></span>
         ${_periodoLabel(c)?`<span style="font-size:10px;font-weight:700;color:#e0a14e;background:#2a2113;border-radius:5px;padding:2px 7px">${_periodoLabel(c)}</span>`:''}
         <button class="conta-card-pag ${pag?'sim':'nao'}" onclick="event.stopPropagation();pagarPessConta(${i})">${pag?'✓ Pago':'Pagar'}</button>
         <button class="fin-del" onclick="event.stopPropagation();delPessConta(${i})">×</button>
@@ -11525,6 +11551,29 @@ function _verificarPopupsPendencias(){
   if(salvou)localStorage.setItem('crm_pend_avisos',JSON.stringify(avisados));
 }
 
+function _verificarContasVencendoPush(){
+  const hoje=new Date();
+  const diaHoje=hoje.getDate();
+  const mesKey=hoje.getFullYear()+'-'+String(hoje.getMonth()+1).padStart(2,'0');
+  const avisos=JSON.parse(localStorage.getItem('crm_contas_dia_avisos')||'{}');
+  let salvou=false;
+  const todas=[
+    ...(finContas||[]).map(c=>({c,tipo:'Empresa'})),
+    ...(pessContas||[]).map(c=>({c,tipo:'Pessoal'}))
+  ];
+  todas.forEach(({c,tipo})=>{
+    if(!c.dia||c.dia!==diaHoje)return;
+    if(_contaPagoMes(c,_contasMesAtivo()))return;
+    const key=c.id+'_'+mesKey;
+    if(avisos[key])return;
+    avisos[key]=true;salvou=true;
+    const titulo='📅 Conta vence hoje!';
+    const valorStr=fmtMoney(_contaValorPendente(c,_contasMesAtivo()));
+    _enviarPushMobile(titulo, `${c.nome} — ${valorStr} (${tipo})`, 'conta_'+c.id);
+  });
+  if(salvou)localStorage.setItem('crm_contas_dia_avisos',JSON.stringify(avisos));
+}
+
 function _verificarLembreteAnaP(){
   const hoje=new Date();
   if(hoje.getDate()!==20)return;
@@ -11545,7 +11594,9 @@ function _initTarefasChecks(){
   loadTarefasData();
   _verificarLembreteAnaP();
   _verificarPopupsPendencias();
+  _verificarContasVencendoPush();
   setInterval(_verificarPopupsPendencias, 60000);
+  setInterval(_verificarContasVencendoPush, 60000);
 }
 </script>
 
