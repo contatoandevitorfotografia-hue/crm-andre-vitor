@@ -1744,7 +1744,7 @@ td { padding: 13px 16px; font-size: 13.5px; }
         <div class="fin-hdr"><h3>📊 Fluxo de Caixa — Empresa 2026</h3></div>
         <div class="fin-tbl-wrap">
           <table class="fin-resumo-tbl" style="width:100%;border-collapse:collapse">
-            <thead><tr><th>Mês</th><th>Festas</th><th>Contas Fixas</th><th>Gastos Diários</th><th>Valor no Banco</th><th>Pode gastar</th><th>Sobrou</th><th>Status</th></tr></thead>
+            <thead><tr><th>Mês</th><th>Festas</th><th>Contas Fixas</th><th>Gastos Diários</th><th>Valor no Banco</th><th>Sobrou</th><th>Status</th></tr></thead>
             <tbody id="fin-resumo-body"></tbody>
           </table>
         </div>
@@ -1849,7 +1849,7 @@ td { padding: 13px 16px; font-size: 13.5px; }
         <div class="fin-hdr"><h3>📊 Fluxo de Caixa — Pessoal 2026</h3></div>
         <div class="fin-tbl-wrap">
           <table class="fin-resumo-tbl" style="width:100%;border-collapse:collapse">
-            <thead><tr><th>Mês</th><th>Festas</th><th>Contas Fixas</th><th>Gastos Diários</th><th>Valor no Banco</th><th>Pode gastar</th><th>Sobrou</th><th>Status</th></tr></thead>
+            <thead><tr><th>Mês</th><th>Festas</th><th>Contas Fixas</th><th>Gastos Diários</th><th>Valor no Banco</th><th>Sobrou</th><th>Status</th></tr></thead>
             <tbody id="p-resumo-body"></tbody>
           </table>
         </div>
@@ -6344,7 +6344,7 @@ function _calcFinMes(mes){
   const vg=finVG[mes]!==undefined?finVG[mes]:autoVg;
   const prevF=festas.filter(f=>!f.p).reduce((s,f)=>s+(f.liq??f.v),0);
   const totalAReceber=festas.reduce((s,f)=>s+f.rest,0);
-  const sobrou=vg;
+  const sobrou=totalAReceber-totalG-totalD+vg;
   // G = contas a pagar do mês (substituíram os antigos "gastos fixos")
   return{totalF,totalAReceber,totalG,pendG,totalD,vg,autoVg,prevF,sobrou,festas,D,G:contasMes};
 }
@@ -6403,16 +6403,17 @@ function renderFinResumo(){
   const tbody=document.getElementById('fin-resumo-body');if(!tbody)return;
   let rows='';
   const _mesMesAtual=_finCurMes();
+  const _idxMesAtual=_idxMesContas(_mesMesAtual);
   MESES_FIN_SHOW.forEach(m=>{
     const c=_calcFinMes(m);
     if(!c.festas.length&&!c.G.length&&!c.D.length&&!c.vg)return;
+    const isPassado=_idxMesContas(m)<_idxMesAtual;
     // Meses passados: contas já foram pagas na época — não mostrar como pendente
     if(m!==_mesMesAtual){c.pendG=0;}
-    const disp=m===_mesMesAtual?(c.totalAReceber-c.totalG-c.totalD+c.vg):c.vg;
-    const ok=disp>1000,wa=disp>=0&&disp<=1000,no=disp<0;
+    const ok=c.sobrou>1000,wa=c.sobrou>=0&&c.sobrou<=1000,no=c.sobrou<0;
     const bdg=ok?'fin-badge-ok':wa?'fin-badge-wa':'fin-badge-no';
     const st=ok?'💰 Ok':wa?'⚠️ Atenção':'🛑 Limite';
-    const dispColor=ok?'var(--success)':no?'var(--danger)':'#d97706';
+    const sobrouColor=ok?'var(--success)':no?'var(--danger)':'#d97706';
     const vgHtml=finVG[m]!==undefined
       ?`<span class="fin-vg-cell" onclick="startFinEditVG('${m}',this)" style="cursor:text;color:${c.vg<0?'var(--danger)':'inherit'}" title="Clique para editar">${fmtMoney(c.vg)}</span>`
       :c.autoVg>0?`<span class="fin-vg-cell" onclick="startFinEditVG('${m}',this)" style="cursor:text;color:#66798D;font-style:italic" title="Auto: soma dos pagamentos recebidos — clique para substituir">${fmtMoney(c.autoVg)}</span>`
@@ -6423,12 +6424,11 @@ function renderFinResumo(){
       <td>${c.totalG>0?`<div style="font-weight:700;font-size:12px;color:var(--n900)">${fmtMoney(c.totalG)}</div><div style="font-size:10px;color:${c.pendG>0?'var(--danger)':'var(--success,#6E879F)'}">${c.pendG>0?'pendente: '+fmtMoney(c.pendG):'✓ tudo pago'}</div>`:''}</td>
       <td style="color:var(--danger)">${c.totalD>0?fmtMoney(c.totalD):''}</td>
       <td>${vgHtml}</td>
-      <td style="font-weight:800;color:${dispColor}">${c.vg?fmtMoney(disp):''}</td>
-      <td style="font-weight:600;color:var(--muted)">${fmtMoney(c.sobrou)}</td>
-      <td><span class="fin-badge ${bdg}">${st}</span></td>
+      <td style="font-weight:800;color:${sobrouColor}">${fmtMoney(c.sobrou)}</td>
+      <td>${isPassado?'':`<span class="fin-badge ${bdg}">${st}</span>`}</td>
     </tr>`;
   });
-  tbody.innerHTML=rows||`<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">Sem dados ainda. Confirme festas e adicione gastos.</td></tr>`;
+  tbody.innerHTML=rows||`<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px">Sem dados ainda. Confirme festas e adicione gastos.</td></tr>`;
 }
 
 function startFinEditVG(m,cell){
@@ -7587,8 +7587,9 @@ function _calcPessMes(mes){
   // Ana & Pedro — só conta no mês atual, só se ainda não pagaram
   const ap=pessAnaP[0]||{pagoAna:false,pagoPedro:false};
   const pendIF=mes===_finCurMes()?(!ap.pagoAna?ANA_PEDRO_V:0)+(!ap.pagoPedro?ANA_PEDRO_V:0):0;
-  const sobrou=vg;
-  return{totalF,totalG,pendG,totalD,pendIF,vg,prevF,sobrou};
+  const aReceber=_calcPessAReceber(mes);
+  const sobrou=aReceber-totalG-totalD+vg;
+  return{totalF,totalG,pendG,totalD,pendIF,vg,prevF,aReceber,sobrou};
 }
 function _pessApParte(){
   const tot=pessAP.reduce((s,b)=>s+b.v,0);
@@ -7642,33 +7643,32 @@ function renderPessResumo(){
   const tbody=document.getElementById('p-resumo-body');if(!tbody)return;
   let rows='';
   const _mesMesAtualP=_finCurMes();
+  const _idxMesAtualP=_idxMesContas(_mesMesAtualP);
   MESES_FIN_SHOW.forEach(m=>{
     const c=_calcPessMes(m);
-    const aReceber=_calcPessAReceber(m);
+    const aReceber=c.aReceber;
     if(!aReceber&&!c.totalF&&!c.totalG&&!c.totalD&&!c.vg&&!c.pendIF)return;
+    const isPassado=_idxMesContas(m)<_idxMesAtualP;
     // Meses passados: contas já foram pagas na época — não mostrar como pendente
     if(m!==_mesMesAtualP){c.pendG=0;}
-    const disp=m===_mesMesAtualP?(aReceber-c.totalG-c.totalD+c.vg):c.vg;
-    const sobrou=c.vg;
-    const ok=disp>300,no=disp<0;
+    const ok=c.sobrou>300,no=c.sobrou<0;
     const bdg=ok?'fin-badge-ok':no?'fin-badge-no':'fin-badge-wa';
     const st=ok?'💰 Ok':no?'🛑 Limite':'⚠️ Atenção';
     const vgHtml=pessVG[m]!==undefined
       ?`<span onclick="startPessEditVG('${m}',this)" style="cursor:text;color:${c.vg<0?'var(--danger)':'inherit'}" title="Clique para editar">${fmtMoney(c.vg)}</span>`
       :`<span onclick="startPessEditVG('${m}',this)" style="cursor:text;color:var(--muted);font-size:11px">— clique —</span>`;
-    const dispColor=ok?'var(--success)':no?'var(--danger)':'#d97706';
+    const sobrouColor=ok?'var(--success)':no?'var(--danger)':'#d97706';
     rows+=`<tr>
       <td>${m}</td>
       <td style="color:var(--success);font-weight:600">${aReceber>0?fmtMoney(aReceber):''}</td>
       <td>${c.totalG>0?`<div style="font-weight:700;font-size:12px;color:var(--n900)">${fmtMoney(c.totalG)}</div><div style="font-size:10px;color:${c.pendG>0?'var(--danger)':'var(--success,#6E879F)'}">${c.pendG>0?'pendente: '+fmtMoney(c.pendG):'✓ tudo pago'}</div>`:''}</td>
       <td style="color:var(--danger)">${c.totalD>0?fmtMoney(c.totalD):''}</td>
       <td>${vgHtml}</td>
-      <td style="font-weight:800;color:${dispColor}">${c.vg?fmtMoney(disp):''}</td>
-      <td style="font-weight:600;color:var(--muted)">${sobrou?fmtMoney(sobrou):''}</td>
-      <td><span class="fin-badge ${bdg}">${st}</span></td>
+      <td style="font-weight:800;color:${sobrouColor}">${fmtMoney(c.sobrou)}</td>
+      <td>${isPassado?'':`<span class="fin-badge ${bdg}">${st}</span>`}</td>
     </tr>`;
   });
-  tbody.innerHTML=rows||`<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">Sem dados ainda.</td></tr>`;
+  tbody.innerHTML=rows||`<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px">Sem dados ainda.</td></tr>`;
 }
 function editContaSP(el){
   if(el.querySelector('input'))return;
