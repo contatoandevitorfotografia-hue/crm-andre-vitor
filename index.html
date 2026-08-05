@@ -2879,6 +2879,25 @@ td { padding: 13px 16px; font-size: 13.5px; }
             <div class="fg"><select id="ct-event-select" onchange="onContractEventChange()"></select></div>
           </div>
           <div class="fs">
+            <div class="fs-title">Modelo do contrato</div>
+            <div class="g2">
+              <div class="fg">
+                <label>📄 Qual contrato será usado? *</label>
+                <select id="ct-contract-model" required onchange="onContractModelChange()">
+                  <option value="padrao">🤍 Padrão — cobertura feita por André Vitor</option>
+                  <option value="equipe">👥 Equipe — cobertura feita por fotógrafo da equipe</option>
+                </select>
+                <div class="ct-helper">O modelo "Equipe" gera o Contrato de Cobertura Fotográfica – Equipe.</div>
+              </div>
+              <div class="fg" id="ct-team-photographer-wrap" style="display:none">
+                <label>📷 Fotógrafo responsável (equipe)</label>
+                <input id="ct-team-photographer" placeholder="Nome do fotógrafo da equipe">
+                <div class="ct-helper">Aparecerá no contrato como profissional designado.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="fs">
             <div class="fs-title">Cliente e evento</div>
             <div class="g2">
               <div class="fg"><label>Nome completo *</label><input id="ct-client-name" required></div>
@@ -4348,6 +4367,12 @@ function openOpModal(cardId,defaultCol,event,fromProj){
       _idsToLoad.forEach(id=>{const btn=document.querySelector(`.pac-chip-opt[data-pid="${id}"]`);if(btn)btn.classList.add('selected');});
       renderPacChips();
       calcDistribuicao();
+      // updateFrlWrap() (chamado logo acima, antes deste setTimeout) já tinha
+      // apagado o cinegrafista selecionado: ele repopula o campo usando
+      // getSelectedPacIds(), que só reflete os chips marcados aqui em cima —
+      // e isso só roda depois. Preenche de novo agora que os chips já foram
+      // marcados, senão o nome cadastrado some ao reabrir o card.
+      fillFilmmakerSelect(_idsToLoad,_filmNome);
     },50);
   }
   if(!card){gastosItensTemp=CUSTOS_PADRAO_EVENTO.map(c=>({...c,id:uid()}));renderGastosItens();}
@@ -11321,7 +11346,11 @@ function fillContractModal(card){
   renderCtPayOptions();
   setContractField('ct-payment-method',contractPaymentMethod(card));
   setContractField('ct-payment-terms',contractPaymentTerms(card));
+  setContractField('ct-contract-model',card.contratoModelo||'padrao');
+  setContractField('ct-team-photographer',card.contratoFotografoEquipe||'');
+  onContractModelChange();
   setContractField('ct-password','');
+
   clearContractMessage();
   updateContractSummary();
   if(card.contrato?.token)showContractMessage('Este evento já possui um contrato vinculado. Gere outro somente se precisar substituir o link atual.','info');
@@ -11347,6 +11376,12 @@ function openContractForClient(clientId){
   const evs=getClientEvents(cl);if(!evs.length){toast('⚠️ Esta cliente ainda não tem um evento no CRM.','orange');return;}
   const sorted=[...evs].sort((a,b)=>(b.dataEvento||'').localeCompare(a.dataEvento||''));openContractModal(sorted[0].id,clientId);
 }
+function onContractModelChange(){
+  const sel=document.getElementById('ct-contract-model');
+  const wrap=document.getElementById('ct-team-photographer-wrap');
+  if(!sel||!wrap)return;
+  wrap.style.display=sel.value==='equipe'?'':'none';
+}
 function onContractEventChange(){const id=document.getElementById('ct-event-select').value;const card=opCards.find(c=>c.id===id);if(card)fillContractModal(card);}
 
 function contractFieldValue(id){return(document.getElementById(id)?.value||'').trim();}
@@ -11369,7 +11404,7 @@ async function createContractFromCrm(){
   const opId=contractFieldValue('ct-op-id');const card=opCards.find(c=>c.id===opId);if(!card){showContractMessage('Evento não encontrado no CRM.','error');return;}
   const btn=document.getElementById('ct-generate-btn');btn.disabled=true;btn.textContent='Criando contrato…';clearContractMessage();
   const payload={
-    clientName:contractFieldValue('ct-client-name'),clientCpf:contractFieldValue('ct-client-cpf'),childName:contractFieldValue('ct-child-name'),eventType:contractFieldValue('ct-event-type'),eventDate:contractFieldValue('ct-event-date'),startTime:contractFieldValue('ct-start-time'),endTime:contractFieldValue('ct-end-time'),venueName:contractFieldValue('ct-venue-name'),venueAddress:contractFieldValue('ct-venue-address'),planName:contractFieldValue('ct-plan-name'),deliverables:contractFieldValue('ct-deliverables'),coverageHours:Number(contractFieldValue('ct-coverage-hours'))||4,toleranceMinutes:Number(contractFieldValue('ct-tolerance'))||15,minPhotos:Number(contractFieldValue('ct-min-photos'))||250,deliveryBusinessDays:Number(contractFieldValue('ct-delivery-days'))||5,totalAmount:Number(contractFieldValue('ct-total')),depositPercent:Number(contractFieldValue('ct-deposit'))||0,paymentMethod:contractFieldValue('ct-payment-method'),paymentTerms:contractFieldValue('ct-payment-terms'),contractDate:contractFieldValue('ct-contract-date'),slug:generateSlug(contractFieldValue('ct-child-name'),contractFieldValue('ct-event-type'))
+    clientName:contractFieldValue('ct-client-name'),clientCpf:contractFieldValue('ct-client-cpf'),childName:contractFieldValue('ct-child-name'),eventType:contractFieldValue('ct-event-type'),eventDate:contractFieldValue('ct-event-date'),startTime:contractFieldValue('ct-start-time'),endTime:contractFieldValue('ct-end-time'),venueName:contractFieldValue('ct-venue-name'),venueAddress:contractFieldValue('ct-venue-address'),planName:contractFieldValue('ct-plan-name'),deliverables:contractFieldValue('ct-deliverables'),coverageHours:Number(contractFieldValue('ct-coverage-hours'))||4,toleranceMinutes:Number(contractFieldValue('ct-tolerance'))||15,minPhotos:Number(contractFieldValue('ct-min-photos'))||250,deliveryBusinessDays:Number(contractFieldValue('ct-delivery-days'))||5,totalAmount:Number(contractFieldValue('ct-total')),depositPercent:Number(contractFieldValue('ct-deposit'))||0,paymentMethod:contractFieldValue('ct-payment-method'),paymentTerms:contractFieldValue('ct-payment-terms'),contractDate:contractFieldValue('ct-contract-date'),contractModel:(contractFieldValue('ct-contract-model')||'padrao'),teamPhotographer:contractFieldValue('ct-team-photographer'),slug:generateSlug(contractFieldValue('ct-child-name'),contractFieldValue('ct-event-type'))
   };
   try{
     const res=await fetch(CONTRACT_SYSTEM_URL+'/api/public/contracts/create',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':contractFieldValue('ct-password')},body:JSON.stringify(payload),cache:'no-store'});
@@ -11380,6 +11415,7 @@ async function createContractFromCrm(){
       if(res.status===404)throw new Error('Gerador de contratos não encontrado nesta versão. Atualize o CRM pelo link oficial e tente novamente.');
       throw new Error(result.error||'Não foi possível gerar o contrato.');
     }
+    card.contratoModelo=(contractFieldValue('ct-contract-model')||'padrao');card.contratoFotografoEquipe=contractFieldValue('ct-team-photographer');
     card.contrato={token:result.token,url:result.contractUrl||`${CONTRACT_SYSTEM_URL}/contrato/${result.token}`,version:result.contractVersion,status:'pending',createdAt:new Date().toISOString(),acceptedAt:null,protocol:null,imageConsent:null,pdfUrl:null,lastCheckedAt:new Date().toISOString()};
     if(['novo-contato','orcamento-enviado','negociacao'].includes(card.coluna))card.coluna='contrato-enviado';
     card.updatedAt=Date.now();savOp();renderOp();renderDashboard();renderOpContractSection(card);
