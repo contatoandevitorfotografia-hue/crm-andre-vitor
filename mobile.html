@@ -848,7 +848,8 @@ function agGetFestas(mes,ano){
     const d=new Date(c.dataEvento+'T12:00:00');
     return{id:c.id,day:d.getDate(),nome:c.nomePais||c.titulo||'Evento',tipo:c.tipo||'festa',
       data:c.dataEvento,coluna:c.coluna,kind:'festa',tipoExecucao:c.tipoExecucao||'proprio',
-      horario:c.horario||'',horarioFim:c.horarioFim||'',local:c.local||'',pendencias:c.pendencias||[]};
+      horario:c.horario||'',horarioFim:c.horarioFim||'',local:c.local||'',pendencias:c.pendencias||[],
+      freelancerNome:c.tipoExecucao==='freelancer'&&c.freelancerId?(freelancers.find(f=>f.id===c.freelancerId)?.nome||''):''};
   });
 }
 
@@ -958,6 +959,7 @@ function agRenderEvents(allEvents){
               ${typeLabel}${isFesta?' · Dia '+e.day+' · '+statusStr:''}
               ${horStr?`<br>${horStr}`:''}
               ${locStr?`<br>${locStr}`:''}
+              ${isFreelancer&&e.freelancerNome?`<br>🎥 Freela: <strong>${esc(e.freelancerNome)}</strong>`:''}
               ${e.obs?`<br>📝 ${esc(e.obs)}`:''}
               ${!isFesta&&e.aviso&&e.aviso!=='nunca'?`<br>🔔 ${AVISO_LBL[e.aviso]}`:''}
             </div>
@@ -1001,6 +1003,8 @@ function renderAgUnconfirmed(){
           const st=FRL_COLS.find(x=>x.id===f.status);
           return `${esc(f.nomeFreela||'—')} <span style="color:${st?st.color:'var(--mut)'};font-weight:700">(${st?st.label:esc(f.status||'')})</span>`;
         }).join(', '):'';
+        const frlContratado=c.tipoExecucao==='freelancer'&&c.freelancerId?(freelancers.find(f=>f.id===c.freelancerId)?.nome||''):'';
+        const frlContratadoLine=frlContratado?`<br>🎥 Freela contratado: <strong>${esc(frlContratado)}</strong>`:'';
         return `<div class="ag-ev-item">
           <div class="ag-ev-dot2 pend"></div>
           <div style="flex:1">
@@ -1008,6 +1012,7 @@ function renderAgUnconfirmed(){
             <div class="ag-ev-info" style="margin-top:4px;line-height:1.8">
               ${info.emoji} ${info.label} · 📅 ${_fmtDate(c.dataEvento)}
               ${c.pendObs?`<br>📝 ${esc(c.pendObs)}`:''}
+              ${frlContratadoLine}
               ${frlLine}
             </div>
             ${_pendChecklistHTML(c.id,c.pendencias)}
