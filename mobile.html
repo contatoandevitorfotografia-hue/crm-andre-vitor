@@ -187,6 +187,16 @@ select{background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;c
 .lst-badge.gravado{background:#FEF3C7;color:#92400E}
 .lst-badge.editado{background:#DBEAFE;color:#1E40AF}
 .lst-badge.publicado{background:#EAF0E3;color:#556248}
+.lst-count-badge{display:inline-flex;align-items:center;justify-content:center;min-width:15px;height:15px;padding:0 4px;border-radius:99px;background:var(--acc);color:#fff;font-size:9px;font-weight:800;vertical-align:middle}
+.rec-day-btn{padding:5px 7px;border:1.5px solid var(--brd);border-radius:7px;font:700 10.5px 'Montserrat',sans-serif;cursor:pointer;background:var(--surf);color:var(--mut)}
+.rec-day-btn.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;background:var(--brd);border-radius:12px;overflow:hidden;border:1px solid var(--brd)}
+.cal-dname{background:var(--dark);color:rgba(255,255,255,.7);text-align:center;font-size:8px;font-weight:700;padding:6px 1px;text-transform:uppercase}
+.cal-day{background:var(--surf);min-height:52px;padding:3px;font-size:9px}
+.cal-day.other{background:var(--surf2);opacity:.6}
+.cal-day.today{background:#F5E9D8}
+.cal-day-num{font-size:9px;font-weight:700;color:var(--mut);margin-bottom:2px}
+.cal-post{font-size:7.5px;font-weight:700;border-radius:4px;padding:2px 3px;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
 
 /* FAB — botão flutuante */
 .ag-fab{display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:50%;background:var(--acc);border:none;color:#fff;font-size:24px;cursor:pointer;box-shadow:0 4px 16px rgba(200,136,42,.45);position:fixed;bottom:calc(var(--nav) + 16px);right:20px;z-index:50;transition:transform .15s}
@@ -304,14 +314,15 @@ select{background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;c
     <section id="sec-lst" class="mob-sec active">
       <div class="lst-tabs">
         <button class="lst-tab active" onclick="switchLstTab('cnt',this)">🎬 Conteúdos</button>
-        <button class="lst-tab" onclick="switchLstTab('pen',this)">⏰ Pendências de Clientes</button>
+        <button class="lst-tab" onclick="switchLstTab('cal',this)">📅 Calendário</button>
+        <button class="lst-tab" onclick="switchLstTab('pen',this)">⏰ Pendências de Clientes <span id="lst-pen-week-badge" class="lst-count-badge" style="display:none"></span></button>
         <button class="lst-tab" onclick="switchLstTab('pgr',this)">📋 Pendências</button>
       </div>
 
       <!-- CONTEÚDOS -->
       <div class="lst-sec active" id="lst-sec-cnt">
-        <div class="lst-add-row">
-          <input type="text" id="lst-cnt-inp" placeholder="Nova ideia de conteúdo..." onkeydown="if(event.key==='Enter')addLstCnt()">
+        <div class="lst-add-row" style="flex-wrap:wrap">
+          <input type="text" id="lst-cnt-inp" placeholder="Nova ideia de conteúdo..." onkeydown="if(event.key==='Enter')addLstCnt()" style="flex:1;min-width:140px">
           <select id="lst-cnt-tipo" style="background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;color:var(--txt);padding:8px 10px;font-size:12px;outline:none;font-family:'Montserrat',sans-serif">
             <option value="reels">🎬 Reels</option>
             <option value="carrossel">🖼️ Carrossel</option>
@@ -319,28 +330,51 @@ select{background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;c
             <option value="foto">📷 Foto</option>
             <option value="outros">📝 Outros</option>
           </select>
+          <input type="date" id="lst-cnt-datapub" title="Data de publicação" style="background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;color:var(--txt);padding:8px 10px;font-size:12px;outline:none;font-family:'Montserrat',sans-serif;flex-shrink:0">
           <button class="btn-add" onclick="addLstCnt()">+</button>
         </div>
         <div id="lst-cnt-list"></div>
       </div>
 
+      <!-- CALENDÁRIO DE POSTS -->
+      <div class="lst-sec" id="lst-sec-cal">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:0 2px 10px">
+          <button onclick="cntCalPrev()" style="background:var(--surf);border:1.5px solid var(--brd);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--txt);cursor:pointer">←</button>
+          <div id="cnt-cal-title" style="font-size:14px;font-weight:800;color:var(--txt)"></div>
+          <button onclick="cntCalNext()" style="background:var(--surf);border:1.5px solid var(--brd);border-radius:8px;padding:6px 10px;font-size:13px;color:var(--txt);cursor:pointer">→</button>
+        </div>
+        <div id="cnt-cal-grid"></div>
+      </div>
+
       <!-- PENDÊNCIAS DE CLIENTES -->
       <div class="lst-sec" id="lst-sec-pen">
-        <div class="lst-add-row">
-          <input type="text" id="lst-pen-inp" placeholder="Nova pendência com cliente..." onkeydown="if(event.key==='Enter')addLstPen()">
+        <div class="lst-add-row" style="flex-wrap:wrap">
+          <input type="text" id="lst-pen-inp" placeholder="Nova pendência com cliente..." onkeydown="if(event.key==='Enter')addLstPen()" style="flex:1;min-width:140px">
           <input type="date" id="lst-pen-prazo" style="background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;color:var(--txt);padding:8px 10px;font-size:12px;outline:none;font-family:'Montserrat',sans-serif;flex-shrink:0">
+          <input type="time" id="lst-pen-hora" style="background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;color:var(--txt);padding:8px 10px;font-size:12px;outline:none;font-family:'Montserrat',sans-serif;flex-shrink:0">
           <button class="btn-add" onclick="addLstPen()">+</button>
         </div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--mut);margin-bottom:8px;cursor:pointer">
+          <input type="checkbox" id="lst-pen-rec-ativa" onchange="_recToggleAdd('lst-pen')" style="width:14px;height:14px;accent-color:var(--acc)">
+          🔁 Repetir
+        </label>
+        <div id="lst-pen-rec-extras" style="display:none;margin-bottom:10px"></div>
         <div id="lst-pen-list"></div>
       </div>
 
       <!-- PENDÊNCIAS GERAIS -->
       <div class="lst-sec" id="lst-sec-pgr">
-        <div class="lst-add-row">
-          <input type="text" id="lst-pgr-inp" placeholder="O que precisa fazer?" onkeydown="if(event.key==='Enter')addLstPgr()">
+        <div class="lst-add-row" style="flex-wrap:wrap">
+          <input type="text" id="lst-pgr-inp" placeholder="O que precisa fazer?" onkeydown="if(event.key==='Enter')addLstPgr()" style="flex:1;min-width:140px">
           <input type="date" id="lst-pgr-prazo" style="background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;color:var(--txt);padding:8px 10px;font-size:12px;outline:none;font-family:'Montserrat',sans-serif;flex-shrink:0">
+          <input type="time" id="lst-pgr-hora" style="background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;color:var(--txt);padding:8px 10px;font-size:12px;outline:none;font-family:'Montserrat',sans-serif;flex-shrink:0">
           <button class="btn-add" onclick="addLstPgr()">+</button>
         </div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--mut);margin-bottom:8px;cursor:pointer">
+          <input type="checkbox" id="lst-pgr-rec-ativa" onchange="_recToggleAdd('lst-pgr')" style="width:14px;height:14px;accent-color:var(--acc)">
+          🔁 Repetir
+        </label>
+        <div id="lst-pgr-rec-extras" style="display:none;margin-bottom:10px"></div>
         <div id="lst-pgr-list"></div>
       </div>
     </section>
@@ -1350,6 +1384,7 @@ function switchLstTab(tab,btn){
   document.querySelectorAll('.lst-sec').forEach(s=>s.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('lst-sec-'+tab).classList.add('active');
+  if(tab==='cal')renderCntCalMob();
 }
 function renderListas(){
   renderLstConteudos();
@@ -1357,14 +1392,154 @@ function renderListas(){
   renderLstPgr();
 }
 
+// — Recorrência (compartilhada entre Pendências de Clientes e Pendências) —
+const _DIAS_PT_MOB=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+function _calcProximaDataMob(prazo,hora,rec){
+  if(!rec||!rec.ativa)return null;
+  if(rec.tipo==='mensal'&&rec.diaMes){
+    const hoje=new Date();hoje.setHours(0,0,0,0);
+    let ano=hoje.getFullYear(),mes=hoje.getMonth();
+    for(let i=0;i<3;i++){
+      const diasNoMes=new Date(ano,mes+1,0).getDate();
+      const dia=Math.min(rec.diaMes,diasNoMes);
+      const cand=new Date(ano,mes,dia);
+      if(cand>hoje)return cand.toISOString().slice(0,10);
+      mes++;if(mes>11){mes=0;ano++;}
+    }
+    return null;
+  }
+  if(rec.dias&&rec.dias.length){
+    const hoje=new Date();
+    for(let i=1;i<=7;i++){const dt=new Date(hoje);dt.setDate(hoje.getDate()+i);if(rec.dias.includes(dt.getDay()))return dt.toISOString().slice(0,10);}
+    return null;
+  }
+  return null;
+}
+function _recLabelMob(rec){
+  if(!rec||!rec.ativa)return'';
+  if(rec.tipo==='mensal'&&rec.diaMes)return`Dia ${rec.diaMes} de cada mês`;
+  if(rec.dias&&rec.dias.length)return rec.dias.map(d=>_DIAS_PT_MOB[d]).join(' · ');
+  return'';
+}
+function _rdiaClickMob(btn){btn.classList.toggle('on');}
+function _getRecDiasMobFromEl(el){return el?[...el.querySelectorAll('.rec-day-btn.on')].map(b=>parseInt(b.dataset.dia)):[];}
+function _recAddHTML(prefix){
+  return`<select id="${prefix}-rec-tipo" onchange="_recTipoChangeAddMob('${prefix}')" style="padding:6px 8px;border:1.5px solid var(--brd);border-radius:8px;font:600 11px 'Montserrat',sans-serif;color:var(--txt);background:var(--surf);outline:none;margin-bottom:8px">
+      <option value="semanal">Semanalmente</option>
+      <option value="mensal">Mensalmente</option>
+    </select>
+    <div id="${prefix}-rec-dias" style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px">
+      ${[0,1,2,3,4,5,6].map(d=>`<button type="button" class="rec-day-btn" data-dia="${d}" onclick="_rdiaClickMob(this)">${_DIAS_PT_MOB[d]}</button>`).join('')}
+    </div>
+    <div id="${prefix}-rec-diames" style="display:none;align-items:center;gap:6px">
+      <span style="font-size:11px;color:var(--mut);font-weight:700">Dia</span>
+      <input type="number" min="1" max="31" id="${prefix}-rec-diames-input" value="1" style="width:56px;padding:5px 6px;border:1.5px solid var(--brd);border-radius:7px;font:600 12px 'Montserrat',sans-serif;color:var(--txt);background:var(--surf);outline:none">
+      <span style="font-size:11px;color:var(--mut);font-weight:700">de cada mês</span>
+    </div>`;
+}
+function _recToggleAdd(prefix){
+  const ativa=document.getElementById(prefix+'-rec-ativa')?.checked;
+  const extras=document.getElementById(prefix+'-rec-extras');
+  if(!extras)return;
+  if(ativa&&!extras.innerHTML.trim())extras.innerHTML=_recAddHTML(prefix);
+  extras.style.display=ativa?'block':'none';
+}
+function _recTipoChangeAddMob(prefix){
+  const tipo=document.getElementById(prefix+'-rec-tipo')?.value||'semanal';
+  const diasBox=document.getElementById(prefix+'-rec-dias');
+  const mesBox=document.getElementById(prefix+'-rec-diames');
+  if(diasBox)diasBox.style.display=tipo==='semanal'?'flex':'none';
+  if(mesBox)mesBox.style.display=tipo==='mensal'?'flex':'none';
+}
+function _readRecFromAdd(prefix){
+  const ativa=document.getElementById(prefix+'-rec-ativa')?.checked||false;
+  const tipo=document.getElementById(prefix+'-rec-tipo')?.value||'semanal';
+  const diasEl=document.getElementById(prefix+'-rec-dias');
+  const dias=tipo==='semanal'?_getRecDiasMobFromEl(diasEl):[];
+  const diaMes=tipo==='mensal'?(parseInt(document.getElementById(prefix+'-rec-diames-input')?.value)||1):null;
+  return{ativa,tipo,dias,diaMes};
+}
+function _resetRecAdd(prefix){
+  const recCb=document.getElementById(prefix+'-rec-ativa');if(recCb)recCb.checked=false;
+  const recExtras=document.getElementById(prefix+'-rec-extras');if(recExtras){recExtras.style.display='none';recExtras.innerHTML='';}
+}
+function _recEditorHTMLMob(id,rec,prefix){
+  rec=rec||{};
+  const tipo=rec.tipo||(rec.dias&&rec.dias.length?'semanal':'semanal');
+  const dias=rec.dias||[];
+  const saveFn=prefix==='lst-pen'?'saveRecPenMob':'saveRecPgrMob';
+  return`<div id="${prefix}-rec-edit-${id}" style="display:none;width:100%;background:var(--surf2);border:1px solid var(--brd);border-radius:10px;padding:10px;margin-top:6px;box-sizing:border-box">
+    <label style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--mut);margin-bottom:8px;cursor:pointer">
+      <input type="checkbox" id="${prefix}-rec-edit-ativa-${id}" ${rec.ativa?'checked':''} onchange="_recEditToggleMob('${prefix}','${id}')" style="width:14px;height:14px;accent-color:var(--acc)">
+      🔁 Repetir
+    </label>
+    <div id="${prefix}-rec-edit-extras-${id}" style="display:${rec.ativa?'block':'none'}">
+      <select id="${prefix}-rec-edit-tipo-${id}" onchange="_recEditTipoChangeMob('${prefix}','${id}')" style="padding:6px 8px;border:1.5px solid var(--brd);border-radius:8px;font:600 11px 'Montserrat',sans-serif;color:var(--txt);background:var(--surf);outline:none;margin-bottom:8px">
+        <option value="semanal" ${tipo==='semanal'?'selected':''}>Semanalmente</option>
+        <option value="mensal" ${tipo==='mensal'?'selected':''}>Mensalmente</option>
+      </select>
+      <div id="${prefix}-rec-edit-dias-${id}" style="display:${tipo==='semanal'?'flex':'none'};gap:4px;flex-wrap:wrap;margin-bottom:8px">
+        ${[0,1,2,3,4,5,6].map(d=>`<button type="button" class="rec-day-btn${dias.includes(d)?' on':''}" data-dia="${d}" onclick="_rdiaClickMob(this)">${_DIAS_PT_MOB[d]}</button>`).join('')}
+      </div>
+      <div id="${prefix}-rec-edit-diames-${id}" style="display:${tipo==='mensal'?'flex':'none'};align-items:center;gap:6px;margin-bottom:8px">
+        <span style="font-size:11px;color:var(--mut);font-weight:700">Dia</span>
+        <input type="number" min="1" max="31" id="${prefix}-rec-edit-diames-input-${id}" value="${rec.diaMes||1}" style="width:56px;padding:5px 6px;border:1.5px solid var(--brd);border-radius:7px;font:600 12px 'Montserrat',sans-serif;color:var(--txt);background:var(--surf);outline:none">
+        <span style="font-size:11px;color:var(--mut);font-weight:700">de cada mês</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px">
+      <button onclick="${saveFn}('${id}')" style="background:var(--acc);color:#fff;border:none;border-radius:7px;padding:6px 14px;font:700 12px 'Montserrat',sans-serif;cursor:pointer">Salvar</button>
+      <button onclick="document.getElementById('${prefix}-rec-edit-${id}').style.display='none'" style="background:var(--surf);color:var(--mut);border:1px solid var(--brd);border-radius:7px;padding:6px 12px;font:700 12px 'Montserrat',sans-serif;cursor:pointer">Cancelar</button>
+    </div>
+  </div>`;
+}
+function editRecMob(prefix,id){const box=document.getElementById(prefix+'-rec-edit-'+id);if(box)box.style.display=box.style.display==='none'?'block':'none';}
+function _recEditToggleMob(prefix,id){
+  const cb=document.getElementById(`${prefix}-rec-edit-ativa-${id}`);
+  const extras=document.getElementById(`${prefix}-rec-edit-extras-${id}`);
+  if(extras)extras.style.display=cb&&cb.checked?'block':'none';
+}
+function _recEditTipoChangeMob(prefix,id){
+  const tipo=document.getElementById(`${prefix}-rec-edit-tipo-${id}`)?.value||'semanal';
+  const diasBox=document.getElementById(`${prefix}-rec-edit-dias-${id}`);
+  const mesBox=document.getElementById(`${prefix}-rec-edit-diames-${id}`);
+  if(diasBox)diasBox.style.display=tipo==='semanal'?'flex':'none';
+  if(mesBox)mesBox.style.display=tipo==='mensal'?'flex':'none';
+}
+function saveRecPenMob(id){
+  const p=pendencias.find(x=>x.id===id);if(!p)return;
+  const ativa=document.getElementById('lst-pen-rec-edit-ativa-'+id)?.checked||false;
+  const tipo=document.getElementById('lst-pen-rec-edit-tipo-'+id)?.value||'semanal';
+  const diasEl=document.getElementById('lst-pen-rec-edit-dias-'+id);
+  const dias=tipo==='semanal'?_getRecDiasMobFromEl(diasEl):[];
+  const diaMes=tipo==='mensal'?(parseInt(document.getElementById('lst-pen-rec-edit-diames-input-'+id)?.value)||1):null;
+  p.rec={ativa,tipo,dias,diaMes};
+  saveD();renderLstPendencias();
+  toast('🔁 Recorrência atualizada');
+}
+function saveRecPgrMob(id){
+  const p=pendenciasGerais.find(x=>x.id===id);if(!p)return;
+  const ativa=document.getElementById('lst-pgr-rec-edit-ativa-'+id)?.checked||false;
+  const tipo=document.getElementById('lst-pgr-rec-edit-tipo-'+id)?.value||'semanal';
+  const diasEl=document.getElementById('lst-pgr-rec-edit-dias-'+id);
+  const dias=tipo==='semanal'?_getRecDiasMobFromEl(diasEl):[];
+  const diaMes=tipo==='mensal'?(parseInt(document.getElementById('lst-pgr-rec-edit-diames-input-'+id)?.value)||1):null;
+  p.rec={ativa,tipo,dias,diaMes};
+  saveD();renderLstPgr();
+  toast('🔁 Recorrência atualizada');
+}
+
 // — Conteúdos —
+let _lstCntEditingId=null;
+let _cntFotosAbertas=new Set(),_cntLinksAbertos=new Set(),_cntNotasAbertas=new Set();
 function addLstCnt(){
   const inp=document.getElementById('lst-cnt-inp');
   const txt=inp.value.trim();if(!txt)return;
   const tipo=document.getElementById('lst-cnt-tipo').value||'reels';
-  conteudos.unshift({id:Date.now().toString(36)+Math.random().toString(36).slice(2),
-    texto:txt,tipo,status:'ideia',criadoEm:Date.now()});
-  inp.value='';saveD();renderLstConteudos();
+  const dataPub=document.getElementById('lst-cnt-datapub')?.value||'';
+  conteudos.unshift({id:uid(),texto:txt,tipo,dataPub,status:'ideia',criadoEm:Date.now()});
+  inp.value='';const dEl=document.getElementById('lst-cnt-datapub');if(dEl)dEl.value='';
+  saveD();renderLstConteudos();
   toast('✅ Conteúdo adicionado');
 }
 function avancarLstCnt(id){
@@ -1374,40 +1549,184 @@ function avancarLstCnt(id){
 }
 function delLstCnt(id){
   conteudos=conteudos.filter(x=>x.id!==id);
+  _cntFotosAbertas.delete(id);_cntLinksAbertos.delete(id);_cntNotasAbertas.delete(id);
   saveD();renderLstConteudos();
+}
+function editTextoLstCnt(id){_lstCntEditingId=id;renderLstConteudos();setTimeout(()=>{const el=document.getElementById('cnt-edit-inp-'+id);if(el){el.focus();el.select();}},30);}
+function saveTextoLstCnt(id,val){const c=conteudos.find(x=>x.id===id);if(c&&val.trim()){c.texto=val.trim();saveD();}_lstCntEditingId=null;renderLstConteudos();}
+function setDataPubLstCnt(id,val){const c=conteudos.find(x=>x.id===id);if(c){c.dataPub=val;saveD();renderLstConteudos();}}
+function toggleFotoLstCnt(id){_cntFotosAbertas.has(id)?_cntFotosAbertas.delete(id):_cntFotosAbertas.add(id);renderLstConteudos();}
+function toggleLinkLstCnt(id){_cntLinksAbertos.has(id)?_cntLinksAbertos.delete(id):_cntLinksAbertos.add(id);renderLstConteudos();}
+function toggleNotaLstCnt(id){_cntNotasAbertas.has(id)?_cntNotasAbertas.delete(id):_cntNotasAbertas.add(id);renderLstConteudos();}
+function saveLinkLstCnt(id,val){const c=conteudos.find(x=>x.id===id);if(c){c.link=val.trim();saveD();renderLstConteudos();}}
+function saveNotaLstCnt(id,val){const c=conteudos.find(x=>x.id===id);if(c){c.notas=val;saveD();}}
+function _resizeImageDataUrlMob(dataUrl,maxDim,quality){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onload=()=>{
+      let w=img.width,h=img.height;
+      if(w>maxDim||h>maxDim){if(w>h){h=Math.round(h*maxDim/w);w=maxDim;}else{w=Math.round(w*maxDim/h);h=maxDim;}}
+      const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      resolve(canvas.toDataURL('image/jpeg',quality));
+    };
+    img.onerror=reject;
+    img.src=dataUrl;
+  });
+}
+function _fileToDataUrlMob(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>resolve(reader.result);
+    reader.onerror=reject;
+    reader.readAsDataURL(file);
+  });
+}
+async function saveFotoLstCnt(id,file){
+  if(!file||!file.type||!file.type.startsWith('image/'))return;
+  try{
+    const raw=await _fileToDataUrlMob(file);
+    const resized=await _resizeImageDataUrlMob(raw,700,0.7);
+    const c=conteudos.find(x=>x.id===id);if(!c)return;
+    c.foto=resized;saveD();renderLstConteudos();
+    toast('📷 Foto anexada!');
+  }catch(e){toast('⚠️ Não consegui carregar essa imagem');}
+}
+function onFotoFileChangeLstCnt(id,input){const file=input.files&&input.files[0];if(file)saveFotoLstCnt(id,file);}
+function onFotoPasteLstCnt(id,event){
+  const items=(event.clipboardData||event.originalEvent?.clipboardData)?.items;
+  if(!items)return;
+  for(const item of items){
+    if(item.type&&item.type.startsWith('image/')){event.preventDefault();saveFotoLstCnt(id,item.getAsFile());return;}
+  }
+}
+function delFotoLstCnt(id){const c=conteudos.find(x=>x.id===id);if(c){c.foto=null;saveD();renderLstConteudos();}}
+function _abrirFotoLightboxMob(url){
+  const old=document.getElementById('foto-lightbox-mob');if(old)old.remove();
+  const d=document.createElement('div');d.id='foto-lightbox-mob';
+  d.style.cssText='position:fixed;inset:0;z-index:9995;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;cursor:zoom-out;padding:20px';
+  d.innerHTML=`<img src="${url}" style="max-width:100%;max-height:100%;border-radius:8px">`;
+  d.onclick=()=>d.remove();
+  document.body.appendChild(d);
 }
 function renderLstConteudos(){
   const el=document.getElementById('lst-cnt-list');if(!el)return;
-  if(!conteudos.length){el.innerHTML='<div class="empty">Nenhum conteúdo ainda. Anote suas ideias! 🎬</div>';return;}
+  if(!conteudos.length){el.innerHTML='<div class="empty">Nenhum conteúdo ainda. Anote suas ideias! 🎬</div>';renderCntCalMob();return;}
   const ativos=conteudos.filter(c=>c.status!=='publicado');
   const pub=conteudos.filter(c=>c.status==='publicado');
-  const rows=arr=>arr.map(c=>`
-    <div class="lst-item">
+  const row=c=>{
+    if(_lstCntEditingId===c.id){
+      return`<div class="lst-item">
+        <input id="cnt-edit-inp-${c.id}" type="text" value="${esc(c.texto)}" onblur="saveTextoLstCnt('${c.id}',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="flex:1;border:1.5px solid var(--acc);border-radius:6px;padding:5px 8px;font-size:13px;font-family:'Montserrat',sans-serif;color:var(--txt);outline:none">
+      </div>`;
+    }
+    const temFoto=!!c.foto,fotoAberta=_cntFotosAbertas.has(c.id);
+    const temLink=c.link&&c.link.trim(),linkAberto=_cntLinksAbertos.has(c.id);
+    const linkHref=temLink?(/^https?:\/\//i.test(c.link.trim())?c.link.trim():'https://'+c.link.trim().replace(/^\/+/,'')):'';
+    const temNota=c.notas&&c.notas.trim(),notaAberta=_cntNotasAbertas.has(c.id);
+    return`<div class="lst-item" style="flex-wrap:wrap">
+      ${temFoto?`<img src="${c.foto}" onclick="_abrirFotoLightboxMob('${c.foto}')" style="width:32px;height:32px;object-fit:cover;border-radius:6px;cursor:zoom-in;flex-shrink:0">`:''}
       <div style="flex:1;min-width:0">
         <div class="lst-txt">${esc(c.texto)}<span class="lst-badge ${c.status}">${CNT_STATUS_LBL_MOB[c.status]||c.status}</span></div>
         ${c.tipo?`<div class="lst-meta">${c.tipo}</div>`:''}
+        ${c.dataPub?`<div class="lst-meta">📅 ${c.dataPub.split('-').reverse().join('/')}</div>`:''}
+        ${temNota&&!notaAberta?`<div class="lst-meta">📝 ${esc(c.notas)}</div>`:''}
+        ${temLink&&!linkAberto?`<div class="lst-meta"><a href="${esc(linkHref)}" target="_blank" rel="noopener" style="color:var(--acc)">🔗 ${esc(c.link)}</a></div>`:''}
       </div>
       <button style="padding:5px 10px;border-radius:8px;border:none;background:rgba(200,136,42,.12);color:var(--acc);font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;font-family:'Montserrat',sans-serif" onclick="avancarLstCnt('${c.id}')">▶</button>
+      <button class="btn-del" style="background:${temFoto?'rgba(200,136,42,.18)':'rgba(139,106,82,.1)'};color:${temFoto?'var(--acc)':'var(--mut)'}" onclick="toggleFotoLstCnt('${c.id}')">📷</button>
+      <button class="btn-del" style="background:${temLink?'rgba(200,136,42,.18)':'rgba(139,106,82,.1)'};color:${temLink?'var(--acc)':'var(--mut)'}" onclick="toggleLinkLstCnt('${c.id}')">🔗</button>
+      <button class="btn-del" style="background:${temNota?'rgba(200,136,42,.18)':'rgba(139,106,82,.1)'};color:${temNota?'var(--acc)':'var(--mut)'}" onclick="toggleNotaLstCnt('${c.id}')">📝</button>
+      <button class="btn-del" onclick="editTextoLstCnt('${c.id}')">✏️</button>
       <button class="btn-del" onclick="delLstCnt('${c.id}')">✕</button>
-    </div>`).join('');
-  let html=ativos.length?rows(ativos):'<div class="empty" style="padding:12px">Sem conteúdos em andamento 🎉</div>';
-  if(pub.length) html+=`<div class="sec-ttl" style="margin-top:4px">Publicados</div>${rows(pub)}`;
+      <div style="width:100%;margin-top:4px">
+        <input type="date" value="${c.dataPub||''}" onchange="setDataPubLstCnt('${c.id}',this.value)" title="Data de publicação" style="font-size:11px;border:1px solid var(--brd);border-radius:6px;padding:4px 6px;background:var(--surf2);color:${c.dataPub?'var(--acc)':'var(--mut)'};font-family:'Montserrat',sans-serif">
+      </div>
+      ${fotoAberta?`<div style="width:100%;background:var(--surf2);border:1px solid var(--brd);border-radius:10px;padding:10px;margin-top:6px;display:flex;flex-direction:column;gap:8px;align-items:center;box-sizing:border-box">
+        ${temFoto?`<img src="${c.foto}" onclick="_abrirFotoLightboxMob('${c.foto}')" style="max-width:100%;max-height:160px;border-radius:8px;cursor:zoom-in;object-fit:contain">`:''}
+        <div tabindex="0" onpaste="onFotoPasteLstCnt('${c.id}',event)" style="width:100%;box-sizing:border-box;border:1.5px dashed var(--brd);border-radius:8px;padding:12px;text-align:center;font-size:11px;color:var(--mut);outline:none">📋 Toque aqui e cole uma captura</div>
+        <div style="display:flex;gap:8px;width:100%">
+          <label style="flex:1;text-align:center;background:var(--surf);border:1.5px solid var(--brd);border-radius:8px;padding:7px;font-size:11px;font-weight:700;color:var(--txt);cursor:pointer">
+            📁 Escolher arquivo
+            <input type="file" accept="image/*" style="display:none" onchange="onFotoFileChangeLstCnt('${c.id}',this)">
+          </label>
+          ${temFoto?`<button onclick="delFotoLstCnt('${c.id}')" style="background:none;border:1.5px solid var(--brd);border-radius:8px;padding:7px 10px;font-size:11px;color:var(--err);cursor:pointer">Remover</button>`:''}
+        </div>
+      </div>`:''}
+      ${linkAberto?`<div style="width:100%;margin-top:6px">
+        <input type="url" placeholder="https://..." value="${esc(c.link||'')}" onblur="saveLinkLstCnt('${c.id}',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="width:100%;box-sizing:border-box;border:1.5px solid var(--brd);border-radius:8px;padding:8px 10px;font-size:12px;font-family:'Montserrat',sans-serif;color:var(--txt);background:var(--surf);outline:none">
+      </div>`:''}
+      ${notaAberta?`<div style="width:100%;margin-top:6px">
+        <textarea placeholder="Notas, referências, ideias..." onblur="saveNotaLstCnt('${c.id}',this.value)" style="width:100%;box-sizing:border-box;min-height:56px;border:1.5px solid var(--brd);border-radius:8px;padding:8px 10px;font-size:12px;font-family:'Montserrat',sans-serif;color:var(--txt);background:var(--surf);outline:none;resize:vertical">${esc(c.notas||'')}</textarea>
+      </div>`:''}
+    </div>`;
+  };
+  let html=ativos.length?ativos.map(row).join(''):'<div class="empty" style="padding:12px">Sem conteúdos em andamento 🎉</div>';
+  if(pub.length) html+=`<div class="sec-ttl" style="margin-top:4px">Publicados</div>${pub.map(row).join('')}`;
   el.innerHTML=html;
+  renderCntCalMob();
+}
+
+// — Calendário de Posts —
+let cntCalYearMob=null,cntCalMonthMob=null;
+function _initCntCalMob(){if(cntCalYearMob===null){const n=new Date();cntCalYearMob=n.getFullYear();cntCalMonthMob=n.getMonth();}}
+function cntCalPrev(){_initCntCalMob();cntCalMonthMob--;if(cntCalMonthMob<0){cntCalMonthMob=11;cntCalYearMob--;}renderCntCalMob();}
+function cntCalNext(){_initCntCalMob();cntCalMonthMob++;if(cntCalMonthMob>11){cntCalMonthMob=0;cntCalYearMob++;}renderCntCalMob();}
+function renderCntCalMob(){
+  const grid=document.getElementById('cnt-cal-grid');if(!grid)return;
+  _initCntCalMob();
+  const MONTHS=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const DAYS=['D','S','T','Q','Q','S','S'];
+  const titleEl=document.getElementById('cnt-cal-title');if(titleEl)titleEl.textContent=`${MONTHS[cntCalMonthMob]} ${cntCalYearMob}`;
+  const porDia={};
+  conteudos.filter(c=>c.dataPub).forEach(c=>{if(!porDia[c.dataPub])porDia[c.dataPub]=[];porDia[c.dataPub].push(c);});
+  const firstDay=new Date(cntCalYearMob,cntCalMonthMob,1).getDay();
+  const daysInMonth=new Date(cntCalYearMob,cntCalMonthMob+1,0).getDate();
+  const prevDays=new Date(cntCalYearMob,cntCalMonthMob,0).getDate();
+  const today=new Date();
+  let html=`<div class="cal-grid">`+DAYS.map(d=>`<div class="cal-dname">${d}</div>`).join('');
+  for(let i=firstDay-1;i>=0;i--)html+=`<div class="cal-day other"><div class="cal-day-num">${prevDays-i}</div></div>`;
+  for(let d=1;d<=daysInMonth;d++){
+    const ds=`${cntCalYearMob}-${String(cntCalMonthMob+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isT=today.getFullYear()===cntCalYearMob&&today.getMonth()===cntCalMonthMob&&today.getDate()===d;
+    const itens=porDia[ds]||[];
+    const itH=itens.slice(0,2).map(c=>{
+      const ec=c.status==='publicado'?'#6B7C5C':'#C8882A';
+      return`<div class="cal-post" style="background:${ec}22;color:${ec}" onclick="abrirConteudoDoCalMob('${c.id}')">${esc(c.texto.slice(0,10))}</div>`;
+    }).join('')+(itens.length>2?`<div style="font-size:7px;color:var(--mut)">+${itens.length-2}</div>`:'');
+    html+=`<div class="cal-day${isT?' today':''}"><div class="cal-day-num">${d}</div>${itH}</div>`;
+  }
+  const rem=(firstDay+daysInMonth)%7===0?0:7-((firstDay+daysInMonth)%7);
+  for(let d=1;d<=rem;d++)html+=`<div class="cal-day other"><div class="cal-day-num">${d}</div></div>`;
+  html+=`</div>`;
+  grid.innerHTML=html;
+}
+function abrirConteudoDoCalMob(id){
+  const btn=[...document.querySelectorAll('.lst-tab')].find(b=>b.getAttribute('onclick')?.includes("switchLstTab('cnt'"));
+  if(btn)switchLstTab('cnt',btn);
+  editTextoLstCnt(id);
 }
 
 // — Pendências de Clientes —
+let _lstPenEditingId=null;
 function addLstPen(){
   const inp=document.getElementById('lst-pen-inp');
   const txt=inp.value.trim();if(!txt)return;
   const prazo=document.getElementById('lst-pen-prazo').value||'';
-  pendencias.unshift({id:Date.now().toString(36)+Math.random().toString(36).slice(2),
-    texto:txt,clienteId:'',clienteNome:'',prazo,status:'pendente',criadoEm:Date.now()});
-  inp.value='';document.getElementById('lst-pen-prazo').value='';
+  const hora=document.getElementById('lst-pen-hora')?.value||'';
+  const rec=_readRecFromAdd('lst-pen');
+  pendencias.unshift({id:uid(),texto:txt,clienteId:'',clienteNome:'',prazo,hora,status:'pendente',criadoEm:Date.now(),rec});
+  inp.value='';document.getElementById('lst-pen-prazo').value='';const hEl=document.getElementById('lst-pen-hora');if(hEl)hEl.value='';
+  _resetRecAdd('lst-pen');
   saveD();renderLstPendencias();
   toast('✅ Pendência adicionada');
 }
 function toggleLstPen(id){
   const p=pendencias.find(x=>x.id===id);if(!p)return;
+  if(p.status==='pendente'&&p.rec&&p.rec.ativa){
+    const novaData=_calcProximaDataMob(p.prazo,p.hora,p.rec);
+    if(novaData){p.prazo=novaData;saveD();renderLstPendencias();toast('🔁 Recorrência renovada!');return;}
+  }
   p.status=p.status==='pendente'?'feito':'pendente';
   saveD();renderLstPendencias();
 }
@@ -1415,7 +1734,26 @@ function delLstPen(id){
   pendencias=pendencias.filter(x=>x.id!==id);
   saveD();renderLstPendencias();
 }
+function editTextoPenMob(id){_lstPenEditingId=id;renderLstPendencias();setTimeout(()=>{const el=document.getElementById('pen-edit-inp-'+id);if(el){el.focus();el.select();}},30);}
+function saveTextoPenMob(id,val){const p=pendencias.find(x=>x.id===id);if(p&&val.trim()){p.texto=val.trim();saveD();}_lstPenEditingId=null;renderLstPendencias();}
+function setPenPrazoMob(id,val){const p=pendencias.find(x=>x.id===id);if(p){p.prazo=val;saveD();renderLstPendencias();}}
+function setPenHoraMob(id,val){const p=pendencias.find(x=>x.id===id);if(p){p.hora=val;saveD();renderLstPendencias();}}
+function _countPendenciasSemanaMob(){
+  const hoje=new Date();hoje.setHours(0,0,0,0);
+  const domingo=new Date(hoje);domingo.setDate(hoje.getDate()-hoje.getDay());
+  const sabado=new Date(domingo);sabado.setDate(domingo.getDate()+6);
+  const iniStr=domingo.toISOString().slice(0,10);
+  const fimStr=sabado.toISOString().slice(0,10);
+  return pendencias.filter(p=>p.status!=='feito'&&p.prazo&&p.prazo>=iniStr&&p.prazo<=fimStr).length;
+}
+function _updateLstPenWeekBadge(){
+  const badge=document.getElementById('lst-pen-week-badge');if(!badge)return;
+  const n=_countPendenciasSemanaMob();
+  badge.textContent=n;
+  badge.style.display=n>0?'inline-flex':'none';
+}
 function renderLstPendencias(){
+  _updateLstPenWeekBadge();
   const el=document.getElementById('lst-pen-list');if(!el)return;
   if(!pendencias.length){el.innerHTML='<div class="empty">Nenhuma pendência com clientes 🎉</div>';return;}
   const abertas=pendencias.filter(p=>p.status==='pendente');
@@ -1424,14 +1762,27 @@ function renderLstPendencias(){
     const done=p.status==='feito';
     const hoje=new Date().toISOString().slice(0,10);
     const venc=p.prazo&&p.prazo<hoje&&!done;
-    return`<div class="lst-item${done?' done':''}">
+    const isEdit=_lstPenEditingId===p.id;
+    const recAtiva=p.rec&&p.rec.ativa;
+    return`<div class="lst-item${done?' done':''}" style="flex-wrap:wrap">
       <div class="chk${done?' on':''}" onclick="toggleLstPen('${p.id}')"></div>
       <div style="flex:1;min-width:0">
-        <div class="lst-txt">${esc(p.texto)}</div>
+        ${isEdit
+          ?`<input id="pen-edit-inp-${p.id}" type="text" value="${esc(p.texto)}" onblur="saveTextoPenMob('${p.id}',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="width:100%;box-sizing:border-box;border:1.5px solid var(--acc);border-radius:6px;padding:5px 8px;font-size:13px;font-family:'Montserrat',sans-serif;color:var(--txt);outline:none">`
+          :`<div class="lst-txt">${esc(p.texto)}</div>`}
         ${p.clienteNome?`<div class="lst-meta">👤 ${esc(p.clienteNome)}</div>`:''}
-        ${p.prazo?`<div class="lst-meta" style="color:${venc?'var(--err)':'var(--mut)'}">📅 ${p.prazo.split('-').reverse().join('/')}</div>`:''}
+        ${recAtiva&&_recLabelMob(p.rec)?`<div class="lst-meta" style="color:#7B5FA0;font-weight:700">🔁 ${_recLabelMob(p.rec)}</div>`:''}
+        <div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap">
+          <input type="date" value="${p.prazo||''}" onchange="setPenPrazoMob('${p.id}',this.value)" style="font-size:11px;border:1px solid var(--brd);border-radius:6px;padding:3px 6px;background:var(--surf2);color:${venc?'var(--err)':'var(--txt)'};font-family:'Montserrat',sans-serif">
+          <input type="time" value="${p.hora||''}" onchange="setPenHoraMob('${p.id}',this.value)" style="font-size:11px;border:1px solid var(--brd);border-radius:6px;padding:3px 6px;background:var(--surf2);color:var(--txt);font-family:'Montserrat',sans-serif">
+        </div>
       </div>
-      <button class="btn-del" onclick="delLstPen('${p.id}')">✕</button>
+      <div style="display:flex;flex-direction:column;gap:4px;align-items:center">
+        <button class="btn-del" style="background:${recAtiva?'rgba(200,136,42,.18)':'rgba(139,106,82,.1)'};color:${recAtiva?'var(--acc)':'var(--mut)'}" onclick="editRecMob('lst-pen','${p.id}')">🔁</button>
+        <button class="btn-del" onclick="editTextoPenMob('${p.id}')">✏️</button>
+        <button class="btn-del" onclick="delLstPen('${p.id}')">✕</button>
+      </div>
+      ${_recEditorHTMLMob(p.id,p.rec,'lst-pen')}
     </div>`;
   };
   let html=abertas.length?abertas.map(row).join(''):'<div class="empty" style="padding:12px">Tudo em dia com os clientes! 🎉</div>';
@@ -1440,18 +1791,25 @@ function renderLstPendencias(){
 }
 
 // — Pendências Gerais —
+let _lstPgrEditingId=null;
 function addLstPgr(){
   const inp=document.getElementById('lst-pgr-inp');
   const txt=inp.value.trim();if(!txt)return;
   const prazo=document.getElementById('lst-pgr-prazo').value||'';
-  pendenciasGerais.unshift({id:Date.now().toString(36)+Math.random().toString(36).slice(2),
-    texto:txt,prazo,status:'pendente',criadoEm:Date.now()});
-  inp.value='';document.getElementById('lst-pgr-prazo').value='';
+  const hora=document.getElementById('lst-pgr-hora')?.value||'';
+  const rec=_readRecFromAdd('lst-pgr');
+  pendenciasGerais.unshift({id:uid(),texto:txt,prazo,hora,status:'pendente',criadoEm:Date.now(),rec});
+  inp.value='';document.getElementById('lst-pgr-prazo').value='';const hEl=document.getElementById('lst-pgr-hora');if(hEl)hEl.value='';
+  _resetRecAdd('lst-pgr');
   saveD();renderLstPgr();
   toast('✅ Pendência adicionada');
 }
 function toggleLstPgr(id){
   const p=pendenciasGerais.find(x=>x.id===id);if(!p)return;
+  if(p.status==='pendente'&&p.rec&&p.rec.ativa){
+    const novaData=_calcProximaDataMob(p.prazo,p.hora,p.rec);
+    if(novaData){p.prazo=novaData;saveD();renderLstPgr();toast('🔁 Recorrência renovada!');return;}
+  }
   p.status=p.status==='pendente'?'feito':'pendente';
   saveD();renderLstPgr();
 }
@@ -1459,6 +1817,10 @@ function delLstPgr(id){
   pendenciasGerais=pendenciasGerais.filter(x=>x.id!==id);
   saveD();renderLstPgr();
 }
+function editTextoPgrMob(id){_lstPgrEditingId=id;renderLstPgr();setTimeout(()=>{const el=document.getElementById('pgr-edit-inp-'+id);if(el){el.focus();el.select();}},30);}
+function saveTextoPgrMob(id,val){const p=pendenciasGerais.find(x=>x.id===id);if(p&&val.trim()){p.texto=val.trim();saveD();}_lstPgrEditingId=null;renderLstPgr();}
+function setPgrPrazoMob(id,val){const p=pendenciasGerais.find(x=>x.id===id);if(p){p.prazo=val;saveD();renderLstPgr();}}
+function setPgrHoraMob(id,val){const p=pendenciasGerais.find(x=>x.id===id);if(p){p.hora=val;saveD();renderLstPgr();}}
 function renderLstPgr(){
   const el=document.getElementById('lst-pgr-list');if(!el)return;
   if(!pendenciasGerais.length){el.innerHTML='<div class="empty">Nenhuma pendência. Tudo certo! ✅</div>';return;}
@@ -1468,13 +1830,26 @@ function renderLstPgr(){
   const row=p=>{
     const done=p.status==='feito';
     const venc=p.prazo&&p.prazo<hoje&&!done;
-    return`<div class="lst-item${done?' done':''}">
+    const isEdit=_lstPgrEditingId===p.id;
+    const recAtiva=p.rec&&p.rec.ativa;
+    return`<div class="lst-item${done?' done':''}" style="flex-wrap:wrap">
       <div class="chk${done?' on':''}" onclick="toggleLstPgr('${p.id}')"></div>
       <div style="flex:1;min-width:0">
-        <div class="lst-txt">${esc(p.texto)}</div>
-        ${p.prazo?`<div class="lst-meta" style="color:${venc?'var(--err)':'var(--mut)'}">📅 ${p.prazo.split('-').reverse().join('/')}</div>`:''}
+        ${isEdit
+          ?`<input id="pgr-edit-inp-${p.id}" type="text" value="${esc(p.texto)}" onblur="saveTextoPgrMob('${p.id}',this.value)" onkeydown="if(event.key==='Enter')this.blur()" style="width:100%;box-sizing:border-box;border:1.5px solid var(--acc);border-radius:6px;padding:5px 8px;font-size:13px;font-family:'Montserrat',sans-serif;color:var(--txt);outline:none">`
+          :`<div class="lst-txt">${esc(p.texto)}</div>`}
+        ${recAtiva&&_recLabelMob(p.rec)?`<div class="lst-meta" style="color:#7B5FA0;font-weight:700">🔁 ${_recLabelMob(p.rec)}</div>`:''}
+        <div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap">
+          <input type="date" value="${p.prazo||''}" onchange="setPgrPrazoMob('${p.id}',this.value)" style="font-size:11px;border:1px solid var(--brd);border-radius:6px;padding:3px 6px;background:var(--surf2);color:${venc?'var(--err)':'var(--txt)'};font-family:'Montserrat',sans-serif">
+          <input type="time" value="${p.hora||''}" onchange="setPgrHoraMob('${p.id}',this.value)" style="font-size:11px;border:1px solid var(--brd);border-radius:6px;padding:3px 6px;background:var(--surf2);color:var(--txt);font-family:'Montserrat',sans-serif">
+        </div>
       </div>
-      <button class="btn-del" onclick="delLstPgr('${p.id}')">✕</button>
+      <div style="display:flex;flex-direction:column;gap:4px;align-items:center">
+        <button class="btn-del" style="background:${recAtiva?'rgba(200,136,42,.18)':'rgba(139,106,82,.1)'};color:${recAtiva?'var(--acc)':'var(--mut)'}" onclick="editRecMob('lst-pgr','${p.id}')">🔁</button>
+        <button class="btn-del" onclick="editTextoPgrMob('${p.id}')">✏️</button>
+        <button class="btn-del" onclick="delLstPgr('${p.id}')">✕</button>
+      </div>
+      ${_recEditorHTMLMob(p.id,p.rec,'lst-pgr')}
     </div>`;
   };
   let html=abertas.length?abertas.map(row).join(''):'<div class="empty" style="padding:12px">Tudo resolvido! 🎉</div>';
