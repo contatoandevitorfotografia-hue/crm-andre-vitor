@@ -104,7 +104,10 @@ body{font-family:'Montserrat',-apple-system,sans-serif;background:var(--bg);colo
 .kb-scrollbar-thumb:hover,.kb-scrollbar-thumb:active{background:#2C7A7B}
 .kb-board{display:flex;gap:13px;min-width:max-content;align-items:flex-start;padding-right:26px;padding-top:2px}
 .col{width:258px;background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(0,0,0,.08)),var(--surface);border-radius:18px;box-shadow:0 16px 34px rgba(0,0,0,.28),0 4px 12px rgba(0,0,0,.18);display:flex;flex-direction:column;max-height:calc(100vh - 175px);overflow:hidden;border:1px solid rgba(255,255,255,.06);backdrop-filter:blur(6px)}
-.col-hdr{padding:15px 14px 12px;border-radius:18px 18px 0 0;position:relative;overflow:hidden;flex-shrink:0}
+.col-hdr{padding:15px 14px 12px;border-radius:18px 18px 0 0;position:relative;overflow:hidden;flex-shrink:0;cursor:grab}
+.col-hdr:active{cursor:grabbing}
+.col-hdr.col-drag-over{box-shadow:inset 0 0 0 3px #fff}
+.col.col-dragging{opacity:.4}
 .col-hdr-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
 .col-title-wrap{display:flex;align-items:flex-start;gap:6px;min-width:0;flex:1}
 .col-emoji{font-size:14px;flex-shrink:0;margin-top:1px}
@@ -3537,7 +3540,7 @@ function switchProjTab(tab){
 function renderAlb(){
   const q=(document.getElementById('srch-alb')?.value||'').toLowerCase();
   const board=document.getElementById('board-alb');if(!board)return;board.innerHTML='';
-  ALB_COLS.forEach(col=>{
+  _orderedCols('alb',ALB_COLS).forEach(col=>{
     let cs=albCards.filter(c=>c.coluna===col.id);
     if(q)cs=cs.filter(c=>(c.titulo||'').toLowerCase().includes(q)||(c.cliente||'').toLowerCase().includes(q));
     board.appendChild(buildAlbCol(col,cs));
@@ -3545,7 +3548,9 @@ function renderAlb(){
 }
 function buildAlbCol(col,cs){
   const div=document.createElement('div');div.className='col';div.dataset.col=col.id;
-  div.innerHTML=`<div class="col-hdr" style="background:${col.color}">
+  div.innerHTML=`<div class="col-hdr" style="background:${col.color}" draggable="true" title="Arraste para reordenar as colunas"
+    ondragstart="colDragStart(event,'alb','${col.id}')" ondragend="colDragEnd(event)"
+    ondragover="colDragOver(event)" ondragleave="colDragLeave(event)" ondrop="colDrop(event,'alb','${col.id}')">
     <div class="col-hdr-top"><div class="col-title-wrap"><span class="col-emoji">${col.emoji}</span><span class="col-name">${col.name}</span></div><span class="col-badge">${cs.length}</span></div>
   </div>
   <div class="cards-list" id="cl-alb-${col.id}" ondragover="onDO(event)" ondragenter="onDE(event)" ondragleave="onDL(event)" ondrop="onDrop(event,'alb','${col.id}')">
@@ -3861,7 +3866,7 @@ function renderClientNotes(cl){
 function renderOp(){
   const q=(document.getElementById('srch-op')?.value||'').toLowerCase();
   const board=document.getElementById('board-op');board.innerHTML='';
-  OP_COLS.forEach(col=>{
+  _orderedCols('op',OP_COLS).forEach(col=>{
     let cs=opCards.filter(c=>c.coluna===col.id&&!c.somenteProjeto);
     if(q)cs=cs.filter(c=>(c.titulo||'').toLowerCase().includes(q)||(c.nomePais||'').toLowerCase().includes(q)||(c.nomeCrianca||'').toLowerCase().includes(q)||(c.nomeCrianca2||'').toLowerCase().includes(q)||(c.local||'').toLowerCase().includes(q));
     // Orçamento Enviado: ordenar por data do evento (mais próximo primeiro)
@@ -3872,7 +3877,9 @@ function renderOp(){
 const OP_HDR_COLOR='#3A434F'; // cor única do cabeçalho das colunas de Oportunidades
 function buildOpCol(col,cs){
   const div=document.createElement('div');div.className='col';div.dataset.col=col.id;
-  div.innerHTML=`<div class="col-hdr" style="background:${OP_HDR_COLOR}">
+  div.innerHTML=`<div class="col-hdr" style="background:${OP_HDR_COLOR}" draggable="true" title="Arraste para reordenar as colunas"
+    ondragstart="colDragStart(event,'op','${col.id}')" ondragend="colDragEnd(event)"
+    ondragover="colDragOver(event)" ondragleave="colDragLeave(event)" ondrop="colDrop(event,'op','${col.id}')">
     <div class="col-hdr-top"><div class="col-title-wrap"><span class="col-emoji">${col.emoji}</span><span class="col-name">${col.name}</span></div><span class="col-badge">${cs.length}</span></div>
   </div>
   <div class="cards-list" id="cl-op-${col.id}" ondragover="onDO(event)" ondragenter="onDE(event)" ondragleave="onDL(event)" ondrop="onDrop(event,'op','${col.id}')">
@@ -3927,7 +3934,7 @@ function renderPr(){
   const q=(document.getElementById('srch-pr')?.value||'').toLowerCase();
   const board=document.getElementById('board-pr');board.innerHTML='';
   const getEffDate=c=>{if(c.sourceId){const s=opCards.find(o=>o.id===c.sourceId);if(s?.dataEvento)return s.dataEvento;}return c.dataEvento||''};
-  PR_COLS.filter(col=>(col.cat||'proj')==='proj').forEach(col=>{
+  _orderedCols('pr-proj',PR_COLS.filter(col=>(col.cat||'proj')==='proj')).forEach(col=>{
     let cs=prCards.filter(c=>c.coluna===col.id);
     if(q)cs=cs.filter(c=>{const d=c.sourceId?(opCards.find(o=>o.id===c.sourceId)||c):c;return(d.nomePais||'').toLowerCase().includes(q)||(d.nomeCrianca||'').toLowerCase().includes(q)||(d.nomeCrianca2||'').toLowerCase().includes(q)});
     const _hoje=new Date().toISOString().slice(0,10);
@@ -3941,7 +3948,7 @@ function renderPrCat(cat,boardId,srchId){
   const q=(document.getElementById(srchId)?.value||'').toLowerCase();
   const board=document.getElementById(boardId);if(!board)return;board.innerHTML='';
   const getEffDate=c=>{if(c.sourceId){const s=opCards.find(o=>o.id===c.sourceId);if(s?.dataEvento)return s.dataEvento;}return c.dataEvento||''};
-  PR_COLS.filter(col=>col.cat===cat).forEach(col=>{
+  _orderedCols('pr-'+cat,PR_COLS.filter(col=>col.cat===cat)).forEach(col=>{
     let cs=prCards.filter(c=>c.coluna===col.id);
     if(q)cs=cs.filter(c=>{const d=c.sourceId?(opCards.find(o=>o.id===c.sourceId)||c):c;return(d.nomePais||'').toLowerCase().includes(q)||(d.nomeCrianca||'').toLowerCase().includes(q)||(d.nomeCrianca2||'').toLowerCase().includes(q)});
     cs.sort((a,b)=>{const da=getEffDate(a),db=getEffDate(b);if(!da&&!db)return 0;if(!da)return 1;if(!db)return-1;return da<db?-1:da>db?1:0;});
@@ -3967,7 +3974,10 @@ function buildPrCol(col,cs){
   const addAction=col.cat?`openPrModal(null,'${col.id}')`:`openOpModal(null,'confirmado',null,true)`;
   const hdrStart=adjustHexColor(col.color,10);
   const hdrEnd=adjustHexColor(col.color,-18);
-  div.innerHTML=`<div class="col-hdr" style="background:linear-gradient(135deg, ${hdrStart} 0%, ${hdrEnd} 100%);box-shadow:inset 0 -1px 0 rgba(255,255,255,.06)">
+  const _boardKey='pr-'+(col.cat||'proj');
+  div.innerHTML=`<div class="col-hdr" style="background:linear-gradient(135deg, ${hdrStart} 0%, ${hdrEnd} 100%);box-shadow:inset 0 -1px 0 rgba(255,255,255,.06)" draggable="true" title="Arraste para reordenar as colunas"
+    ondragstart="colDragStart(event,'${_boardKey}','${col.id}')" ondragend="colDragEnd(event)"
+    ondragover="colDragOver(event)" ondragleave="colDragLeave(event)" ondrop="colDrop(event,'${_boardKey}','${col.id}')">
     <div class="col-hdr-top"><div class="col-title-wrap"><span class="col-emoji">${col.emoji}</span><span class="col-name">${col.name}</span></div><span class="col-badge">${cs.length}</span></div>
   </div>
   <div class="cards-list" id="cl-pr-${col.id}" ondragover="onDO(event)" ondragenter="onDE(event)" ondragleave="onDL(event)" ondrop="onDrop(event,'pr','${col.id}')">
@@ -4063,6 +4073,59 @@ function onDE2(){document.querySelectorAll('.dragging').forEach(el=>el.classList
 function onDO(e){e.preventDefault();e.dataTransfer.dropEffect='move'}
 function onDE(e){e.currentTarget.classList.add('drag-over')}
 function onDL(e){if(!e.currentTarget.contains(e.relatedTarget))e.currentTarget.classList.remove('drag-over')}
+// ── Reordenar colunas dos Kanbans (arrastar pelo cabeçalho) ──
+let _colOrder={};
+try{_colOrder=JSON.parse(localStorage.getItem('crm_col_order')||'{}');}catch{_colOrder={};}
+function _saveColOrder(){localStorage.setItem('crm_col_order',JSON.stringify(_colOrder));}
+function _orderedCols(boardKey,cols){
+  const order=_colOrder[boardKey];
+  if(!order||!order.length)return cols;
+  const byId={};cols.forEach(c=>byId[c.id]=c);
+  const ordered=order.map(id=>byId[id]).filter(Boolean);
+  const missing=cols.filter(c=>!order.includes(c.id));
+  return[...ordered,...missing];
+}
+let _colDragId=null,_colDragBoard=null;
+// Registro dos boards que podem ter as colunas reordenadas: cada um sabe
+// listar seus próprios ids (na ordem "de fábrica") e como se re-renderizar.
+const _COL_BOARD_REGISTRY={
+  op:{ids:()=>OP_COLS.map(c=>c.id),render:()=>renderOp()},
+  alb:{ids:()=>ALB_COLS.map(c=>c.id),render:()=>renderAlb()},
+  'pr-proj':{ids:()=>PR_COLS.filter(c=>(c.cat||'proj')==='proj').map(c=>c.id),render:()=>renderPr()},
+  'pr-video':{ids:()=>PR_COLS.filter(c=>c.cat==='video').map(c=>c.id),render:()=>renderPrVideo()},
+  'pr-frl':{ids:()=>PR_COLS.filter(c=>c.cat==='frl').map(c=>c.id),render:()=>renderPrFrl()},
+};
+function colDragStart(e,boardKey,colId){
+  _colDragId=colId;_colDragBoard=boardKey;
+  e.dataTransfer.effectAllowed='move';
+  e.dataTransfer.setData('text/col-id',colId);
+  e.currentTarget.closest('.col')?.classList.add('col-dragging');
+}
+function colDragEnd(e){
+  document.querySelectorAll('.col-dragging').forEach(el=>el.classList.remove('col-dragging'));
+  document.querySelectorAll('.col-drag-over').forEach(el=>el.classList.remove('col-drag-over'));
+}
+function colDragOver(e){e.preventDefault();e.dataTransfer.dropEffect='move';e.currentTarget.classList.add('col-drag-over');}
+function colDragLeave(e){if(!e.currentTarget.contains(e.relatedTarget))e.currentTarget.classList.remove('col-drag-over');}
+function colDrop(e,boardKey,targetColId){
+  e.preventDefault();e.stopPropagation();
+  e.currentTarget.classList.remove('col-drag-over');
+  const draggedId=_colDragId;
+  const reg=_COL_BOARD_REGISTRY[boardKey];
+  if(!draggedId||_colDragBoard!==boardKey||draggedId===targetColId||!reg)return;
+  const allIds=reg.ids();
+  let order=(_colOrder[boardKey]&&_colOrder[boardKey].length)?[..._colOrder[boardKey]]:[...allIds];
+  allIds.forEach(id=>{if(!order.includes(id))order.push(id);});
+  order=order.filter(id=>allIds.includes(id));
+  const from=order.indexOf(draggedId),to=order.indexOf(targetColId);
+  if(from===-1||to===-1)return;
+  order.splice(from,1);
+  order.splice(to,0,draggedId);
+  _colOrder[boardKey]=order;
+  _saveColOrder();
+  _colDragId=null;_colDragBoard=null;
+  reg.render();
+}
 document.addEventListener('dragover',e=>{document.querySelectorAll('.kb-wrap').forEach(w=>{const r=w.getBoundingClientRect();if(e.clientY<r.top||e.clientY>r.bottom)return;const zone=100,spd=16;if(e.clientX<r.left+zone&&e.clientX>=r.left-10)w.scrollLeft-=spd;else if(e.clientX>r.right-zone&&e.clientX<=r.right+10)w.scrollLeft+=spd;})});
 function clearParaPerdido(card){
   card.pendencias=[];
