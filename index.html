@@ -250,6 +250,7 @@ textarea{resize:vertical;min-height:68px;line-height:1.5}
 .listas-tabs{display:flex;gap:8px;margin-bottom:24px;border-bottom:2px solid var(--border);padding-bottom:0}
 .listas-tab{padding:10px 20px;font:600 13px 'Montserrat',sans-serif;color:var(--muted);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:.15s}
 .listas-tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+.tab-count-badge{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:#A9762F;color:#fff;font-size:10px;font-weight:800;vertical-align:middle}
 .listas-section{display:none}.listas-section.active{display:block}
 .lista-card{background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--sh);border:1px solid var(--border);overflow:hidden}
 .lista-add-row{display:flex;gap:8px;padding:16px;border-bottom:1px solid var(--border);background:var(--n50)}
@@ -1483,7 +1484,8 @@ td { padding: 13px 16px; font-size: 13.5px; }
   <div class="listas-wrap">
     <div class="listas-tabs">
       <button class="listas-tab active" onclick="switchLista('conteudos',this)">🎬 Conteúdos</button>
-      <button class="listas-tab" onclick="switchLista('pendencias',this)">⏰ Pendências de clientes</button>
+      <button class="listas-tab" onclick="switchLista('cnt_cal',this)">📅 Calendário de Posts</button>
+      <button class="listas-tab" onclick="switchLista('pendencias',this)">⏰ Pendências de clientes <span id="pen-week-badge" class="tab-count-badge" style="display:none" title="Pendências com prazo nesta semana"></span></button>
       <button class="listas-tab" onclick="switchLista('pendencias_gerais',this)">⏰ Pendências</button>
     </div>
 
@@ -1500,9 +1502,22 @@ td { padding: 13px 16px; font-size: 13.5px; }
             <option value="Carrossel">📑 Carrossel</option>
             <option value="BTS">🎥 BTS</option>
           </select>
+          <input type="date" id="cnt-data" title="Data de publicação (opcional)" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font:500 13px 'Montserrat',sans-serif;color:var(--n700);background:var(--surface);outline:none">
           <button class="btn btn-p btn-sm" onclick="addConteudo()">＋ Adicionar</button>
         </div>
         <div id="cnt-list"></div>
+      </div>
+    </div>
+
+    <!-- CALENDÁRIO DE CONTEÚDOS -->
+    <div class="listas-section" id="ls-cnt_cal">
+      <div class="lista-card" style="padding:0;overflow:hidden">
+        <div class="ag-nav" style="padding:16px">
+          <button class="btn btn-g btn-sm" onclick="cntCalPrev()">← Mês anterior</button>
+          <div class="ag-nav-title" id="cnt-cal-title"></div>
+          <button class="btn btn-g btn-sm" onclick="cntCalNext()">Próximo mês →</button>
+        </div>
+        <div class="ag-grid" id="cnt-cal-grid" style="border-radius:0"></div>
       </div>
     </div>
 
@@ -2577,7 +2592,11 @@ td { padding: 13px 16px; font-size: 13.5px; }
         <button class="btn btn-teal btn-sm" style="margin-top:8px" onclick="openLinkedClient()">🔗 Abrir ficha do cliente</button>
       </div>
       <div class="fs">
-        <div class="pipe-box"><span style="font-size:18px">🎬</span><label for="f-pr-col">Fase:</label><select id="f-pr-col"></select></div>
+        <div class="pipe-box"><span style="font-size:18px">🎬</span><label for="f-pr-col">Fase:</label><select id="f-pr-col" onchange="onPrColChange()"></select></div>
+      </div>
+      <div class="fs" id="f-pr-pendencia-wrap" style="display:none">
+        <div class="fs-title">🧩 O que está faltando?</div>
+        <div class="fg"><input type="text" id="f-pr-pendencia" placeholder="Ex: Aguardando fotos do freela, cliente não escolheu fotos..."></div>
       </div>
       <div class="fs">
         <div class="fs-title">📝 Notas do Projeto</div>
@@ -3238,6 +3257,7 @@ const OP_COLS=[
 ];
 const PR_COLS=[
   {id:'festa-acontecer',name:'Festa para acontecer',emoji:'🎂',color:'#424A53'},
+  {id:'pr-pendencia',name:'Pendência',sub:'⏳ Falta algo p/ avançar',emoji:'🧩',color:'#A9762F'},
   {id:'separar-fotos',name:'Separar fotos',emoji:'📂',color:'#606872'},
   {id:'cortar-fotos',name:'Cortar fotos',emoji:'✂️',color:'#4F5D65'},
   {id:'aftershoot',name:'Aftershoot — cores',emoji:'🎨',color:'#525B68'},
@@ -3272,8 +3292,8 @@ const ALB_COLS=[
   {id:'alb-montar',    name:'Montar álbum',                    emoji:'📒', color:'#69737E'},
   {id:'alb-capa',      name:'Álbum montado — aguardando capa', emoji:'🎨', color:'#2C7A7B'},
   {id:'alb-aprovacao', name:'Aguardando aprovação',            emoji:'👀', color:'#46586B'},
-  {id:'alb-grafica',   name:'Está na gráfica',                 emoji:'🖨️', color:'#4E7C84'},
   {id:'alb-enviar',    name:'Enviar para a gráfica',           emoji:'📦', color:'#5A6472'},
+  {id:'alb-grafica',   name:'Está na gráfica',                 emoji:'🖨️', color:'#4E7C84'},
   {id:'alb-entregue',  name:'Entregue — concluído',            emoji:'✅', color:'#66798D'},
 ];
 const FREELA_COLS=[
@@ -4027,6 +4047,7 @@ function prCardHTML(c,cc){
       ${valor?`<span class="pc-pill valor">💰 ${fmtMoney(valor)}</span>`:''}
       ${valor||statusPag?`<span class="pc-pill ${pagCls}">${pagTxt}</span>`:''}
     </div>
+    ${c.pendenciaDesc?`<div style="font-size:11px;font-weight:700;color:#d6b16a;margin-top:5px;line-height:1.4">🧩 ${esc(c.pendenciaDesc.slice(0,60))}${c.pendenciaDesc.length>60?'…':''}</div>`:''}
     ${c.obs?`<div style="font-size:11px;color:${planoDeepActive?_pi.deepText:'var(--muted)'};${planoDeepActive?'opacity:.82;':''}margin-top:5px;line-height:1.4">${esc(c.obs.slice(0,60))}${c.obs.length>60?'…':''}</div>`:''}
     ${isFreelaCol?`<button class="freela-btn freela-btn-ok" style="margin-top:8px;width:100%" onclick="event.stopPropagation();marcarFreelaFinalizado('${c.id}')" title="Move este projeto para a coluna Finalizado, junto com os demais">✅ Finalizado</button>`:''}
   </div>`;
@@ -5131,6 +5152,8 @@ function openPrModal(cardId,defaultCol,event){
   document.getElementById('btn-pr-transfer').style.display=card?'inline-flex':'none';
   fillPrColSelect(card?card.coluna:(defaultCol||'festa-acontecer'));
   document.getElementById('f-pr-obs').value=card?.obs||'';
+  document.getElementById('f-pr-pendencia').value=card?.pendenciaDesc||'';
+  onPrColChange();
   const isStandalone=!card?.sourceId;
   document.getElementById('pr-standalone-sec').style.display=isStandalone?'':'none';
   document.getElementById('pr-linked-sec').style.display=isStandalone?'none':'';
@@ -5142,6 +5165,10 @@ function openPrModal(cardId,defaultCol,event){
   document.getElementById('mo-pr').classList.remove('hidden');
 }
 function openLinkedClient(){const card=editingPrId?prCards.find(c=>c.id===editingPrId):null;if(!card?.sourceId)return;closeMo('mo-pr');setTimeout(()=>openOpModal(card.sourceId,null,null),100)}
+function onPrColChange(){
+  const wrap=document.getElementById('f-pr-pendencia-wrap');if(!wrap)return;
+  wrap.style.display=document.getElementById('f-pr-col').value==='pr-pendencia'?'':'none';
+}
 function savePrCard(){
   const newCol=document.getElementById('f-pr-col').value;const oldCard=editingPrId?prCards.find(c=>c.id===editingPrId):null;
   const src2=oldCard?.sourceId?opCards.find(o=>o.id===oldCard.sourceId):null;
@@ -5151,7 +5178,7 @@ function savePrCard(){
   if(isStandalone&&!nomePais){toast('⚠️ Informe o nome do projeto!','orange');document.getElementById('f-pr-nome').focus();return}
   const freela=isStandalone?(document.querySelector('input[name="pr-freela"]:checked')?.value||''):(oldCard?.freela||'');
   const parceiroId=isStandalone&&freela==='sou-freela'?(document.getElementById('f-pr-parceiroId')?.value||''):(oldCard?.parceiroId||'');
-  const data={id:editingPrId||uid(),coluna:newCol,sourceId:oldCard?.sourceId||null,nomePais,nomeCrianca:src2?.nomeCrianca||oldCard?.nomeCrianca||'',idade:src2?.idade||oldCard?.idade||'',nomeCrianca2:src2?.nomeCrianca2||oldCard?.nomeCrianca2||'',idade2:src2?.idade2||oldCard?.idade2||'',dataEvento,freela,parceiroId,obs:document.getElementById('f-pr-obs').value.trim(),criadoEm:oldCard?.criadoEm||Date.now(),updatedAt:Date.now()};
+  const data={id:editingPrId||uid(),coluna:newCol,sourceId:oldCard?.sourceId||null,nomePais,nomeCrianca:src2?.nomeCrianca||oldCard?.nomeCrianca||'',idade:src2?.idade||oldCard?.idade||'',nomeCrianca2:src2?.nomeCrianca2||oldCard?.nomeCrianca2||'',idade2:src2?.idade2||oldCard?.idade2||'',dataEvento,freela,parceiroId,obs:document.getElementById('f-pr-obs').value.trim(),pendenciaDesc:document.getElementById('f-pr-pendencia').value.trim(),criadoEm:oldCard?.criadoEm||Date.now(),updatedAt:Date.now()};
   if(editingPrId){const i=prCards.findIndex(c=>c.id===editingPrId);if(i!==-1)prCards[i]=data;else prCards.push(data)}else prCards.push(data);
   savPr();closeMo('mo-pr');try{renderPr();renderAgenda();}catch(err){console.error(err);}toast('✅ Projeto salvo!','green');
 }
@@ -5266,6 +5293,7 @@ function switchLista(nome,btn){
   document.querySelectorAll('.listas-section').forEach(s=>s.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('ls-'+nome).classList.add('active');
+  if(nome==='cnt_cal')renderCntCal();
 }
 function renderListas(){fillListasClienteSelects();renderTarefas();renderTarefasClientes();renderConteudos();renderPendencias();renderPendenciasGerais();}
 function fillListasClienteSelects(){
@@ -5292,6 +5320,7 @@ let _editingId=null,_editingTipo=null;
 let _concluidos={tar:false,'tar-dia':false,'tar-cli':false,cnt:false,pen:false,pgr:false};
 let _notasAbertas=new Set();
 let _linksAbertos=new Set();
+let _fotosAbertas=new Set();
 function toggleConcluidos(tipo){
   _concluidos[tipo]=!_concluidos[tipo];
   if(tipo==='tar')renderTarefas();else if(tipo==='cnt')renderConteudos();else renderPendencias();
@@ -5385,19 +5414,80 @@ function addConteudo(){
   const tipo=document.getElementById('cnt-tipo').value;
   const clienteId=document.getElementById('cnt-cliente')?.value||'';
   const clienteNome=clienteId?(clients.find(c=>c.id===clienteId)?.nome||''):'';
-  conteudos.unshift({id:uid(),texto:txt,tipo,clienteId,clienteNome,status:'ideia',criadoEm:Date.now()});
-  savCnt();renderConteudos();inp.value='';inp.focus();
+  const dataPub=document.getElementById('cnt-data')?.value||'';
+  conteudos.unshift({id:uid(),texto:txt,tipo,clienteId,clienteNome,dataPub,status:'ideia',criadoEm:Date.now()});
+  savCnt();renderConteudos();inp.value='';const _dEl=document.getElementById('cnt-data');if(_dEl)_dEl.value='';inp.focus();
 }
+function setDataPubConteudo(id,val){const c=conteudos.find(x=>x.id===id);if(c){c.dataPub=val;savCnt();renderConteudos();}}
 function avancarConteudo(id){
   const c=conteudos.find(x=>x.id===id);if(!c)return;
   const idx=CNT_STATUS.indexOf(c.status);if(idx<CNT_STATUS.length-1)c.status=CNT_STATUS[idx+1];
   savCnt();renderConteudos();
 }
-function delConteudo(id){conteudos=conteudos.filter(x=>x.id!==id);_notasAbertas.delete(id);_linksAbertos.delete(id);savCnt();renderConteudos();}
+function delConteudo(id){conteudos=conteudos.filter(x=>x.id!==id);_notasAbertas.delete(id);_linksAbertos.delete(id);_fotosAbertas.delete(id);savCnt();renderConteudos();}
 function toggleNota(id){_notasAbertas.has(id)?_notasAbertas.delete(id):_notasAbertas.add(id);renderConteudos();}
 function saveNota(id,val){const c=conteudos.find(x=>x.id===id);if(c){c.notas=val;savCnt();}}
 function toggleLink(id){_linksAbertos.has(id)?_linksAbertos.delete(id):_linksAbertos.add(id);renderConteudos();}
 function saveLink(id,val){const c=conteudos.find(x=>x.id===id);if(c){c.link=val.trim();savCnt();renderConteudos();}}
+function toggleFoto(id){_fotosAbertas.has(id)?_fotosAbertas.delete(id):_fotosAbertas.add(id);renderConteudos();}
+function _resizeImageDataUrl(dataUrl,maxDim,quality){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onload=()=>{
+      let w=img.width,h=img.height;
+      if(w>maxDim||h>maxDim){
+        if(w>h){h=Math.round(h*maxDim/w);w=maxDim;}else{w=Math.round(w*maxDim/h);h=maxDim;}
+      }
+      const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      resolve(canvas.toDataURL('image/jpeg',quality));
+    };
+    img.onerror=reject;
+    img.src=dataUrl;
+  });
+}
+function _fileToDataUrl(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>resolve(reader.result);
+    reader.onerror=reject;
+    reader.readAsDataURL(file);
+  });
+}
+async function saveFotoConteudo(id,file){
+  if(!file||!file.type||!file.type.startsWith('image/'))return;
+  try{
+    const raw=await _fileToDataUrl(file);
+    const resized=await _resizeImageDataUrl(raw,700,0.7);
+    const c=conteudos.find(x=>x.id===id);if(!c)return;
+    c.foto=resized;savCnt();renderConteudos();
+    toast('📷 Foto anexada!','green');
+  }catch(e){toast('⚠️ Não consegui carregar essa imagem.','orange');}
+}
+function onFotoFileChange(id,input){
+  const file=input.files&&input.files[0];
+  if(file)saveFotoConteudo(id,file);
+}
+function onFotoPaste(id,event){
+  const items=(event.clipboardData||event.originalEvent?.clipboardData)?.items;
+  if(!items)return;
+  for(const item of items){
+    if(item.type&&item.type.startsWith('image/')){
+      event.preventDefault();
+      saveFotoConteudo(id,item.getAsFile());
+      return;
+    }
+  }
+}
+function delFotoConteudo(id){const c=conteudos.find(x=>x.id===id);if(c){c.foto=null;savCnt();renderConteudos();}}
+function _abrirFotoLightbox(url){
+  const old=document.getElementById('foto-lightbox');if(old)old.remove();
+  const d=document.createElement('div');d.id='foto-lightbox';
+  d.style.cssText='position:fixed;inset:0;z-index:9995;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;cursor:zoom-out;padding:24px';
+  d.innerHTML=`<img src="${url}" style="max-width:100%;max-height:100%;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.6)">`;
+  d.onclick=()=>d.remove();
+  document.body.appendChild(d);
+}
 function _cntRow(c){
   const icon=CNT_TIPO_ICON[c.tipo]||'📄';
   const isDone=c.status==='publicado';
@@ -5408,6 +5498,8 @@ function _cntRow(c){
   const temLink=c.link&&c.link.trim();
   const linkAberto=_linksAbertos.has(c.id);
   const linkHref=temLink?(/^https?:\/\//i.test(c.link.trim())?c.link.trim():'https://'+c.link.trim().replace(/^\/+/,'')):'';
+  const temFoto=!!c.foto;
+  const fotoAberta=_fotosAbertas.has(c.id);
   if(_editingId===c.id&&_editingTipo==='cnt'){
     return`<div class="lista-item${isDone?' done':''}">
       <span style="font-size:16px;flex-shrink:0">${icon}</span>
@@ -5418,21 +5510,35 @@ function _cntRow(c){
     </div>`;
   }
   return`<div style="border-radius:10px;overflow:hidden;margin-bottom:2px">
-    <div class="lista-item${isDone?' done':''}" style="border-radius:${(notaAberta||linkAberto)?'10px 10px 0 0':'10px'};margin-bottom:0">
-      <span style="font-size:16px;flex-shrink:0">${icon}</span>
+    <div class="lista-item${isDone?' done':''}" style="border-radius:${(notaAberta||linkAberto||fotoAberta)?'10px 10px 0 0':'10px'};margin-bottom:0">
+      ${temFoto?`<img src="${c.foto}" onclick="event.stopPropagation();_abrirFotoLightbox('${c.foto}')" style="width:34px;height:34px;object-fit:cover;border-radius:6px;cursor:zoom-in;flex-shrink:0" title="Ver foto">`:`<span style="font-size:16px;flex-shrink:0">${icon}</span>`}
       <div style="flex:1;min-width:0">
         <div class="lista-item-text">${esc(c.texto)}<span style="margin-left:6px;font-size:11px;color:var(--muted)">${c.tipo}</span></div>
         ${c.clienteNome?`<div style="font-size:11px;color:var(--muted);margin-top:2px">👤 ${esc(c.clienteNome)}</div>`:''}
         ${temNota&&!notaAberta?`<div style="font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">📝 ${esc(c.notas)}</div>`:''}
         ${temLink&&!linkAberto?`<div style="font-size:11px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><a href="${esc(linkHref)}" target="_blank" rel="noopener noreferrer" style="color:var(--primary)">🔗 ${esc(c.link)}</a></div>`:''}
       </div>
+      <input type="date" value="${c.dataPub||''}" onclick="event.stopPropagation()" onchange="setDataPubConteudo('${c.id}',this.value)" title="Data de publicação"
+        style="font:500 11px 'Montserrat',sans-serif;color:${c.dataPub?'var(--primary)':'var(--muted)'};border:1px solid var(--border);border-radius:6px;padding:3px 6px;background:var(--n50);outline:none;cursor:pointer;max-width:118px">
       <span class="lista-badge ${pillCls}">${CNT_STATUS_LBL[c.status]}</span>
       ${!isDone?`<button class="btn btn-g btn-sm" style="font-size:11px;padding:4px 10px" onclick="avancarConteudo('${c.id}')">${btnTxt}</button>`:''}
+      <button class="lista-item-edit" onclick="toggleFoto('${c.id}')" title="${fotoAberta?'Fechar foto':'Adicionar/ver foto'}" style="opacity:1;${temFoto?'color:var(--primary)':'color:var(--muted)'}">📷</button>
       <button class="lista-item-edit" onclick="toggleLink('${c.id}')" title="${linkAberto?'Fechar link':'Adicionar/editar link'}" style="opacity:1;${temLink?'color:var(--primary)':'color:var(--muted)'}">🔗</button>
       <button class="lista-item-edit" onclick="toggleNota('${c.id}')" title="${notaAberta?'Fechar notas':'Abrir notas'}" style="opacity:1;${temNota?'color:var(--primary)':'color:var(--muted)'}">📝</button>
       <button class="lista-item-edit" onclick="startEdit('cnt','${c.id}')" title="Editar">✏️</button>
       <button class="lista-item-del" onclick="delConteudo('${c.id}')">✕</button>
     </div>
+    ${fotoAberta?`<div style="background:var(--surface);border:1px solid var(--border);border-top:none;padding:10px 12px;${(notaAberta||linkAberto)?'':'border-radius:0 0 10px 10px'};display:flex;flex-direction:column;gap:8px;align-items:center">
+      ${temFoto?`<img src="${c.foto}" onclick="_abrirFotoLightbox('${c.foto}')" style="max-width:100%;max-height:220px;border-radius:8px;cursor:zoom-in;object-fit:contain">`:''}
+      <div tabindex="0" onpaste="onFotoPaste('${c.id}',event)" style="width:100%;box-sizing:border-box;border:1.5px dashed var(--border);border-radius:8px;padding:14px;text-align:center;font-size:12px;color:var(--muted);outline:none;cursor:text" title="Clique aqui e cole (Ctrl+V) uma imagem">📋 Clique aqui e cole (Ctrl+V) uma captura de tela</div>
+      <div style="display:flex;gap:8px;align-items:center;width:100%">
+        <label style="flex:1;text-align:center;background:var(--n100);border:1.5px solid var(--border);border-radius:8px;padding:7px;font-size:12px;font-weight:600;color:var(--n700);cursor:pointer">
+          📁 Escolher arquivo
+          <input type="file" accept="image/*" style="display:none" onchange="onFotoFileChange('${c.id}',this)">
+        </label>
+        ${temFoto?`<button onclick="delFotoConteudo('${c.id}')" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:7px 12px;font-size:12px;color:var(--danger);cursor:pointer">Remover foto</button>`:''}
+      </div>
+    </div>`:''}
     ${linkAberto?`<div style="background:var(--surface);border:1px solid var(--border);border-top:none;padding:8px 12px 10px;${notaAberta?'':'border-radius:0 0 10px 10px'}">
       <input type="url" placeholder="https://... link do conteúdo, referência, etc." value="${esc(c.link||'')}"
         style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font:400 12px 'Montserrat',sans-serif;color:var(--n700);outline:none;box-sizing:border-box;background:var(--surface)"
@@ -5465,6 +5571,49 @@ function renderConteudos(){
     if(open)html+=`<div class="concluidos-section">${publicados.map(_cntRow).join('')}</div>`;
   }
   el.innerHTML=html;
+  renderCntCal();
+}
+
+// — Calendário de Conteúdos —
+let cntCalYear=null,cntCalMonth=null;
+function _initCntCal(){if(cntCalYear===null){const n=new Date();cntCalYear=n.getFullYear();cntCalMonth=n.getMonth();}}
+function cntCalPrev(){_initCntCal();cntCalMonth--;if(cntCalMonth<0){cntCalMonth=11;cntCalYear--;}renderCntCal();}
+function cntCalNext(){_initCntCal();cntCalMonth++;if(cntCalMonth>11){cntCalMonth=0;cntCalYear++;}renderCntCal();}
+function renderCntCal(){
+  const grid=document.getElementById('cnt-cal-grid');if(!grid)return;
+  _initCntCal();
+  const MONTHS=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const DAYS=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  const titleEl=document.getElementById('cnt-cal-title');if(titleEl)titleEl.textContent=`${MONTHS[cntCalMonth]} ${cntCalYear}`;
+  const porDia={};
+  conteudos.filter(c=>c.dataPub).forEach(c=>{if(!porDia[c.dataPub])porDia[c.dataPub]=[];porDia[c.dataPub].push(c);});
+  const firstDay=new Date(cntCalYear,cntCalMonth,1).getDay();
+  const daysInMonth=new Date(cntCalYear,cntCalMonth+1,0).getDate();
+  const prevDays=new Date(cntCalYear,cntCalMonth,0).getDate();
+  const today=new Date();
+  let html=DAYS.map(d=>`<div class="ag-day-name">${d}</div>`).join('');
+  for(let i=firstDay-1;i>=0;i--)html+=`<div class="ag-day other-month"><div class="ag-day-num">${prevDays-i}</div></div>`;
+  for(let d=1;d<=daysInMonth;d++){
+    const ds=`${cntCalYear}-${String(cntCalMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isT=today.getFullYear()===cntCalYear&&today.getMonth()===cntCalMonth&&today.getDate()===d;
+    const itens=porDia[ds]||[];
+    const numH=isT?`<div class="ag-day-num"><span>${d}</span></div>`:`<div class="ag-day-num">${d}</div>`;
+    const itH=itens.slice(0,3).map(c=>{
+      const icon=CNT_TIPO_ICON[c.tipo]||'📄';
+      const ec=c.status==='publicado'?'#5B8A5B':'#A9762F';
+      return`<div class="ag-event" style="background:${ec}22;color:${ec}" title="${esc(c.texto)}" onclick="event.stopPropagation();abrirConteudoDoCal('${c.id}')">${icon} ${esc(c.texto.slice(0,22))}${c.texto.length>22?'…':''}</div>`;
+    }).join('')+(itens.length>3?`<div style="font-size:10px;color:var(--muted)">+${itens.length-3} mais</div>`:'');
+    html+=`<div class="ag-day${isT?' today':''}">${numH}${itH}</div>`;
+  }
+  const rem=(firstDay+daysInMonth)%7===0?0:7-((firstDay+daysInMonth)%7);
+  for(let d=1;d<=rem;d++)html+=`<div class="ag-day other-month"><div class="ag-day-num">${d}</div></div>`;
+  grid.innerHTML=html;
+}
+function abrirConteudoDoCal(id){
+  const btn=[...document.querySelectorAll('.listas-tab')].find(b=>b.getAttribute('onclick')?.includes("switchLista('conteudos'"));
+  if(btn)switchLista('conteudos',btn);
+  startEdit('cnt',id);
+  setTimeout(()=>document.getElementById('edit-inp-'+id)?.scrollIntoView({behavior:'smooth',block:'center'}),50);
 }
 
 // — Pendências —
@@ -5620,7 +5769,22 @@ function _penRow(p){
   </div>
   ${_recEditorBoxHTML(p.id,p.rec,'pen')}`;
 }
+function _countPendenciasSemana(){
+  const hoje=new Date();hoje.setHours(0,0,0,0);
+  const domingo=new Date(hoje);domingo.setDate(hoje.getDate()-hoje.getDay());
+  const sabado=new Date(domingo);sabado.setDate(domingo.getDate()+6);
+  const iniStr=domingo.toISOString().slice(0,10);
+  const fimStr=sabado.toISOString().slice(0,10);
+  return pendencias.filter(p=>p.status!=='feito'&&p.prazo&&p.prazo>=iniStr&&p.prazo<=fimStr).length;
+}
+function _updatePenWeekBadge(){
+  const badge=document.getElementById('pen-week-badge');if(!badge)return;
+  const n=_countPendenciasSemana();
+  badge.textContent=n;
+  badge.style.display=n>0?'inline-flex':'none';
+}
 function renderPendencias(){
+  _updatePenWeekBadge();
   const el=document.getElementById('pen-list');if(!el)return;
   if(!pendencias.length){el.innerHTML=`<div class="lista-empty">Nenhuma pendência. Tudo em dia! ⚠️</div>`;return}
   const pendentes=[...pendencias].filter(p=>p.status!=='feito').sort((a,b)=>{
