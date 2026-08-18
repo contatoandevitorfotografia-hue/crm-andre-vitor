@@ -6552,6 +6552,21 @@ function _calcFluxoDiario(tipo){
       if(val>0){x.saidas+=val;x.saidasList.push({nome:c.nome,valor:val});}
     });
   });
+  // contas sem dia de vencimento definido — ainda não pagas, mas sem dia
+  // certo pra entrar na lista acima. Entram de uma vez em "hoje" (mês
+  // atual) e depois no dia 1º de cada mês seguinte dentro da janela,
+  // pra não sumirem da projeção nem serem contadas duas vezes.
+  dias.forEach((x,i)=>{
+    if(i>0&&x.data.getDate()!==1)return;
+    const mesLabel=_dataParaMesLabel(x.data);
+    contas.forEach(c=>{
+      if(c.dia)return;
+      if(!_contaAtivaNoMes(c,mesLabel))return;
+      if(_contaPagoMes(c,mesLabel))return;
+      const val=_contaValorPendente(c,mesLabel);
+      if(val>0){x.saidas+=val;x.saidasList.push({nome:c.nome+' (sem dia definido)',valor:val});}
+    });
+  });
 
   let saldo=vgAtual;
   return dias.map(x=>{
