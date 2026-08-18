@@ -829,7 +829,7 @@ function initMobSync(){
       const d=snap.val();
       const has=d&&(d.op||d.cnt);
       if(has&&Date.now()-_dadosTs>2000){
-        if(d.op)opCards=toArr(d.op);
+        if(d.op){opCards=toArr(d.op);if(typeof Notification!=='undefined'&&Notification.permission==='granted')scheduleFestaAusenciaNotifs();}
         if(d.pac)packages=toArr(d.pac);
         if(d.cnt)conteudos=toArr(d.cnt);
         if(d.frl)freelancers=toArr(d.frl);
@@ -1278,6 +1278,30 @@ async function scheduleNotif(lem){
 function scheduleAllNotifs(){
   if(_pageTimers)Object.values(_pageTimers).forEach(clearTimeout);
   lembretes.forEach(l=>{if(l.aviso&&l.aviso!=='nunca')scheduleNotif(l);});
+  scheduleFestaAusenciaNotifs();
+}
+
+// Lembrete automático 30min antes de cada festa confirmada — pra não
+// esquecer de ativar a mensagem de ausência antes de sair pra fotografar.
+function scheduleFestaAusenciaNotifs(){
+  if(!('Notification' in window)||Notification.permission!=='granted')return;
+  const now=Date.now();
+  (opCards||[]).filter(c=>GST_FIN_COLS.includes(c.coluna)&&c.dataEvento).forEach(c=>{
+    const evDt=new Date(c.dataEvento+'T'+(c.horario||'09:00'));
+    if(isNaN(evDt.getTime())||evDt.getTime()<=now)return;
+    const id='ausencia_'+c.id;
+    const notifDt=new Date(evDt.getTime()-30*60000);
+    const delay=notifDt-now;
+    if(delay<0)return;
+    const nome=c.nomePais||c.titulo||'Cliente';
+    const title='📸 Festa em 30 min!';
+    const body=`${nome}${c.horario?' às '+c.horario:''} — não esqueça de colocar a mensagem de ausência!`;
+    if(_pageTimers[id])clearTimeout(_pageTimers[id]);
+    _pageTimers[id]=setTimeout(()=>_fireNotif(id,title,body),delay);
+    try{
+      navigator.serviceWorker.ready.then(reg=>{if(reg.active)reg.active.postMessage({type:'SCHEDULE',id,title,body,delay});});
+    }catch(e){}
+  });
 }
 
 async function testNotification(){
