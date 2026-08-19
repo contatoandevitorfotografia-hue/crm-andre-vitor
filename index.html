@@ -6549,25 +6549,34 @@ function _calcFluxoDiario(tipo){
     const lista=contas.flatMap(c=>{
       if(c.itens&&c.itens.length){
         return c.itens.filter(x=>_itemAtivoNoMes(x,mesLabel)&&!_itemPagoMes(x,mesLabel)).map(x=>({
-          nome:x.nome||c.nome,
+          nome:x.nome||c.nome,contaId:c.id,contaNome:c.nome,
           valor:_itemValorMes(x,mesLabel),
           dia:x.dia||c.dia||null
         })).filter(o=>o.valor>0);
       }
       if(!_contaAtivaNoMes(c,mesLabel)||_contaPagoMes(c,mesLabel))return[];
       const val=_contaValorPendente(c,mesLabel);
-      return val>0?[{nome:c.nome,valor:val,dia:c.dia||null}]:[];
+      return val>0?[{nome:c.nome,contaId:c.id,contaNome:c.nome,valor:val,dia:c.dia||null}]:[];
     });
     cacheMes[mesLabel]=lista;
     return lista;
   };
+  // Agrupa vários itens da MESMA conta caindo no mesmo dia num só resumo
+  // (ex: várias comprinhas dentro de "Reembolso"), pra não poluir a linha
+  // do dia — mas mantém o nome do item quando é o único daquele dia (ex:
+  // Vivo/SAAE/EDP/Lourdes, cada um sozinho no seu dia).
+  const _agruparSaidas=lista=>{
+    const porConta={};
+    lista.forEach(o=>{(porConta[o.contaId]=porConta[o.contaId]||[]).push(o);});
+    return Object.values(porConta).map(grp=>grp.length>1
+      ?{nome:`${grp[0].contaNome} (${grp.length} itens)`,valor:grp.reduce((s,o)=>s+o.valor,0)}
+      :{nome:grp[0].nome,valor:grp[0].valor});
+  };
   dias.forEach(x=>{
     const dia=x.data.getDate();
     const mesLabel=_dataParaMesLabel(x.data);
-    _saidasDoMes(mesLabel).forEach(o=>{
-      if(o.dia!==dia)return;
-      x.saidas+=o.valor;x.saidasList.push({nome:o.nome,valor:o.valor});
-    });
+    const matched=_saidasDoMes(mesLabel).filter(o=>o.dia===dia);
+    _agruparSaidas(matched).forEach(o=>{x.saidas+=o.valor;x.saidasList.push(o);});
   });
   // itens/contas sem dia de vencimento definido — entram de uma vez em
   // "hoje" (mês atual) e depois no dia 1º de cada mês seguinte dentro da
@@ -6575,9 +6584,10 @@ function _calcFluxoDiario(tipo){
   dias.forEach((x,i)=>{
     if(i>0&&x.data.getDate()!==1)return;
     const mesLabel=_dataParaMesLabel(x.data);
-    _saidasDoMes(mesLabel).forEach(o=>{
-      if(o.dia)return;
-      x.saidas+=o.valor;x.saidasList.push({nome:o.nome+' (sem dia definido)',valor:o.valor});
+    const matched=_saidasDoMes(mesLabel).filter(o=>!o.dia);
+    _agruparSaidas(matched).forEach(o=>{
+      const nome=o.nome.endsWith('itens)')?o.nome.replace(/ \((\d+) itens\)$/,' (sem dia · $1 itens)'):o.nome+' (sem dia definido)';
+      x.saidas+=o.valor;x.saidasList.push({nome,valor:o.valor});
     });
   });
 
