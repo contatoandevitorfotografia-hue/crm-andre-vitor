@@ -3391,6 +3391,21 @@ function load(){
   try{clients=JSON.parse(localStorage.getItem('crm_cl_v4')||'[]')}catch{clients=[]}
   try{const old=localStorage.getItem('crm_avf_v3');if(old&&opCards.length===0){const oc=JSON.parse(old);opCards=oc.filter(c=>c.coluna!=='pos-evento'&&c.coluna!=='concluido').map(c=>({...c,valorReserva:c.valorSinal||0,statusPag:c.statusPag||c.statusPagamento||'pendente'}));savOp()}}catch{}
   try{albCards=JSON.parse(localStorage.getItem('crm_alb_v1')||'[]')}catch{albCards=[]}
+  // Migração única: coluna "Festa para acontecer" de Álbuns foi removida a
+  // pedido — qualquer álbum que ainda estivesse nela passa pra "Aguardando
+  // seleção", e a coluna fica oculta (pode ser restaurada em ⚙️ Colunas).
+  if(!localStorage.getItem('crm_migr_rm_albfesta_v1')){
+    let changedAF=false;
+    albCards=albCards.map(c=>{
+      if(c.coluna!=='alb-festa')return c;
+      changedAF=true;
+      return{...c,coluna:'alb-selecao'};
+    });
+    if(changedAF)localStorage.setItem('crm_alb_v1',JSON.stringify(albCards));
+    if(!_colHidden.alb)_colHidden.alb=[];
+    if(!_colHidden.alb.includes('alb-festa')){_colHidden.alb.push('alb-festa');_saveColHidden();}
+    localStorage.setItem('crm_migr_rm_albfesta_v1','1');
+  }
   try{freelancers=JSON.parse(localStorage.getItem('crm_frl_v1')||'[]')}catch{freelancers=[]}
   try{tarefas=JSON.parse(localStorage.getItem('crm_tar_v1')||'[]')}catch{tarefas=[]}
   try{conteudos=JSON.parse(localStorage.getItem('crm_cnt_v1')||'[]')}catch{conteudos=[]}
@@ -4125,7 +4140,7 @@ function _saveColHidden(){localStorage.setItem('crm_col_hidden',JSON.stringify(_
 // etc.) e por isso não podem ser removidas, só reordenadas.
 const _COL_PROTEGIDAS={
   op:['novo-contato','confirmado','confirmado-pendencias','perdido'],
-  alb:['alb-festa','alb-selecao'],
+  alb:['alb-selecao'],
   'pr-proj':['festa-acontecer'],
   'pr-video':['freela-aguardando-fotos'],
   'pr-frl':['frl-aguardando-fotos'],
@@ -6469,7 +6484,7 @@ function copyOpToAlbum(){
       const novoAlb={
         id:uid(),
         _opId:opId,
-        coluna:'alb-festa',
+        coluna:'alb-selecao',
         titulo,
         cliente,
         obs,
@@ -7297,14 +7312,26 @@ function saveInlineFalta(cardId){
   const val=parseFloat(inp.value);
   const card=opCards.find(c=>c.id===cardId);if(!card)return;
   if(!isNaN(val)&&val>=0){
+    // "Falta pagar" é sempre recalculado na hora de exibir (líquido menos o
+    // valor pago) — editar só esse campo, sem também ajustar o valor pago
+    // por trás, fazia a edição sumir no próximo render e nunca refletir no
+    // Valor no Banco. Agora deriva o novo valor pago a partir da falta.
+    const _esIF=calcEmpresaShare(card);
+    const _geIF=(card.gastosItens||[]).filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
+    const _liqIF=Math.max(0,_esIF-_geIF);
+    const novaReserva=Math.max(0,parseFloat((_liqIF-val).toFixed(2)));
+    const _valorAntesIF=card.valorReserva||0,_statusAntesIF=card.statusPag;
+    _ajustaVGReservaSimples(card,novaReserva);saveFinData();
+    card.valorReserva=novaReserva;
     card.valorRestante=val;
     if(val===0){card.statusPag='pago';}
-    else if((card.valorReserva||0)>0){card.statusPag='sinal';}
+    else if(novaReserva>0){card.statusPag='sinal';}
     else{card.statusPag='pendente';}
+    _stamparDatasPagamento(card,_valorAntesIF,_statusAntesIF);
     savOp();syncFreelancerToAndre(card);
     toast('✅ Falta Pagar atualizado!','green');
   }
-  renderFinFestas();renderPessAll();
+  renderFinFestas();renderFinResumo();renderPessAll();
 }
 function inlineEditValor(cardId,triggerEl){
   const cell=document.getElementById('fin-val-'+cardId);if(!cell)return;
