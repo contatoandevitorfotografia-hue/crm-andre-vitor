@@ -5263,6 +5263,7 @@ function saveOpCard(){
   // o lembrete de follow-up 5 dias depois (perguntar se baixou/gostou).
   data.galeriaEnviadaEm=(data.galeria&&!oldCard?.galeria)?Date.now():(oldCard?.galeriaEnviadaEm||'');
   if(newCol==='perdido')clearParaPerdido(data);
+  _syncVGReservaChange(oldCard,data);saveFinData();
   if(editingOpId){const i=opCards.findIndex(c=>c.id===editingOpId);if(i!==-1)opCards[i]=data;else opCards.push(data)}else opCards.push(data);
   const wasConf2=oldCol==='confirmado'||oldCol==='confirmado-pendencias';
   const isConf2=newCol==='confirmado'||newCol==='confirmado-pendencias';
@@ -6987,6 +6988,7 @@ function saveQuickPag(cardId){
   const inp=document.getElementById('qep-input');
   const pago=parseFloat(inp?.value)||0;
   const total=(card.valorEmpresa||0)+(card.valorAndre||0)||card.valorTotal||0;
+  _ajustaVGReservaSimples(card,pago);saveFinData();
   card.valorReserva=pago;
   const _esQP=calcEmpresaShare(card);
   const _geQP=(card.gastosItens||[]).filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
@@ -6996,7 +6998,7 @@ function saveQuickPag(cardId){
   else if(pago>0){card.statusPag='sinal';card.valorRestante=_faltaQP;}
   else{card.statusPag='pendente';card.valorRestante=_liqQP||0;}
   card.updatedAt=Date.now();
-  savOp();syncFreelancerToAndre(card);renderOp();renderFinFestas();renderPessAll();
+  savOp();syncFreelancerToAndre(card);renderOp();renderFinFestas();renderFinResumo();renderPessAll();
   // Se o modal desse card estiver aberto, sincroniza os campos
   if(editingOpId===cardId){
     const _fvr=document.getElementById('f-valorReserva');if(_fvr)_fvr.value=card.valorReserva||'';
@@ -7024,12 +7026,14 @@ function saveInlineVT(cardId){
   const val=parseFloat(inp.value);
   const card=opCards.find(c=>c.id===cardId);if(!card)return;
   if(!isNaN(val)&&val>0){
+    const novaReserva=parseFloat((val*0.5).toFixed(2));
+    _ajustaVGReservaSimples(card,novaReserva);saveFinData();
     card.valorTotal=val;
-    card.valorReserva=parseFloat((val*0.5).toFixed(2));
+    card.valorReserva=novaReserva;
     if(card.statusPag!=='pago'){card.valorRestante=parseFloat((val*0.5).toFixed(2));}
     savOp();syncFreelancerToAndre(card);toast('✅ Valor total salvo!','green');
   }
-  renderFinFestas();renderPessAll();
+  renderFinFestas();renderFinResumo();renderPessAll();
 }
 function inlineEditReserva(cardId){
   const cell=document.getElementById('fin-rcell-'+cardId);if(!cell)return;
@@ -7048,6 +7052,7 @@ function saveInlineVR(cardId){
   const inp=document.getElementById('ievr-'+cardId);if(!inp)return;
   const val=parseFloat(inp.value)||0;
   const card=opCards.find(c=>c.id===cardId);if(!card)return;
+  _ajustaVGReservaSimples(card,val);saveFinData();
   card.valorReserva=val;
   // Usa empLiq (líquido empresa) para determinar status — igual ao _getFinFestas
   const _esVR=calcEmpresaShare(card);
@@ -7058,7 +7063,7 @@ function saveInlineVR(cardId){
   else if(val>0){card.statusPag='sinal';card.valorRestante=_faltaVR;}
   else{card.statusPag='pendente';card.valorRestante=_liqVR||0;}
   savOp();syncFreelancerToAndre(card);toast('✅ Valor pago salvo!','green');
-  renderFinFestas();renderPessAll();
+  renderFinFestas();renderFinResumo();renderPessAll();
   // Se o modal desse card estiver aberto, sincroniza os campos
   if(editingOpId===cardId){
     const _fvr=document.getElementById('f-valorReserva');if(_fvr)_fvr.value=card.valorReserva||'';
@@ -8799,6 +8804,35 @@ function _initFinVG(mes){
     const festas=_getFinFestas(mes);
     finVG[mes]=festas.reduce((s,f)=>s+(f.reserva||0),0);
   }
+}
+// Depois que finVG[mes] é "travado" (materializado, seja por edição manual
+// ou por pagar/desfazer uma conta), ele parava de refletir novos valores
+// pagos de festas — o valor no banco ficava congelado mesmo cadastrando
+// pagamentos novos. Estas funções mantêm finVG em sincronia sempre que o
+// "valor pago" (valorReserva) de uma festa muda.
+function _elegivelVG(c){
+  return c&&FIN_COLS.includes(c.coluna)&&(c.tipoExecucao||'proprio')!=='sou-freela'&&(c.tipoExecucao||'proprio')!=='freelancer';
+}
+// Uso: quando SÓ o valorReserva muda (mesmo mês/coluna/execução) — cobre
+// os editores rápidos (quick-edit, inline na aba Festas).
+function _ajustaVGReservaSimples(card,novoValor){
+  if(!_elegivelVG(card))return;
+  const mes=_getMesFin(card.dataEvento);if(!mes)return;
+  _initFinVG(mes);
+  finVG[mes]=(finVG[mes]||0)+(novoValor-(card.valorReserva||0));
+}
+// Uso: quando o card inteiro pode mudar (modal completo) — cobre também
+// troca de data/coluna/execução, removendo a contribuição antiga do mês
+// antigo e somando a nova no mês novo.
+function _syncVGReservaChange(oldCard,newCard){
+  const mesA=_elegivelVG(oldCard)?_getMesFin(oldCard.dataEvento):null;
+  const valA=mesA?(oldCard.valorReserva||0):0;
+  const mesD=_elegivelVG(newCard)?_getMesFin(newCard.dataEvento):null;
+  const valD=mesD?(newCard.valorReserva||0):0;
+  if(mesA)_initFinVG(mesA);
+  if(mesD)_initFinVG(mesD);
+  if(mesA)finVG[mesA]=(finVG[mesA]||0)-valA;
+  if(mesD)finVG[mesD]=(finVG[mesD]||0)+valD;
 }
 function pagarFinConta(i){
   var c=finContas[i]; if(!c)return;
