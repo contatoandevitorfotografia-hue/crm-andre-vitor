@@ -1763,7 +1763,7 @@ td { padding: 13px 16px; font-size: 13.5px; }
         <div class="fin-hdr"><h3>📊 Fluxo de Caixa — Empresa 2026</h3></div>
         <div class="fin-tbl-wrap">
           <table class="fin-resumo-tbl" style="width:100%;border-collapse:collapse">
-            <thead><tr><th>Mês</th><th>Festas</th><th>Contas Fixas</th><th>Gastos Diários</th><th>Valor no Banco</th><th>Sobrou</th><th>Status</th></tr></thead>
+            <thead><tr><th>Mês</th><th>Festas</th><th>Contas Fixas</th><th>Gastos Diários</th><th>Valor no Banco</th><th>Sobrou</th><th>Status</th><th></th></tr></thead>
             <tbody id="fin-resumo-body"></tbody>
           </table>
         </div>
@@ -1876,7 +1876,7 @@ td { padding: 13px 16px; font-size: 13.5px; }
         <div class="fin-hdr"><h3>📊 Fluxo de Caixa — Pessoal 2026</h3></div>
         <div class="fin-tbl-wrap">
           <table class="fin-resumo-tbl" style="width:100%;border-collapse:collapse">
-            <thead><tr><th>Mês</th><th>Festas</th><th>Contas Fixas</th><th>Gastos Diários</th><th>Valor no Banco</th><th>Sobrou</th><th>Status</th></tr></thead>
+            <thead><tr><th>Mês</th><th>Festas</th><th>Contas Fixas</th><th>Gastos Diários</th><th>Valor no Banco</th><th>Sobrou</th><th>Status</th><th></th></tr></thead>
             <tbody id="p-resumo-body"></tbody>
           </table>
         </div>
@@ -6616,6 +6616,27 @@ function _calcFluxoDiario(tipo){
     return{data:x.data,entradas:x.entradas,entradasList:x.entradasList,saidas:x.saidas,saidasList:x.saidasList,saldo};
   });
 }
+function irParaFluxoDiario(tipo,mesLabel){
+  const idxSel=_idxMesContas(mesLabel);
+  const idxAtual=_idxMesContas(_finCurMes());
+  if(idxSel<idxAtual){toast('📆 O Fluxo Diário só cobre os próximos 30 dias — esse mês já passou.','orange');return;}
+  const btn=document.querySelector((tipo==='fin'?'#fin-main-empresa':'#fin-main-pessoais')+' .fin-stab[onclick*="fluxodia"]');
+  if(tipo==='fin')switchFinTab('fluxodia',btn);else switchPessTab('fluxodia',btn);
+  setTimeout(()=>{
+    const container=document.getElementById(tipo==='fin'?'fin-fluxodia-list':'p-fluxodia-list');
+    if(!container)return;
+    const linhas=_calcFluxoDiario(tipo);
+    const alvo=linhas.findIndex(l=>_dataParaMesLabel(l.data)===mesLabel);
+    const alvoEl=alvo>=0?container.children[alvo]:null;
+    if(alvoEl){
+      alvoEl.scrollIntoView({behavior:'smooth',block:'center'});
+      alvoEl.style.outline='2px solid #6ba3e0';
+      setTimeout(()=>{alvoEl.style.outline='';},2000);
+    } else {
+      toast('📆 Esse mês está fora da janela de 30 dias do Fluxo Diário.','orange');
+    }
+  },150);
+}
 function renderFluxoDiario(tipo){
   const el=document.getElementById(tipo==='fin'?'fin-fluxodia-list':'p-fluxodia-list');
   if(!el)return;
@@ -6861,9 +6882,10 @@ function renderFinResumo(){
       <td>${vgHtml}</td>
       <td style="font-weight:800;color:${sobrouColor}">${fmtMoney(c.sobrou)}</td>
       <td>${isPassado?'':`<span class="fin-badge ${bdg}">${st}</span>`}</td>
+      <td>${isPassado?'':`<button onclick="irParaFluxoDiario('fin','${m}')" title="Ver esse mês no Fluxo Diário" style="background:none;border:1px solid var(--border);border-radius:7px;padding:4px 9px;font-size:13px;cursor:pointer;color:var(--muted)">📆</button>`}</td>
     </tr>`;
   });
-  tbody.innerHTML=rows||`<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px">Sem dados ainda. Confirme festas e adicione gastos.</td></tr>`;
+  tbody.innerHTML=rows||`<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">Sem dados ainda. Confirme festas e adicione gastos.</td></tr>`;
 }
 
 function startFinEditVG(m,cell){
@@ -8107,9 +8129,10 @@ function renderPessResumo(){
       <td>${vgHtml}</td>
       <td style="font-weight:800;color:${sobrouColor}">${fmtMoney(c.sobrou)}</td>
       <td>${isPassado?'':`<span class="fin-badge ${bdg}">${st}</span>`}</td>
+      <td>${isPassado?'':`<button onclick="irParaFluxoDiario('pess','${m}')" title="Ver esse mês no Fluxo Diário" style="background:none;border:1px solid var(--border);border-radius:7px;padding:4px 9px;font-size:13px;cursor:pointer;color:var(--muted)">📆</button>`}</td>
     </tr>`;
   });
-  tbody.innerHTML=rows||`<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px">Sem dados ainda.</td></tr>`;
+  tbody.innerHTML=rows||`<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">Sem dados ainda.</td></tr>`;
 }
 function editContaSP(el){
   if(el.querySelector('input'))return;
