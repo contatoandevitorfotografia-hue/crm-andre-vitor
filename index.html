@@ -6549,7 +6549,7 @@ function _calcFluxoDiario(tipo){
     const lista=contas.flatMap(c=>{
       if(c.itens&&c.itens.length){
         return c.itens.filter(x=>_itemAtivoNoMes(x,mesLabel)&&!_itemPagoMes(x,mesLabel)).map(x=>({
-          nome:c.nome+(x.nome?' — '+x.nome:''),
+          nome:x.nome||c.nome,
           valor:_itemValorMes(x,mesLabel),
           dia:x.dia||c.dia||null
         })).filter(o=>o.valor>0);
