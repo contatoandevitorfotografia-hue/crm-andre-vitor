@@ -104,6 +104,9 @@ body{font-family:'Montserrat',-apple-system,sans-serif;background:var(--bg);colo
 .kb-scrollbar-thumb:hover,.kb-scrollbar-thumb:active{background:#2C7A7B}
 .kb-board{display:flex;gap:13px;min-width:max-content;align-items:flex-start;padding-right:26px;padding-top:2px}
 .col{width:258px;background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(0,0,0,.08)),var(--surface);border-radius:18px;box-shadow:0 16px 34px rgba(0,0,0,.28),0 4px 12px rgba(0,0,0,.18);display:flex;flex-direction:column;max-height:calc(100vh - 175px);overflow:hidden;border:1px solid rgba(255,255,255,.06);backdrop-filter:blur(6px)}
+.col-add-ghost{flex-shrink:0;box-shadow:none;background:none;border:none}
+.col-add-ghost button{width:100%;min-height:110px;background:transparent;border:2px dashed rgba(255,255,255,.14);border-radius:14px;color:var(--muted);font:700 13px 'Montserrat',sans-serif;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;transition:.15s}
+.col-add-ghost button:hover{border-color:#6ba3e0;color:#6ba3e0;background:rgba(107,163,224,.06)}
 .col-hdr{padding:15px 14px 12px;border-radius:18px 18px 0 0;position:relative;overflow:hidden;flex-shrink:0;cursor:grab}
 .col-hdr:active{cursor:grabbing}
 .col-hdr.col-drag-over{box-shadow:inset 0 0 0 3px #fff}
@@ -3553,11 +3556,12 @@ function switchProjTab(tab){
 function renderAlb(){
   const q=_norm(document.getElementById('srch-alb')?.value||'');
   const board=document.getElementById('board-alb');if(!board)return;board.innerHTML='';
-  _orderedCols('alb',ALB_COLS).forEach(col=>{
+  _orderedCols('alb',_visibleCols('alb',ALB_COLS)).forEach(col=>{
     let cs=albCards.filter(c=>c.coluna===col.id);
     if(q)cs=cs.filter(c=>_norm(c.titulo).includes(q)||_norm(c.cliente).includes(q));
     board.appendChild(buildAlbCol(col,cs));
   });
+  board.appendChild(_colAddGhostEl('alb'));
 }
 function buildAlbCol(col,cs){
   const div=document.createElement('div');div.className='col';div.dataset.col=col.id;
@@ -3583,7 +3587,7 @@ function albCardHTML(c,cc){
   </div>`;
 }
 function fillAlbColSelect(selected){
-  document.getElementById('f-alb-col').innerHTML=ALB_COLS.map(c=>`<option value="${c.id}"${c.id===selected?' selected':''}>${c.emoji} ${c.name}</option>`).join('');
+  document.getElementById('f-alb-col').innerHTML=_visibleCols('alb',ALB_COLS).map(c=>`<option value="${c.id}"${c.id===selected?' selected':''}>${c.emoji} ${c.name}</option>`).join('');
 }
 function openAlbModal(cardId,defaultCol,event){
   if(event)event.stopPropagation();
@@ -3879,13 +3883,14 @@ function renderClientNotes(cl){
 function renderOp(){
   const q=_norm(document.getElementById('srch-op')?.value||'');
   const board=document.getElementById('board-op');board.innerHTML='';
-  _orderedCols('op',OP_COLS).forEach(col=>{
+  _orderedCols('op',_visibleCols('op',OP_COLS)).forEach(col=>{
     let cs=opCards.filter(c=>c.coluna===col.id&&!c.somenteProjeto);
     if(q)cs=cs.filter(c=>_norm(c.titulo).includes(q)||_norm(c.nomePais).includes(q)||_norm(c.nomeCrianca).includes(q)||_norm(c.nomeCrianca2).includes(q)||_norm(c.local).includes(q));
     // Orçamento Enviado: ordenar por data do evento (mais próximo primeiro)
     if(col.id==='orcamento-enviado')cs=cs.slice().sort((a,b)=>(a.dataEvento||'9999').localeCompare(b.dataEvento||'9999'));
     board.appendChild(buildOpCol(col,cs));
   });
+  board.appendChild(_colAddGhostEl('op'));
 }
 const OP_HDR_COLOR='#3A434F'; // cor única do cabeçalho das colunas de Oportunidades
 function buildOpCol(col,cs){
@@ -3955,13 +3960,14 @@ function renderPr(){
   const q=_norm(document.getElementById('srch-pr')?.value||'');
   const board=document.getElementById('board-pr');board.innerHTML='';
   const getEffDate=c=>{if(c.sourceId){const s=opCards.find(o=>o.id===c.sourceId);if(s?.dataEvento)return s.dataEvento;}return c.dataEvento||''};
-  _orderedCols('pr-proj',PR_COLS.filter(col=>(col.cat||'proj')==='proj')).forEach(col=>{
+  _orderedCols('pr-proj',_visibleCols('pr-proj',PR_COLS.filter(col=>(col.cat||'proj')==='proj'))).forEach(col=>{
     let cs=prCards.filter(c=>c.coluna===col.id);
     if(q)cs=cs.filter(c=>{const d=c.sourceId?(opCards.find(o=>o.id===c.sourceId)||c):c;return _norm(d.nomePais).includes(q)||_norm(d.nomeCrianca).includes(q)||_norm(d.nomeCrianca2).includes(q)});
     const _hoje=new Date().toISOString().slice(0,10);
     cs.sort((a,b)=>{const da=getEffDate(a),db=getEffDate(b);if(!da&&!db)return 0;if(!da)return 1;if(!db)return-1;return da<db?-1:da>db?1:0;});
     board.appendChild(buildPrCol(col,cs));
   });
+  board.appendChild(_colAddGhostEl('pr-proj'));
   renderPrVideo();renderPrFrl();
 }
 // Renderiza um board de projetos filtrado por categoria (video / frl)
@@ -3969,12 +3975,13 @@ function renderPrCat(cat,boardId,srchId){
   const q=_norm(document.getElementById(srchId)?.value||'');
   const board=document.getElementById(boardId);if(!board)return;board.innerHTML='';
   const getEffDate=c=>{if(c.sourceId){const s=opCards.find(o=>o.id===c.sourceId);if(s?.dataEvento)return s.dataEvento;}return c.dataEvento||''};
-  _orderedCols('pr-'+cat,PR_COLS.filter(col=>col.cat===cat)).forEach(col=>{
+  _orderedCols('pr-'+cat,_visibleCols('pr-'+cat,PR_COLS.filter(col=>col.cat===cat))).forEach(col=>{
     let cs=prCards.filter(c=>c.coluna===col.id);
     if(q)cs=cs.filter(c=>{const d=c.sourceId?(opCards.find(o=>o.id===c.sourceId)||c):c;return _norm(d.nomePais).includes(q)||_norm(d.nomeCrianca).includes(q)||_norm(d.nomeCrianca2).includes(q)});
     cs.sort((a,b)=>{const da=getEffDate(a),db=getEffDate(b);if(!da&&!db)return 0;if(!da)return 1;if(!db)return-1;return da<db?-1:da>db?1:0;});
     board.appendChild(buildPrCol(col,cs));
   });
+  board.appendChild(_colAddGhostEl('pr-'+cat));
 }
 function renderPrVideo(){renderPrCat('video','board-pr-video','srch-pr-video')}
 function renderPrFrl(){renderPrCat('frl','board-pr-frl','srch-pr-frl')}
@@ -4106,15 +4113,139 @@ function _orderedCols(boardKey,cols){
   const missing=cols.filter(c=>!order.includes(c.id));
   return[...ordered,...missing];
 }
+// ── Adicionar/remover colunas dos Kanbans ──
+let _colCustom={};
+try{_colCustom=JSON.parse(localStorage.getItem('crm_col_custom')||'{}');}catch{_colCustom={};}
+function _saveColCustom(){localStorage.setItem('crm_col_custom',JSON.stringify(_colCustom));}
+let _colHidden={};
+try{_colHidden=JSON.parse(localStorage.getItem('crm_col_hidden')||'{}');}catch{_colHidden={};}
+function _saveColHidden(){localStorage.setItem('crm_col_hidden',JSON.stringify(_colHidden));}
+// Colunas essenciais de cada board — usadas em algum lugar do sistema como
+// destino automático (novo lead, novo projeto sincronizado, financeiro
+// etc.) e por isso não podem ser removidas, só reordenadas.
+const _COL_PROTEGIDAS={
+  op:['novo-contato','confirmado','confirmado-pendencias','perdido'],
+  alb:['alb-festa','alb-selecao'],
+  'pr-proj':['festa-acontecer'],
+  'pr-video':['freela-aguardando-fotos'],
+  'pr-frl':['frl-aguardando-fotos'],
+};
+// Junta as colunas "de fábrica" com as colunas customizadas do usuário e
+// tira as que foram removidas — é isso que todo lugar que desenha um board
+// (Kanban, seletor "Fase" do modal) deve usar em vez do array cru.
+function _visibleCols(boardKey,baseCols){
+  const custom=_colCustom[boardKey]||[];
+  const hidden=_colHidden[boardKey]||[];
+  return[...baseCols,...custom].filter(c=>!hidden.includes(c.id));
+}
+function _baseColsDoBoard(boardKey){
+  if(boardKey==='op')return OP_COLS;
+  if(boardKey==='alb')return ALB_COLS;
+  if(boardKey==='pr-proj')return PR_COLS.filter(c=>(c.cat||'proj')==='proj');
+  if(boardKey==='pr-video')return PR_COLS.filter(c=>c.cat==='video');
+  if(boardKey==='pr-frl')return PR_COLS.filter(c=>c.cat==='frl');
+  return[];
+}
+function _contarCardsNaColuna(boardKey,colId){
+  if(boardKey==='op')return opCards.filter(c=>c.coluna===colId&&!c.somenteProjeto).length;
+  if(boardKey==='alb')return albCards.filter(c=>c.coluna===colId).length;
+  return prCards.filter(c=>c.coluna===colId).length;
+}
+function abrirGerenciarColunas(boardKey){
+  const base=_baseColsDoBoard(boardKey);
+  const custom=_colCustom[boardKey]||[];
+  const hidden=_colHidden[boardKey]||[];
+  const protegidas=_COL_PROTEGIDAS[boardKey]||[];
+  const old=document.getElementById('gc-modal');if(old)old.remove();
+  const linha=(c,isCustom)=>{
+    const isHidden=hidden.includes(c.id);
+    const isProt=protegidas.includes(c.id);
+    const n=_contarCardsNaColuna(boardKey,c.id);
+    let acao;
+    if(isHidden){
+      acao=`<button onclick="restaurarColuna('${boardKey}','${c.id}')" style="background:#1D2630;color:#7fd99a;border:1px solid #22543d;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">👁️ Mostrar</button>`;
+    } else if(isProt){
+      acao=`<span title="Coluna essencial — usada em outras partes do sistema" style="font-size:11px;color:var(--muted);white-space:nowrap">🔒 Essencial</span>`;
+    } else {
+      acao=`<button onclick="removerColuna('${boardKey}','${c.id}',${isCustom})" style="background:none;color:#e78a7c;border:1px solid #7f1d1d;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">🗑 Remover</button>`;
+    }
+    return`<div style="display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--border)${isHidden?';opacity:.5':''}">
+      <span style="font-size:16px;flex-shrink:0">${c.emoji||'📌'}</span>
+      <span style="flex:1;font-size:13px;font-weight:600;min-width:0">${esc(c.name)}${n>0?` <span style="font-size:11px;color:var(--muted);font-weight:400">(${n} card${n>1?'s':''})</span>`:''}</span>
+      ${acao}
+    </div>`;
+  };
+  const d=document.createElement('div');d.id='gc-modal';
+  d.innerHTML=`<div style="position:fixed;inset:0;z-index:9990;background:rgba(0,0,0,.55)" onclick="document.getElementById('gc-modal').remove()"></div>
+    <div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9991;background:var(--surface,#1a1f27);border:1px solid var(--border);border-radius:14px;padding:22px 24px;box-shadow:0 8px 40px rgba(0,0,0,.6);width:min(420px,90vw);max-height:85vh;overflow-y:auto" onclick="event.stopPropagation()">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <h3 style="margin:0;font-size:16px">⚙️ Colunas deste quadro</h3>
+        <button onclick="document.getElementById('gc-modal').remove()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1">×</button>
+      </div>
+      <div>${base.map(c=>linha(c,false)).join('')}${custom.map(c=>linha(c,true)).join('')}</div>
+      <div style="margin-top:16px;padding-top:14px;border-top:1px dashed var(--border)">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">+ Nova coluna</div>
+        <div style="display:flex;gap:6px">
+          <input id="gc-emoji" type="text" maxlength="4" placeholder="🎯" style="width:52px;text-align:center;border:1.5px solid var(--border);border-radius:8px;padding:8px;font-size:15px;background:var(--surface)">
+          <input id="gc-nome" type="text" placeholder="Nome da coluna" style="flex:1;border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;background:var(--surface)" onkeydown="if(event.key==='Enter')adicionarColuna('${boardKey}')">
+          <button onclick="adicionarColuna('${boardKey}')" style="background:#6ba3e0;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer">Adicionar</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(d);
+  setTimeout(()=>document.getElementById('gc-nome')?.focus(),50);
+}
+function adicionarColuna(boardKey){
+  const nome=(document.getElementById('gc-nome')?.value||'').trim();
+  const emoji=(document.getElementById('gc-emoji')?.value||'').trim()||'📌';
+  if(!nome){toast('⚠️ Dê um nome pra coluna','orange');return;}
+  const novo={id:'custom_'+uid(),name:nome,emoji,color:'#5A6472',sub:''};
+  if(boardKey==='pr-video')novo.cat='video';
+  else if(boardKey==='pr-frl')novo.cat='frl';
+  if(!_colCustom[boardKey])_colCustom[boardKey]=[];
+  _colCustom[boardKey].push(novo);
+  _saveColCustom();
+  toast('✅ Coluna adicionada!','green');
+  _COL_BOARD_REGISTRY[boardKey]?.render();
+  abrirGerenciarColunas(boardKey);
+}
+function removerColuna(boardKey,colId,isCustom){
+  const n=_contarCardsNaColuna(boardKey,colId);
+  if(n>0){toast(`⚠️ Mova os ${n} card(s) desta coluna antes de removê-la.`,'orange');return;}
+  if(isCustom){
+    _colCustom[boardKey]=(_colCustom[boardKey]||[]).filter(c=>c.id!==colId);
+    _saveColCustom();
+  }else{
+    if(!_colHidden[boardKey])_colHidden[boardKey]=[];
+    if(!_colHidden[boardKey].includes(colId))_colHidden[boardKey].push(colId);
+    _saveColHidden();
+  }
+  toast('🗑️ Coluna removida!','green');
+  _COL_BOARD_REGISTRY[boardKey]?.render();
+  abrirGerenciarColunas(boardKey);
+}
+function restaurarColuna(boardKey,colId){
+  _colHidden[boardKey]=(_colHidden[boardKey]||[]).filter(id=>id!==colId);
+  _saveColHidden();
+  toast('👁️ Coluna restaurada!','green');
+  _COL_BOARD_REGISTRY[boardKey]?.render();
+  abrirGerenciarColunas(boardKey);
+}
+function _colAddGhostEl(boardKey){
+  const div=document.createElement('div');
+  div.className='col col-add-ghost';
+  div.innerHTML=`<button onclick="abrirGerenciarColunas('${boardKey}')" title="Adicionar ou remover colunas"><span style="font-size:20px">⚙️</span>Colunas</button>`;
+  return div;
+}
 let _colDragId=null,_colDragBoard=null;
 // Registro dos boards que podem ter as colunas reordenadas: cada um sabe
 // listar seus próprios ids (na ordem "de fábrica") e como se re-renderizar.
 const _COL_BOARD_REGISTRY={
-  op:{ids:()=>OP_COLS.map(c=>c.id),render:()=>renderOp()},
-  alb:{ids:()=>ALB_COLS.map(c=>c.id),render:()=>renderAlb()},
-  'pr-proj':{ids:()=>PR_COLS.filter(c=>(c.cat||'proj')==='proj').map(c=>c.id),render:()=>renderPr()},
-  'pr-video':{ids:()=>PR_COLS.filter(c=>c.cat==='video').map(c=>c.id),render:()=>renderPrVideo()},
-  'pr-frl':{ids:()=>PR_COLS.filter(c=>c.cat==='frl').map(c=>c.id),render:()=>renderPrFrl()},
+  op:{ids:()=>_visibleCols('op',OP_COLS).map(c=>c.id),render:()=>renderOp()},
+  alb:{ids:()=>_visibleCols('alb',ALB_COLS).map(c=>c.id),render:()=>renderAlb()},
+  'pr-proj':{ids:()=>_visibleCols('pr-proj',PR_COLS.filter(c=>(c.cat||'proj')==='proj')).map(c=>c.id),render:()=>renderPr()},
+  'pr-video':{ids:()=>_visibleCols('pr-video',PR_COLS.filter(c=>c.cat==='video')).map(c=>c.id),render:()=>renderPrVideo()},
+  'pr-frl':{ids:()=>_visibleCols('pr-frl',PR_COLS.filter(c=>c.cat==='frl')).map(c=>c.id),render:()=>renderPrFrl()},
 };
 function colDragStart(e,boardKey,colId){
   _colDragId=colId;_colDragBoard=boardKey;
@@ -4298,7 +4429,7 @@ function clearClientSelection(){
   if(banner)banner.style.display='none';
 }
 function resetClientSelector(){document.getElementById('cl-search-input').value='';document.getElementById('cl-selected-badge').style.display='none';document.getElementById('cl-dropdown').style.display='none';const b=document.getElementById('freela-parceiro-banner');if(b)b.style.display='none';const ck=document.getElementById('freela-parceiro-check');if(ck)ck.checked=false;}
-function fillOpColSelect(selected){document.getElementById('f-col').innerHTML=OP_COLS.map(c=>`<option value="${c.id}"${c.id===selected?' selected':''}>${c.emoji} ${c.name}${c.sub?' ('+c.sub+')':''}</option>`).join('')}
+function fillOpColSelect(selected){document.getElementById('f-col').innerHTML=_visibleCols('op',OP_COLS).map(c=>`<option value="${c.id}"${c.id===selected?' selected':''}>${c.emoji} ${c.name}${c.sub?' ('+c.sub+')':''}</option>`).join('')}
 // ── Multi-seleção de pacotes ──
 function getSelectedPacIds(){
   return Array.from(document.querySelectorAll('.pac-chip-opt.selected')).map(el=>el.dataset.pid);
@@ -5275,7 +5406,7 @@ function saveOpCard(){
 function fillPrColSelect(selected){
   const opt=c=>`<option value="${c.id}"${c.id===selected?' selected':''}>${c.emoji} ${c.name}</option>`;
   document.getElementById('f-pr-col').innerHTML=Object.values(PR_CATS).map(cat=>{
-    const cols=PR_COLS.filter(c=>(c.cat||'proj')===cat.key);
+    const cols=_visibleCols('pr-'+cat.key,PR_COLS.filter(c=>(c.cat||'proj')===cat.key));
     return cols.length?`<optgroup label="${cat.emoji} ${cat.label}">${cols.map(opt).join('')}</optgroup>`:'';
   }).join('');
 }
