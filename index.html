@@ -6540,31 +6540,44 @@ function _calcFluxoDiario(tipo){
     });
   }
 
-  // saídas — contas fixas com dia de vencimento, ainda não pagas no mês em que caem
+  // saídas — contas fixas ainda não pagas. Quando a conta tem itens (ex:
+  // "Contas da Casa" com Vivo, SAAE, EDP, Lourdes...), cada item pode ter
+  // seu próprio dia de vencimento; sem item próprio, cai no dia da conta.
+  const cacheMes={};
+  const _saidasDoMes=mesLabel=>{
+    if(cacheMes[mesLabel])return cacheMes[mesLabel];
+    const lista=contas.flatMap(c=>{
+      if(c.itens&&c.itens.length){
+        return c.itens.filter(x=>_itemAtivoNoMes(x,mesLabel)&&!_itemPagoMes(x,mesLabel)).map(x=>({
+          nome:c.nome+(x.nome?' — '+x.nome:''),
+          valor:_itemValorMes(x,mesLabel),
+          dia:x.dia||c.dia||null
+        })).filter(o=>o.valor>0);
+      }
+      if(!_contaAtivaNoMes(c,mesLabel)||_contaPagoMes(c,mesLabel))return[];
+      const val=_contaValorPendente(c,mesLabel);
+      return val>0?[{nome:c.nome,valor:val,dia:c.dia||null}]:[];
+    });
+    cacheMes[mesLabel]=lista;
+    return lista;
+  };
   dias.forEach(x=>{
     const dia=x.data.getDate();
     const mesLabel=_dataParaMesLabel(x.data);
-    contas.forEach(c=>{
-      if(!c.dia||c.dia!==dia)return;
-      if(!_contaAtivaNoMes(c,mesLabel))return;
-      if(_contaPagoMes(c,mesLabel))return;
-      const val=_contaValorPendente(c,mesLabel);
-      if(val>0){x.saidas+=val;x.saidasList.push({nome:c.nome,valor:val});}
+    _saidasDoMes(mesLabel).forEach(o=>{
+      if(o.dia!==dia)return;
+      x.saidas+=o.valor;x.saidasList.push({nome:o.nome,valor:o.valor});
     });
   });
-  // contas sem dia de vencimento definido — ainda não pagas, mas sem dia
-  // certo pra entrar na lista acima. Entram de uma vez em "hoje" (mês
-  // atual) e depois no dia 1º de cada mês seguinte dentro da janela,
-  // pra não sumirem da projeção nem serem contadas duas vezes.
+  // itens/contas sem dia de vencimento definido — entram de uma vez em
+  // "hoje" (mês atual) e depois no dia 1º de cada mês seguinte dentro da
+  // janela, pra não sumirem da projeção nem serem contados duas vezes.
   dias.forEach((x,i)=>{
     if(i>0&&x.data.getDate()!==1)return;
     const mesLabel=_dataParaMesLabel(x.data);
-    contas.forEach(c=>{
-      if(c.dia)return;
-      if(!_contaAtivaNoMes(c,mesLabel))return;
-      if(_contaPagoMes(c,mesLabel))return;
-      const val=_contaValorPendente(c,mesLabel);
-      if(val>0){x.saidas+=val;x.saidasList.push({nome:c.nome+' (sem dia definido)',valor:val});}
+    _saidasDoMes(mesLabel).forEach(o=>{
+      if(o.dia)return;
+      x.saidas+=o.valor;x.saidasList.push({nome:o.nome+' (sem dia definido)',valor:o.valor});
     });
   });
 
@@ -8734,6 +8747,7 @@ function renderFinContas(){
           <button class="ci-pag-btn${xPago?' pago':''}" onclick="pagarContaItem('fin',${i},${j})" title="${xPago?'Desfazer':'Marcar como pago'}">${xPago?'✓':''}</button>
           <span class="conta-item-nome" style="${xPago?'text-decoration:line-through;color:var(--muted)':''}">${esc(x.nome)}</span>
           ${_periodoLabel(x)?`<span style="font-size:9px;font-weight:700;color:#e0a14e;background:#2a2113;border-radius:4px;padding:1px 5px;flex-shrink:0">▶ ${_periodoLabel(x)}</span>`:''}
+          <span class="conta-card-dia" style="font-size:10px;padding:1px 6px;cursor:pointer;flex-shrink:0" title="Clique para ${x.dia?'editar':'definir'} o dia do vencimento deste item" onclick="event.stopPropagation();editContaItemDia('fin',${i},${j},this)">${x.dia?`Dia ${x.dia}`:'+ Dia'} <span style="font-size:9px;opacity:.4">✏️</span></span>
           <span class="conta-item-val" style="${xPago?'color:var(--success,#6E879F)':''}cursor:pointer;text-decoration:underline dotted" title="Clique para editar" onclick="event.stopPropagation();editContaItemValor('fin',${i},${j},this)">${fmtMoney(xVal)} <span style="font-size:10px;opacity:.4">✏️</span></span>
           <button class="fin-del" onclick="delContaItem('fin',${i},${j})" title="Remover">×</button>
         </div>`}).join('')}
@@ -8741,6 +8755,7 @@ function renderFinContas(){
           <div style="display:flex;gap:6px;align-items:center">
             <input type="text" id="fin-ci-n-${i}" placeholder="Ex: Cartão Inter, Spotify...">
             <input type="number" id="fin-ci-v-${i}" placeholder="R$" step="0.01" min="0" style="max-width:90px">
+            <input type="number" id="fin-ci-d-${i}" placeholder="Dia" min="1" max="31" style="max-width:60px">
             <button class="conta-item-btn-add" onclick="addContaItem('fin',${i})">+</button>
             <button class="conta-item-btn-cancel" onclick="document.getElementById('fin-ciadd-${i}').style.display='none'">✕</button>
           </div>
@@ -8984,16 +8999,18 @@ function pagarContaItem(tipo,ci,ii){
 function addContaItem(tipo,i){
   var nEl=document.getElementById(tipo+'-ci-n-'+i);
   var vEl=document.getElementById(tipo+'-ci-v-'+i);
+  var dEl=document.getElementById(tipo+'-ci-d-'+i);
   var nome=(nEl?.value||'').trim();
   var valor=parseFloat(vEl?.value)||0;
+  var dia=parseInt(dEl?.value)||null;
   var vig=_lerScope(tipo+'-ci-'+i);
   if(!nome){alert('Informe o nome do item!');return;}
   if(!valor){alert('Informe o valor do item!');return;}
   var arr=tipo==='fin'?finContas:pessContas;
   var c=arr[i];if(!c)return;
   if(!c.itens)c.itens=[];
-  c.itens.push({id:Date.now(),nome,valor,mesInicio:vig.mesInicio,mesFim:vig.mesFim});
-  if(nEl)nEl.value='';if(vEl)vEl.value='';
+  c.itens.push({id:Date.now(),nome,valor,dia,mesInicio:vig.mesInicio,mesFim:vig.mesFim});
+  if(nEl)nEl.value='';if(vEl)vEl.value='';if(dEl)dEl.value='';
   _resetScope(tipo+'-ci-'+i);
   if(tipo==='fin'){saveFinData();renderFinContas();}
   else{savePessData();renderPessContas();}
@@ -9132,6 +9149,33 @@ function saveContaDia(tipo,i){
   var v=raw===''?null:parseInt(raw);
   if(v!==null&&(isNaN(v)||v<1||v>31)){tipo==='fin'?renderFinContas():renderPessContas();return;}
   arr[i].dia=v;
+  if(tipo==='fin'){saveFinData();renderFinContas();}
+  else{savePessData();renderPessContas();}
+  toast(v?'📅 Dia de vencimento definido!':'Dia de vencimento removido.','green');
+}
+function editContaItemDia(tipo,ci,ii,el){
+  if(el.querySelector('input'))return;
+  var arr=tipo==='fin'?finContas:pessContas;
+  var item=arr[ci]?.itens?.[ii];if(!item)return;
+  var cur=item.dia||'';
+  var uid='cid-'+tipo+'-'+ci+'-'+ii;
+  el.outerHTML=`<input type="number" id="${uid}" value="${cur}" min="1" max="31" placeholder="Dia"
+    style="width:56px;border:2px solid var(--accent);border-radius:6px;padding:3px 7px;font:700 12px 'Montserrat',sans-serif;color:var(--accent);background:var(--surface)"
+    onclick="event.stopPropagation()"
+    onkeydown="if(event.key==='Enter')saveContaItemDia('${tipo}',${ci},${ii});if(event.key==='Escape')${tipo==='fin'?'renderFinContas':'renderPessContas'}()"
+    onblur="saveContaItemDia('${tipo}',${ci},${ii})">`;
+  var inp=document.getElementById(uid);
+  if(inp){inp.focus();inp.select();}
+}
+function saveContaItemDia(tipo,ci,ii){
+  var uid='cid-'+tipo+'-'+ci+'-'+ii;
+  var inp=document.getElementById(uid);if(!inp)return;
+  var arr=tipo==='fin'?finContas:pessContas;
+  var item=arr[ci]?.itens?.[ii];if(!item)return;
+  var raw=inp.value.trim();
+  var v=raw===''?null:parseInt(raw);
+  if(v!==null&&(isNaN(v)||v<1||v>31)){tipo==='fin'?renderFinContas():renderPessContas();return;}
+  item.dia=v;
   if(tipo==='fin'){saveFinData();renderFinContas();}
   else{savePessData();renderPessContas();}
   toast(v?'📅 Dia de vencimento definido!':'Dia de vencimento removido.','green');
@@ -9330,6 +9374,7 @@ function renderPessContas(){
           <button class="ci-pag-btn${xPago?' pago':''}" onclick="pagarContaItem('pess',${i},${j})" title="${xPago?'Desfazer':'Marcar como pago'}">${xPago?'✓':''}</button>
           <span class="conta-item-nome" style="${xPago?'text-decoration:line-through;color:var(--muted)':''}">${esc(x.nome)}</span>
           ${_periodoLabel(x)?`<span style="font-size:9px;font-weight:700;color:#e0a14e;background:#2a2113;border-radius:4px;padding:1px 5px;flex-shrink:0">▶ ${_periodoLabel(x)}</span>`:''}
+          <span class="conta-card-dia" style="font-size:10px;padding:1px 6px;cursor:pointer;flex-shrink:0" title="Clique para ${x.dia?'editar':'definir'} o dia do vencimento deste item" onclick="event.stopPropagation();editContaItemDia('pess',${i},${j},this)">${x.dia?`Dia ${x.dia}`:'+ Dia'} <span style="font-size:9px;opacity:.4">✏️</span></span>
           <span class="conta-item-val" style="${xPago?'color:var(--success,#6E879F)':''}cursor:pointer;text-decoration:underline dotted" title="Clique para editar" onclick="event.stopPropagation();editContaItemValor('pess',${i},${j},this)">${fmtMoney(xVal)} <span style="font-size:10px;opacity:.4">✏️</span></span>
           <button class="fin-del" onclick="delContaItem('pess',${i},${j})" title="Remover">×</button>
         </div>`}).join('')}
@@ -9337,6 +9382,7 @@ function renderPessContas(){
           <div style="display:flex;gap:6px;align-items:center">
             <input type="text" id="pess-ci-n-${i}" placeholder="Ex: Netflix, Spotify...">
             <input type="number" id="pess-ci-v-${i}" placeholder="R$" step="0.01" min="0" style="max-width:90px">
+            <input type="number" id="pess-ci-d-${i}" placeholder="Dia" min="1" max="31" style="max-width:60px">
             <button class="conta-item-btn-add" onclick="addContaItem('pess',${i})">+</button>
             <button class="conta-item-btn-cancel" onclick="document.getElementById('pess-ciadd-${i}').style.display='none'">✕</button>
           </div>
