@@ -577,6 +577,18 @@ tr:hover td{background:var(--n50)}
 .conta-card-pag.sim{background:var(--success,#6E879F);color:#fff;border-color:var(--success,#6E879F)}
 .conta-itens{display:none;border-top:1px solid var(--border);background:var(--n50)}
 .conta-itens.open{display:block}
+.perdido-cat{border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden}
+.perdido-cat-hdr{display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;background:var(--n50)}
+.perdido-cat-arrow{font-size:10px;transition:transform .15s;flex-shrink:0}
+.perdido-cat-arrow.open{transform:rotate(90deg)}
+.perdido-cat-nome{flex:1;font-weight:700;font-size:13px}
+.perdido-cat-badge{background:var(--danger);color:#fff;font-size:11px;font-weight:700;border-radius:10px;padding:2px 8px;flex-shrink:0}
+.perdido-cat-list{max-height:0;overflow:hidden;transition:max-height .2s}
+.perdido-cat-list.open{max-height:360px;overflow-y:auto}
+.perdido-item{padding:8px 14px;border-top:1px solid var(--border);font-size:12px;cursor:pointer}
+.perdido-item:hover{background:var(--n50)}
+.perdido-item-data{color:var(--muted);flex-shrink:0}
+.perdido-item-det{color:var(--muted);font-size:11px;margin-top:2px}
 .conta-item{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid var(--border);font-size:13px;cursor:grab}
 .conta-item[draggable="true"]:active{cursor:grabbing}
 .conta-item.dragging{opacity:.35;background:rgba(44,122,123,.08)}
@@ -1751,7 +1763,6 @@ td { padding: 13px 16px; font-size: 13.5px; }
       <button class="fin-stab" onclick="switchFinTab('contas',this)">📅 Contas</button>
       <button class="fin-stab" onclick="switchFinTab('diarios',this)">💳 Diários</button>
       <button class="fin-stab" onclick="switchFinTab('reserva',this)">🏦 Reserva</button>
-      <button class="fin-stab" onclick="switchFinTab('fluxodia',this)">📆 Fluxo Diário</button>
     </div>
 
     <div id="fin-tab-resumo" class="fin-subtab-panel on">
@@ -1763,7 +1774,7 @@ td { padding: 13px 16px; font-size: 13.5px; }
         <div class="fin-hdr"><h3>📊 Fluxo de Caixa — Empresa 2026</h3></div>
         <div class="fin-tbl-wrap">
           <table class="fin-resumo-tbl" style="width:100%;border-collapse:collapse">
-            <thead><tr><th>Mês</th><th>Festas</th><th>Contas Fixas</th><th>Gastos Diários</th><th>Valor no Banco</th><th>Sobrou</th><th>Status</th><th></th></tr></thead>
+            <thead><tr><th>Mês</th><th>Festas</th><th>Contas Fixas</th><th>Gastos Diários</th><th>Valor no Banco</th><th>Sobrou</th><th>Status</th></tr></thead>
             <tbody id="fin-resumo-body"></tbody>
           </table>
         </div>
@@ -1840,13 +1851,6 @@ td { padding: 13px 16px; font-size: 13.5px; }
         <button class="fin-cancel-btn" onclick="toggleFinForm('fin-contas-f')">Cancelar</button>
       </div>
     </div>
-
-    <!-- FIN-FLUXO DIÁRIO -->
-    <div id="fin-tab-fluxodia" class="fin-subtab-panel">
-      <div class="fin-hdr" style="padding:0 0 6px"><h3>📆 Fluxo de Caixa Diário — Empresa</h3></div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.5">Projeção dos próximos 30 dias a partir do saldo atual em banco: entradas previstas (valor líquido das festas confirmadas ainda não quitadas, no dia do evento) menos saídas previstas (contas fixas, ainda não pagas, no dia certo de cada uma) e a média dos seus gastos diários dos últimos 30 dias.</div>
-      <div id="fin-fluxodia-list"></div>
-    </div>
   </div><!-- /empresa -->
 
   <!-- ═══════════ PESSOAIS ═══════════ -->
@@ -1863,7 +1867,6 @@ td { padding: 13px 16px; font-size: 13.5px; }
       <button class="fin-stab" onclick="switchPessTab('reserva',this)">🏦 Reserva</button>
       <button class="fin-stab" onclick="switchPessTab('ap',this)">🏠 Apartamento</button>
       <button class="fin-stab" onclick="switchPessTab('dividas',this)">💳 Dívidas</button>
-      <button class="fin-stab" onclick="switchPessTab('fluxodia',this)">📆 Fluxo Diário</button>
     </div>
 
     <!-- P-RESUMO -->
@@ -1876,7 +1879,7 @@ td { padding: 13px 16px; font-size: 13.5px; }
         <div class="fin-hdr"><h3>📊 Fluxo de Caixa — Pessoal 2026</h3></div>
         <div class="fin-tbl-wrap">
           <table class="fin-resumo-tbl" style="width:100%;border-collapse:collapse">
-            <thead><tr><th>Mês</th><th>Festas</th><th>Contas Fixas</th><th>Gastos Diários</th><th>Valor no Banco</th><th>Sobrou</th><th>Status</th><th></th></tr></thead>
+            <thead><tr><th>Mês</th><th>Festas</th><th>Contas Fixas</th><th>Gastos Diários</th><th>Valor no Banco</th><th>Sobrou</th><th>Status</th></tr></thead>
             <tbody id="p-resumo-body"></tbody>
           </table>
         </div>
@@ -2108,13 +2111,6 @@ td { padding: 13px 16px; font-size: 13.5px; }
         <button class="fin-save-btn" onclick="savePessConta()">Salvar</button>
         <button class="fin-cancel-btn" onclick="toggleFinForm('pess-contas-f')">Cancelar</button>
       </div>
-    </div>
-
-    <!-- P-FLUXO DIÁRIO -->
-    <div id="p-tab-fluxodia" class="fin-subtab-panel">
-      <div class="fin-hdr" style="padding:0 0 6px"><h3>📆 Fluxo de Caixa Diário — Pessoal</h3></div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.5">Projeção dos próximos 30 dias a partir do saldo atual em banco: entradas previstas (valor líquido das festas ainda não quitadas, no dia do evento) menos saídas previstas (contas fixas, ainda não pagas, no dia certo de cada uma) e a média dos seus gastos diários dos últimos 30 dias.</div>
-      <div id="p-fluxodia-list"></div>
     </div>
   </div><!-- /pessoais -->
   </div><!-- /padding wrapper -->
@@ -3896,7 +3892,7 @@ function buildOpCol(col,cs){
   div.innerHTML=`<div class="col-hdr" style="background:${OP_HDR_COLOR}" draggable="true" title="Arraste para reordenar as colunas"
     ondragstart="colDragStart(event,'op','${col.id}')" ondragend="colDragEnd(event)"
     ondragover="colDragOver(event)" ondragleave="colDragLeave(event)" ondrop="colDrop(event,'op','${col.id}')">
-    <div class="col-hdr-top"><div class="col-title-wrap"><span class="col-emoji">${col.emoji}</span><span class="col-name">${col.name}</span></div><span class="col-badge">${cs.length}</span></div>
+    <div class="col-hdr-top"><div class="col-title-wrap"><span class="col-emoji">${col.emoji}</span><span class="col-name">${col.name}</span></div>${col.id==='perdido'?`<button onclick="event.stopPropagation();abrirPerdidosPorMotivo()" title="Ver por motivo" style="background:rgba(255,255,255,.12);border:none;border-radius:7px;padding:3px 8px;font-size:12px;cursor:pointer;color:#fff;margin-right:6px">📊</button>`:''}<span class="col-badge">${cs.length}</span></div>
   </div>
   <div class="cards-list" id="cl-op-${col.id}" ondragover="onDO(event)" ondragenter="onDE(event)" ondragleave="onDL(event)" ondrop="onDrop(event,'op','${col.id}')">
     ${cs.map(c=>opCardHTML(c,col.color)).join('')}
@@ -4151,6 +4147,46 @@ function colDrop(e,boardKey,targetColId){
   reg.render();
 }
 document.addEventListener('dragover',e=>{document.querySelectorAll('.kb-wrap').forEach(w=>{const r=w.getBoundingClientRect();if(e.clientY<r.top||e.clientY>r.bottom)return;const zone=100,spd=16;if(e.clientX<r.left+zone&&e.clientX>=r.left-10)w.scrollLeft-=spd;else if(e.clientX>r.right-zone&&e.clientX<=r.right+10)w.scrollLeft+=spd;})});
+const MOTIVOS_PERDIDO=['Preço','Data indisponível','Escolheu outro fotógrafo','Cancelou o evento','Sem retorno','Outro'];
+function abrirPerdidosPorMotivo(){
+  const perdidos=opCards.filter(c=>c.coluna==='perdido');
+  const grupos={};
+  MOTIVOS_PERDIDO.forEach(m=>grupos[m]=[]);
+  grupos['Sem motivo definido']=[];
+  perdidos.forEach(c=>{
+    const key=MOTIVOS_PERDIDO.includes(c.motivo)?c.motivo:'Sem motivo definido';
+    grupos[key].push(c);
+  });
+  const old=document.getElementById('perdidos-modal');if(old)old.remove();
+  const d=document.createElement('div');d.id='perdidos-modal';
+  const catHTML=Object.entries(grupos).filter(([,arr])=>arr.length>0).map(([motivo,arr])=>`
+    <div class="perdido-cat">
+      <div class="perdido-cat-hdr" onclick="this.nextElementSibling.classList.toggle('open');this.querySelector('.perdido-cat-arrow').classList.toggle('open')">
+        <span class="perdido-cat-arrow">▶</span>
+        <span class="perdido-cat-nome">${esc(motivo)}</span>
+        <span class="perdido-cat-badge">${arr.length}</span>
+      </div>
+      <div class="perdido-cat-list">
+        ${arr.sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0)).map(c=>`
+          <div class="perdido-item" onclick="document.getElementById('perdidos-modal').remove();openOpModal('${c.id}')">
+            <div style="display:flex;justify-content:space-between;gap:8px">
+              <span>${esc(c.nomePais||c.titulo||'Cliente')}</span>
+              <span class="perdido-item-data">${c.dataEvento?fmtDate(c.dataEvento):''}</span>
+            </div>
+            ${c.detalhe?`<div class="perdido-item-det">${esc(c.detalhe)}</div>`:''}
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+  d.innerHTML=`<div style="position:fixed;inset:0;z-index:9990;background:rgba(0,0,0,.55)" onclick="document.getElementById('perdidos-modal').remove()"></div>
+    <div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9991;background:var(--surface,#1a1f27);border:1px solid var(--border);border-radius:14px;padding:22px 24px;box-shadow:0 8px 40px rgba(0,0,0,.6);width:min(480px,90vw);max-height:80vh;overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <h3 style="margin:0;font-size:16px">❌ Perdidos por motivo (${perdidos.length})</h3>
+        <button onclick="document.getElementById('perdidos-modal').remove()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1">×</button>
+      </div>
+      ${catHTML||'<p style="color:var(--muted);text-align:center">Nenhum lead perdido ainda.</p>'}
+    </div>`;
+  document.body.appendChild(d);
+}
 function clearParaPerdido(card){
   card.pendencias=[];
   card.statusPag='pendente';
@@ -6486,176 +6522,6 @@ function _getFinFestas(mes){
     };
   });}
 
-// ── Fluxo de Caixa Diário (projeção dos próximos 30 dias) ──
-function _mesLabelParaData(mesLabel,dia){
-  if(!mesLabel||!dia)return null;
-  const partes=String(mesLabel).split('/');
-  const year=partes[1]==='27'?2027:2026;
-  const monthIdx=MESES_FIN.indexOf(partes[0]);
-  if(monthIdx<0)return null;
-  return new Date(year,monthIdx,dia);
-}
-function _dataParaMesLabel(date){
-  const y=date.getFullYear(),mi=date.getMonth();
-  const name=MESES_FIN[mi];
-  return y===2026?name:name+'/'+String(y).slice(2);
-}
-function _calcFluxoDiario(tipo){
-  const N=30;
-  const hoje=new Date();hoje.setHours(0,0,0,0);
-  const vgAtual=(tipo==='fin'?finVG:pessVG)[_finCurMes()]||0;
-  const contas=tipo==='fin'?finContas:pessContas;
-  const dias=[];
-  for(let i=0;i<N;i++){
-    const d=new Date(hoje.getTime()+i*86400000);
-    dias.push({data:d,entradas:0,entradasList:[],saidas:0,saidasList:[]});
-  }
-  const idxPorData={};
-  dias.forEach((x,i)=>{idxPorData[x.data.toDateString()]=i;});
-
-  // entradas — festas ainda não quitadas, no dia do evento
-  if(tipo==='fin'){
-    opCards.filter(c=>FIN_COLS.includes(c.coluna)&&(c.tipoExecucao||'proprio')!=='sou-freela'&&(c.tipoExecucao||'proprio')!=='freelancer'&&c.dataEvento).forEach(c=>{
-      const dt=new Date(c.dataEvento+'T12:00:00');dt.setHours(0,0,0,0);
-      const i=idxPorData[dt.toDateString()];if(i===undefined)return;
-      const empShare=calcEmpresaShare(c);
-      const gastosEmp=(c.gastosItens||[]).filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
-      const empLiq=Math.max(0,empShare-gastosEmp);
-      const vPago=c.valorReserva||0;
-      const falta=Math.max(0,parseFloat((empLiq-vPago).toFixed(2)));
-      if(falta>0){dias[i].entradas+=falta;dias[i].entradasList.push({nome:c.nomePais||c.titulo||'Cliente',valor:falta});}
-    });
-  } else {
-    Object.keys(pessFD||{}).forEach(mesLabel=>{
-      (pessFD[mesLabel]||[]).forEach(f=>{
-        const dt=_mesLabelParaData(mesLabel,f.d);if(!dt)return;dt.setHours(0,0,0,0);
-        const i=idxPorData[dt.toDateString()];if(i===undefined)return;
-        const op=f._opId?opCardsPess.find(o=>o.id===f._opId):null;
-        const gastosPes=(op?.gastosItens||[]).filter(g=>g.tipo==='pessoal').reduce((s,g)=>s+(g.val||0),0);
-        const vPago=op?(op.valorReserva??0):(f.pago||0);
-        const liq=Math.max(0,f.v-gastosPes);
-        const falta=Math.max(0,parseFloat((liq-vPago).toFixed(2)));
-        if(falta>0){dias[i].entradas+=falta;dias[i].entradasList.push({nome:f.n,valor:falta});}
-      });
-    });
-  }
-
-  // saídas — contas fixas ainda não pagas. Quando a conta tem itens (ex:
-  // "Contas da Casa" com Vivo, SAAE, EDP, Lourdes...), cada item pode ter
-  // seu próprio dia de vencimento; sem item próprio, cai no dia da conta.
-  const cacheMes={};
-  const _saidasDoMes=mesLabel=>{
-    if(cacheMes[mesLabel])return cacheMes[mesLabel];
-    const lista=contas.flatMap(c=>{
-      if(c.itens&&c.itens.length){
-        return c.itens.filter(x=>_itemAtivoNoMes(x,mesLabel)&&!_itemPagoMes(x,mesLabel)).map(x=>({
-          nome:x.nome||c.nome,contaId:c.id,contaNome:c.nome,
-          valor:_itemValorMes(x,mesLabel),
-          dia:x.dia||c.dia||null
-        })).filter(o=>o.valor>0);
-      }
-      if(!_contaAtivaNoMes(c,mesLabel)||_contaPagoMes(c,mesLabel))return[];
-      const val=_contaValorPendente(c,mesLabel);
-      return val>0?[{nome:c.nome,contaId:c.id,contaNome:c.nome,valor:val,dia:c.dia||null}]:[];
-    });
-    cacheMes[mesLabel]=lista;
-    return lista;
-  };
-  // Agrupa vários itens da MESMA conta caindo no mesmo dia num só resumo
-  // (ex: várias comprinhas dentro de "Reembolso"), pra não poluir a linha
-  // do dia — mas mantém o nome do item quando é o único daquele dia (ex:
-  // Vivo/SAAE/EDP/Lourdes, cada um sozinho no seu dia).
-  const _agruparSaidas=lista=>{
-    const porConta={};
-    lista.forEach(o=>{(porConta[o.contaId]=porConta[o.contaId]||[]).push(o);});
-    return Object.values(porConta).map(grp=>grp.length>1
-      ?{nome:`${grp[0].contaNome} (${grp.length} itens)`,valor:grp.reduce((s,o)=>s+o.valor,0)}
-      :{nome:grp[0].nome,valor:grp[0].valor});
-  };
-  dias.forEach(x=>{
-    const dia=x.data.getDate();
-    const mesLabel=_dataParaMesLabel(x.data);
-    const matched=_saidasDoMes(mesLabel).filter(o=>o.dia===dia);
-    _agruparSaidas(matched).forEach(o=>{x.saidas+=o.valor;x.saidasList.push(o);});
-  });
-  // itens/contas sem dia de vencimento definido — entram de uma vez em
-  // "hoje" (mês atual) e depois no dia 1º de cada mês seguinte dentro da
-  // janela, pra não sumirem da projeção nem serem contados duas vezes.
-  dias.forEach((x,i)=>{
-    if(i>0&&x.data.getDate()!==1)return;
-    const mesLabel=_dataParaMesLabel(x.data);
-    const matched=_saidasDoMes(mesLabel).filter(o=>!o.dia);
-    _agruparSaidas(matched).forEach(o=>{
-      const nome=o.nome.endsWith('itens)')?o.nome.replace(/ \((\d+) itens\)$/,' (sem dia · $1 itens)'):o.nome+' (sem dia definido)';
-      x.saidas+=o.valor;x.saidasList.push({nome,valor:o.valor});
-    });
-  });
-  // gastos diários — cada lançamento já desconta do banco na hora em que é
-  // cadastrado (não importa a data escolhida), então repeti-los nos dias
-  // futuros contaria a mesma saída duas vezes. Em vez disso, projeta uma
-  // média diária com base no histórico dos últimos 30 dias, igual à ideia
-  // da coluna "Diário" da planilha que o André mencionou.
-  const DD=tipo==='fin'?finDD:pessDD;
-  const limite30=new Date(hoje.getTime()-30*86400000);
-  let somaHist=0;
-  Object.values(DD||{}).forEach(lista=>(lista||[]).forEach(d=>{
-    const dt=new Date(d.dt+'T12:00:00');
-    if(dt>=limite30&&dt<hoje)somaHist+=(d.v||0);
-  }));
-  const mediaDiaria=parseFloat((somaHist/30).toFixed(2));
-  if(mediaDiaria>0){
-    dias.forEach(x=>{
-      x.saidas+=mediaDiaria;
-      x.saidasList.push({nome:'📊 Gastos diários (média)',valor:mediaDiaria});
-    });
-  }
-
-  let saldo=vgAtual;
-  return dias.map(x=>{
-    saldo=saldo+x.entradas-x.saidas;
-    return{data:x.data,entradas:x.entradas,entradasList:x.entradasList,saidas:x.saidas,saidasList:x.saidasList,saldo};
-  });
-}
-function irParaFluxoDiario(tipo,mesLabel){
-  const idxSel=_idxMesContas(mesLabel);
-  const idxAtual=_idxMesContas(_finCurMes());
-  if(idxSel<idxAtual){toast('📆 O Fluxo Diário só cobre os próximos 30 dias — esse mês já passou.','orange');return;}
-  const btn=document.querySelector((tipo==='fin'?'#fin-main-empresa':'#fin-main-pessoais')+' .fin-stab[onclick*="fluxodia"]');
-  if(tipo==='fin')switchFinTab('fluxodia',btn);else switchPessTab('fluxodia',btn);
-  setTimeout(()=>{
-    const container=document.getElementById(tipo==='fin'?'fin-fluxodia-list':'p-fluxodia-list');
-    if(!container)return;
-    const linhas=_calcFluxoDiario(tipo);
-    const alvo=linhas.findIndex(l=>_dataParaMesLabel(l.data)===mesLabel);
-    const alvoEl=alvo>=0?container.children[alvo]:null;
-    if(alvoEl){
-      alvoEl.scrollIntoView({behavior:'smooth',block:'center'});
-      alvoEl.style.outline='2px solid #6ba3e0';
-      setTimeout(()=>{alvoEl.style.outline='';},2000);
-    } else {
-      toast('📆 Esse mês está fora da janela de 30 dias do Fluxo Diário.','orange');
-    }
-  },150);
-}
-function renderFluxoDiario(tipo){
-  const el=document.getElementById(tipo==='fin'?'fin-fluxodia-list':'p-fluxodia-list');
-  if(!el)return;
-  const linhas=_calcFluxoDiario(tipo);
-  const diasSemana=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
-  el.innerHTML=linhas.map(x=>{
-    const cor=x.saldo<0?{bg:'#3a1414',bd:'#7f1d1d',tx:'#e78a7c'}:x.saldo<1000?{bg:'#3a2a13',bd:'#78350f',tx:'#e0a14e'}:{bg:'#13251c',bd:'#22543d',tx:'#7fd99a'};
-    const hojeMk=x.data.toDateString()===new Date().toDateString();
-    const detalhes=[
-      x.entradasList.length?`<span style="color:#7fd99a">+${x.entradasList.map(e=>esc(e.nome)+' '+fmtMoney(e.valor)).join(', ')}</span>`:'',
-      x.saidasList.length?`<span style="color:#e78a7c">−${x.saidasList.map(s=>esc(s.nome)+' '+fmtMoney(s.valor)).join(', ')}</span>`:''
-    ].filter(Boolean).join(' · ');
-    return`<div style="display:flex;align-items:center;gap:12px;padding:9px 13px;margin-bottom:5px;border-radius:9px;background:${cor.bg};border:1px solid ${cor.bd}${hojeMk?';box-shadow:0 0 0 2px #6ba3e0':''}">
-      <div style="flex:0 0 80px;font-size:12px;font-weight:700;color:#A9B2BD">${hojeMk?'Hoje':diasSemana[x.data.getDay()]+' '+x.data.getDate()+'/'+(x.data.getMonth()+1)}</div>
-      <div style="flex:1;min-width:0;font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${detalhes||'—'}</div>
-      <div style="flex:0 0 auto;font-size:14px;font-weight:800;color:${cor.tx}">${fmtMoney(x.saldo)}</div>
-    </div>`;
-  }).join('');
-}
 function _finGastosVal(g){return g.v||0;}
 function _idxMesContas(m){
   if(!m)return -1;
@@ -6817,7 +6683,6 @@ function switchFinTab(tab,btn){
   else if(tab==='diarios')renderFinDiarios();
   else if(tab==='reserva')renderFinReserva();
   else if(tab==='contas')renderFinContas();
-  else if(tab==='fluxodia')renderFluxoDiario('fin');
 }
 function toggleFinForm(id){const el=document.getElementById(id);el.classList.toggle('on');if(el.classList.contains('on'))setTimeout(()=>el.scrollIntoView({behavior:'smooth',block:'nearest'}),50);}
 
@@ -6882,10 +6747,9 @@ function renderFinResumo(){
       <td>${vgHtml}</td>
       <td style="font-weight:800;color:${sobrouColor}">${fmtMoney(c.sobrou)}</td>
       <td>${isPassado?'':`<span class="fin-badge ${bdg}">${st}</span>`}</td>
-      <td>${isPassado?'':`<button onclick="irParaFluxoDiario('fin','${m}')" title="Ver esse mês no Fluxo Diário" style="background:none;border:1px solid var(--border);border-radius:7px;padding:4px 9px;font-size:13px;cursor:pointer;color:var(--muted)">📆</button>`}</td>
     </tr>`;
   });
-  tbody.innerHTML=rows||`<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">Sem dados ainda. Confirme festas e adicione gastos.</td></tr>`;
+  tbody.innerHTML=rows||`<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px">Sem dados ainda. Confirme festas e adicione gastos.</td></tr>`;
 }
 
 function startFinEditVG(m,cell){
@@ -8071,7 +7935,6 @@ function switchPessTab(tab,btn){
   else if(tab==='ap')renderPessAp();
   else if(tab==='dividas')renderPessDividas();
   else if(tab==='contas')renderPessContas();
-  else if(tab==='fluxodia')renderFluxoDiario('pess');
 }
 function renderPessAll(){
   const active=document.querySelector('#fin-main-pessoais .fin-stab.active');
@@ -8129,10 +7992,9 @@ function renderPessResumo(){
       <td>${vgHtml}</td>
       <td style="font-weight:800;color:${sobrouColor}">${fmtMoney(c.sobrou)}</td>
       <td>${isPassado?'':`<span class="fin-badge ${bdg}">${st}</span>`}</td>
-      <td>${isPassado?'':`<button onclick="irParaFluxoDiario('pess','${m}')" title="Ver esse mês no Fluxo Diário" style="background:none;border:1px solid var(--border);border-radius:7px;padding:4px 9px;font-size:13px;cursor:pointer;color:var(--muted)">📆</button>`}</td>
     </tr>`;
   });
-  tbody.innerHTML=rows||`<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">Sem dados ainda.</td></tr>`;
+  tbody.innerHTML=rows||`<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px">Sem dados ainda.</td></tr>`;
 }
 function editContaSP(el){
   if(el.querySelector('input'))return;
