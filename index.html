@@ -3971,15 +3971,24 @@ function opCardHTML(c,cc){
     ${contractBadge}${pendBadge}${fuBadge}
   </div>`;
 }
+// Compara horários "HH:MM" pra ordenação — sem horário sempre vai por
+// último dentro do mesmo dia.
+function _cmpHora(a,b){
+  if(!a&&!b)return 0;
+  if(!a)return 1;
+  if(!b)return-1;
+  return a<b?-1:a>b?1:0;
+}
 function renderPr(){
   const q=_norm(document.getElementById('srch-pr')?.value||'');
   const board=document.getElementById('board-pr');board.innerHTML='';
   const getEffDate=c=>{if(c.sourceId){const s=opCards.find(o=>o.id===c.sourceId);if(s?.dataEvento)return s.dataEvento;}return c.dataEvento||''};
+  const getEffTime=c=>{if(c.sourceId){const s=opCards.find(o=>o.id===c.sourceId);if(s)return s.horario||'';}return c.horario||''};
   _orderedCols('pr-proj',_visibleCols('pr-proj',PR_COLS.filter(col=>(col.cat||'proj')==='proj'))).forEach(col=>{
     let cs=prCards.filter(c=>c.coluna===col.id);
     if(q)cs=cs.filter(c=>{const d=c.sourceId?(opCards.find(o=>o.id===c.sourceId)||c):c;return _norm(d.nomePais).includes(q)||_norm(d.nomeCrianca).includes(q)||_norm(d.nomeCrianca2).includes(q)});
     const _hoje=new Date().toISOString().slice(0,10);
-    cs.sort((a,b)=>{const da=getEffDate(a),db=getEffDate(b);if(!da&&!db)return 0;if(!da)return 1;if(!db)return-1;return da<db?-1:da>db?1:0;});
+    cs.sort((a,b)=>{const da=getEffDate(a),db=getEffDate(b);if(!da&&!db)return _cmpHora(getEffTime(a),getEffTime(b));if(!da)return 1;if(!db)return-1;if(da!==db)return da<db?-1:1;return _cmpHora(getEffTime(a),getEffTime(b));});
     board.appendChild(buildPrCol(col,cs));
   });
   board.appendChild(_colAddGhostEl('pr-proj'));
@@ -3990,10 +3999,11 @@ function renderPrCat(cat,boardId,srchId){
   const q=_norm(document.getElementById(srchId)?.value||'');
   const board=document.getElementById(boardId);if(!board)return;board.innerHTML='';
   const getEffDate=c=>{if(c.sourceId){const s=opCards.find(o=>o.id===c.sourceId);if(s?.dataEvento)return s.dataEvento;}return c.dataEvento||''};
+  const getEffTime=c=>{if(c.sourceId){const s=opCards.find(o=>o.id===c.sourceId);if(s)return s.horario||'';}return c.horario||''};
   _orderedCols('pr-'+cat,_visibleCols('pr-'+cat,PR_COLS.filter(col=>col.cat===cat))).forEach(col=>{
     let cs=prCards.filter(c=>c.coluna===col.id);
     if(q)cs=cs.filter(c=>{const d=c.sourceId?(opCards.find(o=>o.id===c.sourceId)||c):c;return _norm(d.nomePais).includes(q)||_norm(d.nomeCrianca).includes(q)||_norm(d.nomeCrianca2).includes(q)});
-    cs.sort((a,b)=>{const da=getEffDate(a),db=getEffDate(b);if(!da&&!db)return 0;if(!da)return 1;if(!db)return-1;return da<db?-1:da>db?1:0;});
+    cs.sort((a,b)=>{const da=getEffDate(a),db=getEffDate(b);if(!da&&!db)return _cmpHora(getEffTime(a),getEffTime(b));if(!da)return 1;if(!db)return-1;if(da!==db)return da<db?-1:1;return _cmpHora(getEffTime(a),getEffTime(b));});
     board.appendChild(buildPrCol(col,cs));
   });
   board.appendChild(_colAddGhostEl('pr-'+cat));
@@ -6752,6 +6762,29 @@ function _contaPagoMes(c,mes){
 }
 function _contasDoMes(contas,mes){
   return contas.filter(c=>_contaAtivaNoMes(c,mes));
+}
+// Lista as contas (ou itens individuais dela) com vencimento EXATAMENTE no
+// dia informado, ainda não pagas — item sem dia próprio cai no dia da
+// conta-mãe, mesma regra usada no Fluxo de Caixa Diário. Usada tanto no
+// popup "Contas que vencem hoje" quanto no push de aviso no celular.
+function _contasNoDia(contas,mes,dia){
+  const out=[];
+  (contas||[]).forEach(c=>{
+    if(c.itens&&c.itens.length){
+      c.itens.filter(x=>_itemAtivoNoMes(x,mes)&&!_itemPagoMes(x,mes)).forEach(x=>{
+        const d=x.dia||c.dia;
+        if(d!==dia)return;
+        const val=_itemValorMes(x,mes);
+        if(val>0)out.push({nome:c.nome+(x.nome?' — '+x.nome:''),valor:val,contaId:c.id,itemId:x.id});
+      });
+      return;
+    }
+    if(c.dia!==dia)return;
+    if(!_contaAtivaNoMes(c,mes)||_contaPagoMes(c,mes))return;
+    const val=_contaValorPendente(c,mes);
+    if(val>0)out.push({nome:c.nome,valor:val,contaId:c.id,itemId:null});
+  });
+  return out;
 }
 function _rotuloMesContas(m){
   return m.includes('/')?m:m+'/26';
@@ -9716,9 +9749,10 @@ function verificarPendenciasHoje(){
 
 function verificarContasHoje(){
   const hoje=new Date().getDate();
+  const mes=_contasMesAtivo();
   const vencidas=[
-    ...finContas.filter(c=>c.dia===hoje&&!c.pago).map(c=>({...c,tipo:'Empresa'})),
-    ...pessContas.filter(c=>c.dia===hoje&&!c.pago).map(c=>({...c,tipo:'Pessoal'}))
+    ..._contasNoDia(finContas,mes,hoje).map(c=>({...c,tipo:'Empresa'})),
+    ..._contasNoDia(pessContas,mes,hoje).map(c=>({...c,tipo:'Pessoal'}))
   ];
   if(!vencidas.length)return;
   const ov=document.getElementById('contas-hoje-overlay');
@@ -12163,21 +12197,19 @@ function _verificarContasVencendoPush(){
   const hoje=new Date();
   const diaHoje=hoje.getDate();
   const mesKey=hoje.getFullYear()+'-'+String(hoje.getMonth()+1).padStart(2,'0');
+  const mes=_contasMesAtivo();
   const avisos=JSON.parse(localStorage.getItem('crm_contas_dia_avisos')||'{}');
   let salvou=false;
   const todas=[
-    ...(finContas||[]).map(c=>({c,tipo:'Empresa'})),
-    ...(pessContas||[]).map(c=>({c,tipo:'Pessoal'}))
+    ..._contasNoDia(finContas,mes,diaHoje).map(c=>({...c,tipo:'Empresa'})),
+    ..._contasNoDia(pessContas,mes,diaHoje).map(c=>({...c,tipo:'Pessoal'}))
   ];
-  todas.forEach(({c,tipo})=>{
-    if(!c.dia||c.dia!==diaHoje)return;
-    if(_contaPagoMes(c,_contasMesAtivo()))return;
-    const key=c.id+'_'+mesKey;
+  todas.forEach(c=>{
+    const key=c.contaId+'_'+(c.itemId||'')+'_'+mesKey;
     if(avisos[key])return;
     avisos[key]=true;salvou=true;
     const titulo='📅 Conta vence hoje!';
-    const valorStr=fmtMoney(_contaValorPendente(c,_contasMesAtivo()));
-    _enviarPushMobile(titulo, `${c.nome} — ${valorStr} (${tipo})`, 'conta_'+c.id);
+    _enviarPushMobile(titulo, `${c.nome} — ${fmtMoney(c.valor)} (${c.tipo})`, 'conta_'+c.contaId+'_'+(c.itemId||''));
   });
   if(salvou)localStorage.setItem('crm_contas_dia_avisos',JSON.stringify(avisos));
 }
