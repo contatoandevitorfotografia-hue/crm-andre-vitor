@@ -6763,28 +6763,31 @@ function _contaPagoMes(c,mes){
 function _contasDoMes(contas,mes){
   return contas.filter(c=>_contaAtivaNoMes(c,mes));
 }
-// Lista as contas (ou itens individuais dela) com vencimento EXATAMENTE no
-// dia informado, ainda não pagas — item sem dia próprio cai no dia da
-// conta-mãe, mesma regra usada no Fluxo de Caixa Diário. Usada tanto no
-// popup "Contas que vencem hoje" quanto no push de aviso no celular.
+// Lista as contas com vencimento EXATAMENTE no dia informado, ainda não
+// pagas — item sem dia próprio cai no dia da conta-mãe, mesma regra usada
+// no Fluxo de Caixa Diário. Itens da MESMA conta no mesmo dia são somados
+// num só resultado (só o nome da conta e o total, sem descrição de cada
+// item). Usada tanto no popup "Contas que vencem hoje" quanto no push.
 function _contasNoDia(contas,mes,dia){
-  const out=[];
+  const brutos=[];
   (contas||[]).forEach(c=>{
     if(c.itens&&c.itens.length){
       c.itens.filter(x=>_itemAtivoNoMes(x,mes)&&!_itemPagoMes(x,mes)).forEach(x=>{
         const d=x.dia||c.dia;
         if(d!==dia)return;
         const val=_itemValorMes(x,mes);
-        if(val>0)out.push({nome:c.nome+(x.nome?' — '+x.nome:''),valor:val,contaId:c.id,itemId:x.id});
+        if(val>0)brutos.push({nome:c.nome,valor:val,contaId:c.id});
       });
       return;
     }
     if(c.dia!==dia)return;
     if(!_contaAtivaNoMes(c,mes)||_contaPagoMes(c,mes))return;
     const val=_contaValorPendente(c,mes);
-    if(val>0)out.push({nome:c.nome,valor:val,contaId:c.id,itemId:null});
+    if(val>0)brutos.push({nome:c.nome,valor:val,contaId:c.id});
   });
-  return out;
+  const porConta={};
+  brutos.forEach(o=>{(porConta[o.contaId]=porConta[o.contaId]||[]).push(o);});
+  return Object.values(porConta).map(grp=>({nome:grp[0].nome,valor:grp.reduce((s,o)=>s+o.valor,0),contaId:grp[0].contaId}));
 }
 function _rotuloMesContas(m){
   return m.includes('/')?m:m+'/26';
@@ -12205,11 +12208,11 @@ function _verificarContasVencendoPush(){
     ..._contasNoDia(pessContas,mes,diaHoje).map(c=>({...c,tipo:'Pessoal'}))
   ];
   todas.forEach(c=>{
-    const key=c.contaId+'_'+(c.itemId||'')+'_'+mesKey;
+    const key=c.contaId+'_'+mesKey;
     if(avisos[key])return;
     avisos[key]=true;salvou=true;
     const titulo='📅 Conta vence hoje!';
-    _enviarPushMobile(titulo, `${c.nome} — ${fmtMoney(c.valor)} (${c.tipo})`, 'conta_'+c.contaId+'_'+(c.itemId||''));
+    _enviarPushMobile(titulo, `${c.nome} — ${fmtMoney(c.valor)} (${c.tipo})`, 'conta_'+c.contaId);
   });
   if(salvou)localStorage.setItem('crm_contas_dia_avisos',JSON.stringify(avisos));
 }
