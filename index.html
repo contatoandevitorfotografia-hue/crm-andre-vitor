@@ -4186,12 +4186,23 @@ function _simBase(tipo){
   const c=tipo==='fin'?_calcFinMes(mes):_calcPessMes(mes);
   return c.vg;
 }
+// Limite real disponível: o que está no banco menos as contas que ainda
+// faltam pagar este mês (contas já pagas não entram na conta de novo,
+// porque já foram descontadas do banco quando você marcou como pagas).
+function _simLimite(tipo){
+  const mes=_finCurMes();
+  const c=tipo==='fin'?_calcFinMes(mes):_calcPessMes(mes);
+  return c.vg-c.pendG;
+}
 function abrirSimulador(tipo){
   const old=document.getElementById('sim-modal');if(old)old.remove();
   const itens=tipo==='fin'?_simItensFin:_simItensPess;
   const base=_simBase(tipo);
+  const limite=_simLimite(tipo);
   const totalSim=itens.reduce((s,i)=>s+i.valor,0);
   const novoValor=base-totalSim;
+  const restanteLimite=limite-totalSim;
+  const passouLimite=restanteLimite<0;
   const d=document.createElement('div');d.id='sim-modal';
   d.innerHTML=`<div style="position:fixed;inset:0;z-index:9990;background:rgba(0,0,0,.55)" onclick="document.getElementById('sim-modal').remove()"></div>
     <div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9991;background:var(--surface,#1a1f27);border:1px solid var(--border);border-radius:14px;padding:22px 24px;box-shadow:0 8px 40px rgba(0,0,0,.6);width:min(430px,90vw);max-height:85vh;overflow-y:auto" onclick="event.stopPropagation()">
@@ -4200,11 +4211,13 @@ function abrirSimulador(tipo){
         <button onclick="document.getElementById('sim-modal').remove()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1">×</button>
       </div>
       <div style="font-size:11px;color:var(--muted);margin-bottom:14px;line-height:1.5">Cadastre gastos que talvez você faça, só pra ver como ficaria o Valor no Banco. Nada aqui é salvo de verdade — some se você recarregar a página.</div>
-      <div style="background:var(--n50);border-radius:10px;padding:12px 14px;margin-bottom:14px">
+      <div style="background:var(--n50);border-radius:10px;padding:12px 14px;margin-bottom:${passouLimite?10:14}px">
         <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)"><span>Valor no Banco atual</span><span>${fmtMoney(base)}</span></div>
-        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--danger)"><span>Gastos simulados</span><span>−${fmtMoney(totalSim)}</span></div>
-        <div style="display:flex;justify-content:space-between;font-size:17px;font-weight:800;color:${novoValor<0?'var(--danger)':'var(--success,#6E879F)'};margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)"><span>Ficaria</span><span>${fmtMoney(novoValor)}</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)"><span>Limite disponível (banco − contas a pagar)</span><span style="font-weight:700">${fmtMoney(limite)}</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--danger);margin-top:4px"><span>Gastos simulados</span><span>−${fmtMoney(totalSim)}</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:17px;font-weight:800;color:${passouLimite?'var(--danger)':'var(--success,#6E879F)'};margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)"><span>Sobra do limite</span><span>${fmtMoney(restanteLimite)}</span></div>
       </div>
+      ${passouLimite?`<div style="background:#3a1414;border:1px solid #7f1d1d;color:#e78a7c;border-radius:8px;padding:10px 12px;font-size:12px;font-weight:700;margin-bottom:14px">⚠️ Isso passa do seu limite disponível em ${fmtMoney(-restanteLimite)}, já descontando as contas que ainda faltam pagar este mês.</div>`:''}
       <div id="sim-lista">${itens.map((i,idx)=>`
         <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)">
           <span style="flex:1;font-size:13px;min-width:0">${esc(i.desc)}</span>
@@ -4227,7 +4240,13 @@ function adicionarSimItem(tipo){
   const val=parseFloat(valEl?.value)||0;
   if(val<=0){toast('⚠️ Informe um valor','orange');return;}
   const arr=tipo==='fin'?_simItensFin:_simItensPess;
+  const limite=_simLimite(tipo);
+  const totalAntes=arr.reduce((s,i)=>s+i.valor,0);
   arr.push({desc,valor:val});
+  const totalDepois=totalAntes+val;
+  if(totalDepois>limite&&totalAntes<=limite){
+    toast(`⚠️ Passou do limite disponível em ${fmtMoney(totalDepois-limite)}!`,'orange');
+  }
   abrirSimulador(tipo);
 }
 function removerSimItem(tipo,idx){
