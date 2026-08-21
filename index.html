@@ -1770,7 +1770,8 @@ td { padding: 13px 16px; font-size: 13.5px; }
 
     <div id="fin-tab-resumo" class="fin-subtab-panel on">
       <div class="stats-grid" id="fin-stats"></div>
-      <div style="display:flex;justify-content:flex-end;margin:10px 0 2px">
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin:10px 0 2px">
+        <button onclick="abrirSimulador('fin')" style="background:none;color:#e0a14e;border:1.5px solid #e0a14e;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px">🧮 Simulador</button>
         <button onclick="abrirHistMes('fin')" style="background:linear-gradient(135deg,#2C7A7B,#246364);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px">📅 Ver por mês</button>
       </div>
       <div class="fin-card" style="margin-top:8px">
@@ -1875,7 +1876,8 @@ td { padding: 13px 16px; font-size: 13.5px; }
     <!-- P-RESUMO -->
     <div id="p-tab-resumo" class="fin-subtab-panel on">
       <div class="stats-grid" id="p-stats"></div>
-      <div style="display:flex;justify-content:flex-end;margin:10px 0 2px">
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin:10px 0 2px">
+        <button onclick="abrirSimulador('pess')" style="background:none;color:#e0a14e;border:1.5px solid #e0a14e;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px">🧮 Simulador</button>
         <button onclick="abrirHistMes('pess')" style="background:linear-gradient(135deg,#2C7A7B,#246364);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px">📅 Ver por mês</button>
       </div>
       <div class="fin-card" style="margin-top:8px">
@@ -4175,6 +4177,67 @@ function _contarCardsNaColuna(boardKey,colId){
   if(boardKey==='op')return opCards.filter(c=>c.coluna===colId&&!c.somenteProjeto).length;
   if(boardKey==='alb')return albCards.filter(c=>c.coluna===colId).length;
   return prCards.filter(c=>c.coluna===colId).length;
+}
+// ── Simulador de gastos (Financeiro > Resumo) ──
+// Preview não-destrutivo: nada aqui é salvo, some ao recarregar a página.
+let _simItensFin=[],_simItensPess=[];
+function _simBase(tipo){
+  const mes=_finCurMes();
+  const c=tipo==='fin'?_calcFinMes(mes):_calcPessMes(mes);
+  return c.vg;
+}
+function abrirSimulador(tipo){
+  const old=document.getElementById('sim-modal');if(old)old.remove();
+  const itens=tipo==='fin'?_simItensFin:_simItensPess;
+  const base=_simBase(tipo);
+  const totalSim=itens.reduce((s,i)=>s+i.valor,0);
+  const novoValor=base-totalSim;
+  const d=document.createElement('div');d.id='sim-modal';
+  d.innerHTML=`<div style="position:fixed;inset:0;z-index:9990;background:rgba(0,0,0,.55)" onclick="document.getElementById('sim-modal').remove()"></div>
+    <div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9991;background:var(--surface,#1a1f27);border:1px solid var(--border);border-radius:14px;padding:22px 24px;box-shadow:0 8px 40px rgba(0,0,0,.6);width:min(430px,90vw);max-height:85vh;overflow-y:auto" onclick="event.stopPropagation()">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <h3 style="margin:0;font-size:16px">🧮 Simulador de Gastos — ${tipo==='fin'?'Empresa':'Pessoal'}</h3>
+        <button onclick="document.getElementById('sim-modal').remove()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1">×</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:14px;line-height:1.5">Cadastre gastos que talvez você faça, só pra ver como ficaria o Valor no Banco. Nada aqui é salvo de verdade — some se você recarregar a página.</div>
+      <div style="background:var(--n50);border-radius:10px;padding:12px 14px;margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)"><span>Valor no Banco atual</span><span>${fmtMoney(base)}</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--danger)"><span>Gastos simulados</span><span>−${fmtMoney(totalSim)}</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:17px;font-weight:800;color:${novoValor<0?'var(--danger)':'var(--success,#6E879F)'};margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)"><span>Ficaria</span><span>${fmtMoney(novoValor)}</span></div>
+      </div>
+      <div id="sim-lista">${itens.map((i,idx)=>`
+        <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)">
+          <span style="flex:1;font-size:13px;min-width:0">${esc(i.desc)}</span>
+          <span style="font-weight:700;color:var(--danger);white-space:nowrap">${fmtMoney(i.valor)}</span>
+          <button onclick="removerSimItem('${tipo}',${idx})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;line-height:1">×</button>
+        </div>`).join('')||''}</div>
+      <div style="display:flex;gap:6px;margin-top:12px">
+        <input id="sim-desc" type="text" placeholder="Descrição (ex: Câmera nova)" style="flex:1;min-width:0;border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;background:var(--surface)" onkeydown="if(event.key==='Enter')document.getElementById('sim-val').focus()">
+        <input id="sim-val" type="number" step="0.01" min="0" placeholder="R$" style="width:90px;flex-shrink:0;border:1.5px solid var(--border);border-radius:8px;padding:8px;font-size:13px;background:var(--surface)" onkeydown="if(event.key==='Enter')adicionarSimItem('${tipo}')">
+        <button onclick="adicionarSimItem('${tipo}')" style="background:#6ba3e0;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:15px;font-weight:700;cursor:pointer;flex-shrink:0">＋</button>
+      </div>
+      ${itens.length?`<button onclick="limparSimulador('${tipo}')" style="margin-top:10px;background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer;width:100%">🗑 Limpar simulação</button>`:''}
+    </div>`;
+  document.body.appendChild(d);
+  setTimeout(()=>document.getElementById('sim-desc')?.focus(),50);
+}
+function adicionarSimItem(tipo){
+  const descEl=document.getElementById('sim-desc'),valEl=document.getElementById('sim-val');
+  const desc=(descEl?.value||'').trim()||'Gasto';
+  const val=parseFloat(valEl?.value)||0;
+  if(val<=0){toast('⚠️ Informe um valor','orange');return;}
+  const arr=tipo==='fin'?_simItensFin:_simItensPess;
+  arr.push({desc,valor:val});
+  abrirSimulador(tipo);
+}
+function removerSimItem(tipo,idx){
+  const arr=tipo==='fin'?_simItensFin:_simItensPess;
+  arr.splice(idx,1);
+  abrirSimulador(tipo);
+}
+function limparSimulador(tipo){
+  if(tipo==='fin')_simItensFin=[];else _simItensPess=[];
+  abrirSimulador(tipo);
 }
 function abrirGerenciarColunas(boardKey){
   const base=_baseColsDoBoard(boardKey);
