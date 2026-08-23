@@ -7362,6 +7362,8 @@ function saveInlineVRPess(cardId){
   const inp=document.getElementById('ievr-pess-'+cardId);if(!inp)return;
   const val=parseFloat(inp.value)||0;
   const card=opCardsPess.find(c=>c.id===cardId);if(!card)return;
+  const mes=_getMesFin(card.dataEvento);
+  if(mes){pessVG[mes]=(pessVG[mes]||0)+(val-(card.valorReserva||0));savePessData();}
   card.valorReserva=val;
   savOpPess();toast('✅ Valor pago salvo!','green');
   renderPessEntradas();renderPessResumo();
@@ -7393,7 +7395,9 @@ function savePessPago(mes,idx){
   const inp=document.getElementById('edit-pes-pago-'+mes+'-'+idx);if(!inp)return;
   const val=parseFloat(inp.value)||0;
   if(pessFD[mes]&&pessFD[mes][idx]){
-    pessFD[mes][idx].pago=val;
+    const entrada=pessFD[mes][idx];
+    pessVG[mes]=(pessVG[mes]||0)+(val-(entrada.pago||0));
+    entrada.pago=val;
     savePessData();renderPessEntradas();renderPessResumo();
   }
 }
@@ -7408,7 +7412,19 @@ function savePessRest(mes,idx){
   const inp=document.getElementById('edit-pes-rest-'+mes+'-'+idx);if(!inp)return;
   const val=parseFloat(inp.value)||0;
   if(pessFD[mes]&&pessFD[mes][idx]){
-    pessFD[mes][idx].rest=val;
+    // "Falta pagar" é sempre recalculado na exibição (líquido menos o
+    // valor pago) — editar só esse campo não mudava nada de verdade e
+    // nunca refletia no Valor no Banco. Deriva o novo valor pago a
+    // partir da falta informada, igual à mesma correção já feita do
+    // lado Empresa.
+    const entrada=pessFD[mes][idx];
+    const op=entrada._opId?opCardsPess.find(o=>o.id===entrada._opId):null;
+    const gastosPes=(op?.gastosItens||[]).filter(g=>g.tipo==='pessoal').reduce((s,g)=>s+(g.val||0),0);
+    const andLiq=Math.max(0,(entrada.v||0)-gastosPes);
+    const novoPago=Math.max(0,parseFloat((andLiq-val).toFixed(2)));
+    pessVG[mes]=(pessVG[mes]||0)+(novoPago-(entrada.pago||0));
+    entrada.pago=novoPago;
+    entrada.rest=val;
     savePessData();renderPessEntradas();renderPessResumo();
   }
 }
