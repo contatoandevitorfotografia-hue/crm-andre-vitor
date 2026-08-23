@@ -7358,12 +7358,22 @@ function inlineEditReservaPess(cardId){
   </div>`;
   setTimeout(()=>{const i=document.getElementById('ievr-pess-'+cardId);if(i)i.focus();},20);
 }
+// Igual ao _initFinVG do lado Empresa: na primeira vez que pessVG[mes] é
+// tocado, o valor-base precisa ser a soma do que já está pago nas festas
+// daquele mês (não zero) — senão um pagamento já cadastrado antes desta
+// correção existir "some" ao sincronizar (delta 0 em cima de um zero).
+function _initPessVG(mes){
+  if(pessVG[mes]===undefined){
+    const F=pessFD[mes]||[];
+    pessVG[mes]=F.reduce((s,f)=>s+(f.pago||0),0);
+  }
+}
 function saveInlineVRPess(cardId){
   const inp=document.getElementById('ievr-pess-'+cardId);if(!inp)return;
   const val=parseFloat(inp.value)||0;
   const card=opCardsPess.find(c=>c.id===cardId);if(!card)return;
   const mes=_getMesFin(card.dataEvento);
-  if(mes){pessVG[mes]=(pessVG[mes]||0)+(val-(card.valorReserva||0));savePessData();}
+  if(mes){_initPessVG(mes);pessVG[mes]=(pessVG[mes]||0)+(val-(card.valorReserva||0));savePessData();}
   card.valorReserva=val;
   savOpPess();toast('✅ Valor pago salvo!','green');
   renderPessEntradas();renderPessResumo();
@@ -7396,6 +7406,7 @@ function savePessPago(mes,idx){
   const val=parseFloat(inp.value)||0;
   if(pessFD[mes]&&pessFD[mes][idx]){
     const entrada=pessFD[mes][idx];
+    _initPessVG(mes);
     pessVG[mes]=(pessVG[mes]||0)+(val-(entrada.pago||0));
     entrada.pago=val;
     savePessData();renderPessEntradas();renderPessResumo();
@@ -7422,6 +7433,7 @@ function savePessRest(mes,idx){
     const gastosPes=(op?.gastosItens||[]).filter(g=>g.tipo==='pessoal').reduce((s,g)=>s+(g.val||0),0);
     const andLiq=Math.max(0,(entrada.v||0)-gastosPes);
     const novoPago=Math.max(0,parseFloat((andLiq-val).toFixed(2)));
+    _initPessVG(mes);
     pessVG[mes]=(pessVG[mes]||0)+(novoPago-(entrada.pago||0));
     entrada.pago=novoPago;
     entrada.rest=val;
