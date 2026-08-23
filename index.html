@@ -12,6 +12,7 @@
    Tom visual: Elegante · Terroso · Artesanal
    ═══════════════════════════════════════════════ */
 *{box-sizing:border-box;margin:0;padding:0}
+button,input,select,textarea{font-family:inherit}
 :root{
   /* ── Primária: Âmbar / Dourado (tema Noturno) ── */
   --primary:#E0A14E;
@@ -7089,7 +7090,7 @@ function renderFinFestas(){
     const vFull=card?.valorTotal||0;
     const vRes=card?.valorReserva||0;
     const valorCell=`<span id="fin-v-${f.id}" style="color:var(--success);font-weight:700;cursor:pointer;text-decoration:underline dotted" title="Clique para editar" onclick="event.stopPropagation();inlineEditValor('${f.id}',this)">${fmtMoney(f.liq)}</span>`;
-    const reservaCell=`<span id="fin-r-${f.id}" style="color:#7D95AE;font-weight:700;cursor:pointer;text-decoration:underline dotted" title="Clique para editar o valor pago" onclick="event.stopPropagation();inlineEditReserva('${f.id}')">${f.reserva>0?fmtMoney(f.reserva):'— editar'}</span>`;
+    const reservaCell=`<span id="fin-r-${f.id}" style="color:#7D95AE;font-weight:700;cursor:pointer;text-decoration:underline dotted" title="Clique para editar o valor pago" onclick="event.stopPropagation();inlineEditReserva('${f.id}')">${f.reserva>0?fmtMoney(f.reserva):''}</span>`;
     const restCell=f.rest<=0
       ?`<span style="color:var(--muted);font-size:12px">quitado</span>`
       :f.rest>0
@@ -7114,7 +7115,7 @@ function renderFinFestas(){
   }).join('');
   tbl.innerHTML=`<table><thead><tr><th>Dia</th><th>Cliente</th><th>Valor</th><th style="color:#7D95AE">💰 Valor Pago</th><th style="color:#E06B5A">Falta pagar</th><th style="color:#E06B5A">💸 Custos</th><th style="color:#22c55e">🎁 Álbum</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
   const totAll=festas.reduce((s,f)=>s+f.liq,0);
-  const totPaid=festas.filter(f=>f.p).reduce((s,f)=>s+f.liq,0);
+  const totPaid=festas.reduce((s,f)=>s+f.reserva,0);
   const totRest=festas.reduce((s,f)=>s+f.rest,0);
   const totCusto=festas.reduce((s,f)=>s+f.custo,0);
   const totLucro=totAll-totCusto;
@@ -8421,17 +8422,10 @@ function renderPessEntradas(){
     const _gp=(_op?.gastosItens||[]).filter(g=>g.tipo==='pessoal').reduce((ss,g)=>ss+(g.val||0),0);
     return s+Math.max(0,f.v-_gp);
   },0);
-  const totPaid=F.filter(f=>{
+  const totPaid=F.reduce((s,f)=>{
     const _op=f._opId?opCardsPess.find(o=>o.id===f._opId):null;
-    const _gp=(_op?.gastosItens||[]).filter(g=>g.tipo==='pessoal').reduce((ss,g)=>ss+(g.val||0),0);
     const _vPago=_op?(_op.valorReserva??0):(f.pago||0);
-    const _andLiq=Math.max(0,f.v-_gp);
-    const _andFalt=Math.max(0,_andLiq-_vPago);
-    return _andFalt<=0&&_andLiq>0;
-  }).reduce((s,f)=>{
-    const _op=f._opId?opCardsPess.find(o=>o.id===f._opId):null;
-    const _gp=(_op?.gastosItens||[]).filter(g=>g.tipo==='pessoal').reduce((ss,g)=>ss+(g.val||0),0);
-    return s+Math.max(0,f.v-_gp);
+    return s+_vPago;
   },0);
   const totRest=F.reduce((s,f)=>{
     const _op=f._opId?opCardsPess.find(o=>o.id===f._opId):null;
