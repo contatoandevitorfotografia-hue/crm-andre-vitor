@@ -6935,13 +6935,17 @@ function _calcFinMes(mes){
   const totalG=contasMes.reduce((s,c)=>s+_contaValor(c,mes),0);
   const pendG=contasMes.reduce((s,c)=>s+_contaValorPendente(c,mes),0);
   const totalD=D.reduce((s,d)=>s+d.v,0);
+  const pendD=D.filter(d=>!d.p).reduce((s,d)=>s+d.v,0);
   const autoVg=festas.reduce((s,f)=>s+(f.reserva||0),0);
   const vg=finVG[mes]!==undefined?finVG[mes]:autoVg;
   const prevF=festas.filter(f=>!f.p).reduce((s,f)=>s+(f.liq??f.v),0);
   const totalAReceber=festas.reduce((s,f)=>s+f.rest,0);
-  const sobrou=totalAReceber-totalG-totalD+vg;
+  // "Sobrou" projeta o que ainda falta entrar/sair: contas e gastos já
+  // pagos já saíram do banco (já estão refletidos em "vg" mais baixo), só
+  // o que ainda está pendente deve ser descontado — senão conta em dobro.
+  const sobrou=totalAReceber-pendG-pendD+vg;
   // G = contas a pagar do mês (substituíram os antigos "gastos fixos")
-  return{totalF,totalAReceber,totalG,pendG,totalD,vg,autoVg,prevF,sobrou,festas,D,G:contasMes};
+  return{totalF,totalAReceber,totalG,pendG,totalD,pendD,vg,autoVg,prevF,sobrou,festas,D,G:contasMes};
 }
 
 function switchFinTab(tab,btn){
@@ -6985,7 +6989,7 @@ function renderFinResumo(){
   const curMesFin=_finCurMes();
   const cCurFin=_calcFinMes(curMesFin);
   const finBrutoMes=cCurFin.festas.reduce((s,f)=>s+(f.vFull||0),0);
-  const dispFin=cCurFin.totalAReceber-cCurFin.totalG-cCurFin.totalD+cCurFin.vg;
+  const dispFin=cCurFin.totalAReceber-cCurFin.pendG-cCurFin.pendD+cCurFin.vg;
   const dfOk=dispFin>1000,dfNo=dispFin<0;
   const dfGrad=dfOk?'linear-gradient(135deg,#9FB5CB,#064e3b)':dfNo?'linear-gradient(135deg,#e78a7c,#7f1d1d)':'linear-gradient(135deg,#92400e,#78350f)';
   if(statsEl)statsEl.innerHTML=`
@@ -8232,14 +8236,18 @@ function _calcPessMes(mes){
   const totalG=contasMes.reduce((s,c)=>s+_contaValor(c,mes),0);
   const pendG=contasMes.reduce((s,c)=>s+_contaValorPendente(c,mes),0);
   const totalD=D.reduce((s,d)=>s+d.v,0);
+  const pendD=D.filter(d=>!d.p).reduce((s,d)=>s+d.v,0);
   const vg=pessVG[mes]||0;
   const prevF=F.filter(f=>!f.p).reduce((s,f)=>s+f.v,0);
   // Ana & Pedro — só conta no mês atual, só se ainda não pagaram
   const ap=pessAnaP[0]||{pagoAna:false,pagoPedro:false};
   const pendIF=mes===_finCurMes()?(!ap.pagoAna?ANA_PEDRO_V:0)+(!ap.pagoPedro?ANA_PEDRO_V:0):0;
   const aReceber=_calcPessAReceber(mes);
-  const sobrou=aReceber-totalG-totalD+vg;
-  return{totalF,totalG,pendG,totalD,pendIF,vg,prevF,aReceber,sobrou};
+  // Contas e gastos já pagos já saíram do banco (refletidos no vg) — só o
+  // pendente deve ser descontado aqui, senão conta em dobro (mesmo ajuste
+  // já feito do lado Empresa).
+  const sobrou=aReceber-pendG-pendD+vg;
+  return{totalF,totalG,pendG,totalD,pendD,pendIF,vg,prevF,aReceber,sobrou};
 }
 function _pessApParte(){
   const tot=pessAP.reduce((s,b)=>s+b.v,0);
@@ -8278,7 +8286,7 @@ function renderPessResumo(){
     const gp=(op?.gastosItens||[]).filter(g=>g.tipo==='pessoal').reduce((ss,g)=>ss+(g.val||0),0);
     return s+Math.max(0,f.v-gp);
   },0);
-  const disponivel=aReceberCur-cCur.totalG-cCur.totalD+cCur.vg;
+  const disponivel=aReceberCur-cCur.pendG-cCur.pendD+cCur.vg;
   const dOk=disponivel>300,dNo=disponivel<0;
   const dGrad=dOk?'linear-gradient(135deg,#9FB5CB,#064e3b)':dNo?'linear-gradient(135deg,#e78a7c,#7f1d1d)':'linear-gradient(135deg,#92400e,#78350f)';
   const statsEl=document.getElementById('p-stats');
@@ -8701,7 +8709,7 @@ function savePessDiarioValor(mes,i,inp){
   if(isNaN(v)||v<0){renderPessDiarios();return;}
   if(!pessDD[mes]||!pessDD[mes][i])return;
   const d=pessDD[mes][i];
-  if(d.p){pessVG[mes]=(pessVG[mes]||0)+(d.v-v);}
+  if(d.p){_initPessVG(mes);pessVG[mes]=(pessVG[mes]||0)+(d.v-v);}
   d.v=v;
   savePessData();renderPessDiarios();renderPessResumo();
   toast('✅ Gasto atualizado!','green');
@@ -8711,11 +8719,12 @@ function togglePessDiario(mes,i,val){
   const d=pessDD[mes][i];
   const foiPago=d.p;
   d.p=val;
+  _initPessVG(mes);
   if(val&&!foiPago) pessVG[mes]=(pessVG[mes]||0)-d.v;
   else if(!val&&foiPago) pessVG[mes]=(pessVG[mes]||0)+d.v;
   savePessData();renderPessDiarios();renderPessResumo();
 }
-function delPessDiario(mes,i){if(!pessDD[mes])return;if(!confirm('Excluir?'))return;const _d=pessDD[mes][i];if(_d&&_d.p)pessVG[mes]=(pessVG[mes]||0)+_d.v;pessDD[mes].splice(i,1);savePessData();renderPessDiarios();renderPessResumo();}
+function delPessDiario(mes,i){if(!pessDD[mes])return;if(!confirm('Excluir?'))return;const _d=pessDD[mes][i];if(_d&&_d.p){_initPessVG(mes);pessVG[mes]=(pessVG[mes]||0)+_d.v;}pessDD[mes].splice(i,1);savePessData();renderPessDiarios();renderPessResumo();}
 function savePessDiario(){
   const dt=document.getElementById('p-d-dt').value;
   const v=parseFloat(document.getElementById('p-d-v').value)||0;
@@ -8723,6 +8732,7 @@ function savePessDiario(){
   if(!v){alert('Preencha o valor!');return;}
   if(!pessDD[pessCurD])pessDD[pessCurD]=[];
   // Marca como pago e deduz do banco imediatamente
+  _initPessVG(pessCurD);
   pessVG[pessCurD]=(pessVG[pessCurD]||0)-v;
   pessDD[pessCurD].push({dt,v,l,p:true});
   pessDD[pessCurD].sort((a,b)=>a.dt.localeCompare(b.dt));
@@ -9252,6 +9262,7 @@ function pagarContaItem(tipo,ci,ii){
   var valor=_itemValorMes(x,mes);
   // Deduz/restaura do banco do mês selecionado
   if(tipo==='fin') _initFinVG(mes);
+  else _initPessVG(mes);
   if(novoPago&&!foiPago){
     // marcou como pago — subtrai do banco
     if(tipo==='fin') finVG[mes]-=valor;
@@ -9691,6 +9702,7 @@ function pagarPessConta(i){
   var mes=_contasMesAtivo();
   var foiPago=_contaPagoMes(c,mes);
   var novoPago=!foiPago;
+  _initPessVG(mes);
   if(c.itens&&c.itens.length){
     // Com sub-itens: marca/desmarca todos e desconta/devolve apenas os que mudaram de estado
     c.itens.forEach(function(x){
