@@ -6270,7 +6270,7 @@ function _pgrRow(p){
   const isEdit=_editingTipo==='pgr'&&_editingId===p.id;
   const dt=p.prazo?fmtDate(p.prazo):'';
   const recAtiva=p.rec&&p.rec.ativa;
-  return `<div class="pend-item${feito?' done':''}" style="${atrasado?'border-color:var(--danger-light);background:#2E1A18':ehHoje?'border-color:var(--warning);background:var(--warning-light)':''};flex-wrap:wrap">
+  return `<div class="pend-item${feito?' done':''}" style="${atrasado?'border-color:var(--danger);background:#2E1A18':ehHoje?'border-color:var(--warning);background:var(--warning-light)':''};flex-wrap:wrap">
     <input type="checkbox" ${feito?'checked':''} onchange="togglePendenciaGeral('${p.id}')">
     ${isEdit
       ? `<input type="text" id="edit-inp-${p.id}" value="${esc(p.texto)}" onblur="saveEditPgr('${p.id}')" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit()" style="flex:1;border:1.5px solid var(--primary);border-radius:6px;padding:5px 8px;font:600 13px 'Montserrat',sans-serif;color:var(--n900);outline:none">`
