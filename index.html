@@ -491,6 +491,8 @@ tr:hover td{background:var(--n50)}
 .proj-tab{padding:7px 20px;border:1.5px solid var(--border);border-radius:99px;background:none;cursor:pointer;font:600 13px 'Montserrat',sans-serif;color:var(--muted);transition:.18s}
 .proj-tab:hover{border-color:var(--primary);color:var(--primary)}
 .proj-tab.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.proj-tab-badge{display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:17px;padding:0 5px;margin-left:6px;border-radius:99px;background:var(--danger);color:#fff;font-size:10px;font-weight:700;vertical-align:middle}
+.proj-tab.active .proj-tab-badge{background:rgba(255,255,255,.3)}
 
 
 /* ── Backup ── */
@@ -1464,9 +1466,9 @@ td { padding: 13px 16px; font-size: 13.5px; }
   </div>
   <div class="proj-tab-bar">
     <button class="proj-tab active" id="ptab-proj" onclick="switchProjTab('proj')">📸 Projetos</button>
-    <button class="proj-tab" id="ptab-alb" onclick="switchProjTab('alb')">📒 Álbuns</button>
-    <button class="proj-tab" id="ptab-video" onclick="switchProjTab('video')">🎥 Vídeo</button>
-    <button class="proj-tab" id="ptab-frl" onclick="switchProjTab('frl')">🤝 Freelas</button>
+    <button class="proj-tab" id="ptab-alb" onclick="switchProjTab('alb')">📒 Álbuns<span class="proj-tab-badge" id="ptab-alb-badge" style="display:none"></span></button>
+    <button class="proj-tab" id="ptab-video" onclick="switchProjTab('video')">🎥 Vídeo<span class="proj-tab-badge" id="ptab-video-badge" style="display:none"></span></button>
+    <button class="proj-tab" id="ptab-frl" onclick="switchProjTab('frl')">🤝 Freelas<span class="proj-tab-badge" id="ptab-frl-badge" style="display:none"></span></button>
   </div>
   <div id="proj-section">
     <div class="srch-bar"><div class="srch-wrap"><input class="srch-inp" id="srch-pr" placeholder="Buscar projeto..." oninput="renderPr()"></div></div>
@@ -3580,6 +3582,26 @@ function renderAlb(){
     board.appendChild(buildAlbCol(col,cs));
   });
   board.appendChild(_colAddGhostEl('alb'));
+  updateProjTabBadges();
+}
+// Mostra, nas abas Álbuns/Vídeo/Freelas, quantos eventos ainda estão
+// pendentes (fora da última coluna do board) — só aparece se houver
+// algum card no board. Projetos fica de fora por ser a aba principal.
+function updateProjTabBadges(){
+  const setBadge=(id,total,pend)=>{
+    const el=document.getElementById(id);if(!el)return;
+    if(total>0&&pend>0){el.textContent=pend;el.style.display='inline-flex';}
+    else el.style.display='none';
+  };
+  setBadge('ptab-alb-badge',albCards.length,albCards.filter(c=>c.coluna!=='alb-entregue').length);
+  const videoCols=PR_COLS.filter(c=>c.cat==='video').map(c=>c.id);
+  const videoCards=prCards.filter(c=>videoCols.includes(c.coluna));
+  const videoLast=videoCols[videoCols.length-1];
+  setBadge('ptab-video-badge',videoCards.length,videoCards.filter(c=>c.coluna!==videoLast).length);
+  const frlCols=PR_COLS.filter(c=>c.cat==='frl').map(c=>c.id);
+  const frlCards=prCards.filter(c=>frlCols.includes(c.coluna));
+  const frlLast=frlCols[frlCols.length-1];
+  setBadge('ptab-frl-badge',frlCards.length,frlCards.filter(c=>c.coluna!==frlLast).length);
 }
 function buildAlbCol(col,cs){
   const div=document.createElement('div');div.className='col';div.dataset.col=col.id;
@@ -3996,6 +4018,7 @@ function renderPr(){
   });
   board.appendChild(_colAddGhostEl('pr-proj'));
   renderPrVideo();renderPrFrl();
+  updateProjTabBadges();
 }
 // Renderiza um board de projetos filtrado por categoria (video / frl)
 function renderPrCat(cat,boardId,srchId){
