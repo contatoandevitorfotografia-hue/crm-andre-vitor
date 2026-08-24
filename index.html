@@ -2826,6 +2826,13 @@ td { padding: 13px 16px; font-size: 13.5px; }
         <div class="fg"><label>CPF</label><input type="text" id="cl-cpf" placeholder="000.000.000-00" oninput="fmtCpf(this)"></div>
         <div class="fg"><label>Cidade / Estado</label><input type="text" id="cl-cidade" placeholder="Ex: São Paulo - SP"></div>
         <div class="fg full"><label>📦 Endereço completo <span style="font-weight:400;text-transform:none;letter-spacing:0">(para envio de brindes)</span></label><input type="text" id="cl-endereco" placeholder="Rua, número, complemento, bairro, cidade e CEP"></div>
+        <div class="fg full" style="display:flex;gap:8px;align-items:center">
+          <div style="flex:1">
+            <label>🖼️ Galeria</label>
+            <input type="url" id="cl-galeria" placeholder="https://link-da-galeria.com" oninput="onClGaleriaInput()">
+          </div>
+          <button type="button" id="btn-abrir-galeria-cl" onclick="abrirGaleriaCliente()" style="display:none;padding:9px 14px;background:var(--primary-light);color:var(--primary-dark);border:1.5px solid var(--primary);border-radius:8px;font:600 12px 'Montserrat',sans-serif;cursor:pointer;white-space:nowrap;margin-top:20px">🔗 Abrir</button>
+        </div>
         <div class="fg"><label>📍 Como nos encontrou?</label><select id="cl-origem" onchange="onOrigemChange()"><option value="">Não informado</option><option value="instagram">📸 Instagram</option><option value="google">🔍 Google</option><option value="trafego-pago">💰 Tráfego Pago</option><option value="indicacao">🤝 Indicação</option><option value="site">🌐 Site</option><option value="whatsapp">💬 WhatsApp</option><option value="outro">Outro</option></select></div>
         <div class="fg" id="cl-ref-wrap" style="display:none"><label>👤 Indicado por</label><select id="cl-origem-ref-id"><option value="">Selecione o cliente...</option></select></div>
         <div class="fg full"><label>🏷️ Tags / Locais</label><input type="text" id="cl-tags" placeholder="Ex: #buffetengenho #salaofesta #aniversario (separadas por espaço)"></div>
@@ -10452,17 +10459,24 @@ function openClientModal(clientId){
   document.getElementById('cl-nome').value=cl?.nome||'';
   setClTipo(cl?.tipo||'cliente');
   if(cl)document.getElementById('mo-cl-title').textContent=cl.tipo==='parceiro'?'✏️ Editar Parceiro':'✏️ Editar Cliente';document.getElementById('cl-tel').value=cl?.telefone||'';document.getElementById('cl-email').value=cl?.email||'';document.getElementById('cl-cpf').value=cl?.cpf||'';document.getElementById('cl-cidade').value=cl?.cidade||'';document.getElementById('cl-endereco').value=cl?.endereco||'';document.getElementById('cl-tags').value=cl?.tags||'';document.getElementById('cl-obs').value=cl?.obs||'';
+  document.getElementById('cl-galeria').value=cl?.galeria||'';
+  onClGaleriaInput();
   document.getElementById('cl-origem').value=cl?.origem||'';
   onOrigemChange();
   if(cl?.origemClienteId)document.getElementById('cl-origem-ref-id').value=cl.origemClienteId;
   document.getElementById('mo-cl').classList.remove('hidden');document.getElementById('cl-nome').focus();
 }
+function onClGaleriaInput(){
+  const v=document.getElementById('cl-galeria')?.value.trim();
+  const btn=document.getElementById('btn-abrir-galeria-cl');if(btn)btn.style.display=v?'inline-flex':'none';
+}
+function abrirGaleriaCliente(){const url=document.getElementById('cl-galeria').value.trim();if(url)window.open(url,'_blank');}
 function saveClient(){
   const nome=document.getElementById('cl-nome').value.trim();if(!nome){toast('⚠️ Informe o nome!','orange');document.getElementById('cl-nome').focus();return}
   const old=editingClId?clients.find(c=>c.id===editingClId):null;
   const _origVal=document.getElementById('cl-origem').value;
   const tipo=document.getElementById('cl-tipo').value||'cliente';
-  const data={id:editingClId||uid(),tipo,nome,telefone:document.getElementById('cl-tel').value.trim(),email:document.getElementById('cl-email').value.trim(),cpf:tipo==='parceiro'?'':document.getElementById('cl-cpf').value.trim(),cidade:document.getElementById('cl-cidade').value.trim(),endereco:document.getElementById('cl-endereco').value.trim(),origem:_origVal,origemClienteId:_origVal==='indicacao'?document.getElementById('cl-origem-ref-id').value:'',tags:document.getElementById('cl-tags').value.trim(),obs:document.getElementById('cl-obs').value.trim(),notes:old?.notes||[],criadoEm:old?.criadoEm||Date.now(),updatedAt:Date.now()};
+  const data={id:editingClId||uid(),tipo,nome,telefone:document.getElementById('cl-tel').value.trim(),email:document.getElementById('cl-email').value.trim(),cpf:tipo==='parceiro'?'':document.getElementById('cl-cpf').value.trim(),cidade:document.getElementById('cl-cidade').value.trim(),endereco:document.getElementById('cl-endereco').value.trim(),galeria:document.getElementById('cl-galeria').value.trim(),origem:_origVal,origemClienteId:_origVal==='indicacao'?document.getElementById('cl-origem-ref-id').value:'',tags:document.getElementById('cl-tags').value.trim(),obs:document.getElementById('cl-obs').value.trim(),notes:old?.notes||[],criadoEm:old?.criadoEm||Date.now(),updatedAt:Date.now()};
   if(editingClId){const i=clients.findIndex(c=>c.id===editingClId);if(i!==-1)clients[i]=data;else clients.push(data)}else clients.push(data);
   savCl();closeMo('mo-cl');try{renderClientes();}catch(err){console.error(err);}toast(tipo==='parceiro'?'🤝 Parceiro salvo!':'👤 Cliente salvo!','green');
 }
