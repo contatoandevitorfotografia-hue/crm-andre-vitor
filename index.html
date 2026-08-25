@@ -3601,7 +3601,8 @@ function updateProjTabBadges(){
     if(total>0&&pend>0){el.textContent=pend;el.style.display='inline-flex';}
     else el.style.display='none';
   };
-  setBadge('ptab-alb-badge',albCards.length,albCards.filter(c=>c.coluna!=='alb-entregue').length);
+  // "Aguardando seleção" não conta como pendência — depende do cliente escolher as fotos, não dela.
+  setBadge('ptab-alb-badge',albCards.length,albCards.filter(c=>c.coluna!=='alb-entregue'&&c.coluna!=='alb-selecao').length);
   const videoCols=PR_COLS.filter(c=>c.cat==='video').map(c=>c.id);
   const videoCards=prCards.filter(c=>videoCols.includes(c.coluna));
   const videoLast=videoCols[videoCols.length-1];
