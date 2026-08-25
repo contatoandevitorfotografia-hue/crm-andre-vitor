@@ -3403,10 +3403,12 @@ function load(){
   try{clients=JSON.parse(localStorage.getItem('crm_cl_v4')||'[]')}catch{clients=[]}
   try{const old=localStorage.getItem('crm_avf_v3');if(old&&opCards.length===0){const oc=JSON.parse(old);opCards=oc.filter(c=>c.coluna!=='pos-evento'&&c.coluna!=='concluido').map(c=>({...c,valorReserva:c.valorSinal||0,statusPag:c.statusPag||c.statusPagamento||'pendente'}));savOp()}}catch{}
   try{albCards=JSON.parse(localStorage.getItem('crm_alb_v1')||'[]')}catch{albCards=[]}
-  // Migração única: coluna "Festa para acontecer" de Álbuns foi removida a
-  // pedido — qualquer álbum que ainda estivesse nela passa pra "Aguardando
-  // seleção", e a coluna fica oculta (pode ser restaurada em ⚙️ Colunas).
-  if(!localStorage.getItem('crm_migr_rm_albfesta_v1')){
+  // Coluna "Festa para acontecer" de Álbuns foi removida a pedido — qualquer
+  // álbum que caia nela (inclusive vindo de "Mover/Copiar", que antes ainda
+  // oferecia essa coluna oculta como opção) passa pra "Aguardando seleção".
+  // Roda em TODO load (não só uma vez) porque é idempotente e evita cards
+  // ficarem presos numa coluna que nunca mais aparece na tela.
+  {
     let changedAF=false;
     albCards=albCards.map(c=>{
       if(c.coluna!=='alb-festa')return c;
@@ -3416,7 +3418,6 @@ function load(){
     if(changedAF)localStorage.setItem('crm_alb_v1',JSON.stringify(albCards));
     if(!_colHidden.alb)_colHidden.alb=[];
     if(!_colHidden.alb.includes('alb-festa')){_colHidden.alb.push('alb-festa');_saveColHidden();}
-    localStorage.setItem('crm_migr_rm_albfesta_v1','1');
   }
   try{freelancers=JSON.parse(localStorage.getItem('crm_frl_v1')||'[]')}catch{freelancers=[]}
   try{tarefas=JSON.parse(localStorage.getItem('crm_tar_v1')||'[]')}catch{tarefas=[]}
@@ -3666,7 +3667,16 @@ const TRANSFER_DESTS=[
 ];
 let _trfKind=null,_trfId=null,_trfDest=null,_trfMode='mover';
 
-const trfCols=dest=>dest==='alb'?ALB_COLS:PR_COLS.filter(c=>(c.cat||'proj')===dest);
+// Usa as mesmas colunas VISÍVEIS (e na mesma ordem) que o board de destino
+// realmente renderiza — senão o seletor podia oferecer (e até deixar
+// selecionada, por padrão) uma coluna oculta, como a antiga "Festa para
+// acontecer" de Álbuns: o card ia parar lá e sumia da tela, mesmo
+// existindo nos dados.
+const trfCols=dest=>{
+  const boardKey=dest==='alb'?'alb':'pr-'+dest;
+  const base=dest==='alb'?ALB_COLS:PR_COLS.filter(c=>(c.cat||'proj')===dest);
+  return _orderedCols(boardKey,_visibleCols(boardKey,base));
+};
 const trfDestInfo=dest=>TRANSFER_DESTS.find(d=>d.key===dest)||TRANSFER_DESTS[0];
 function trfFindCard(kind,id){return kind==='alb'?albCards.find(c=>c.id===id):prCards.find(c=>c.id===id)}
 function trfCardName(kind,card){
