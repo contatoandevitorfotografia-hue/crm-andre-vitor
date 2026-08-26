@@ -2707,13 +2707,9 @@ td { padding: 13px 16px; font-size: 13.5px; }
         </div>
         <div id="p-custos-memorias-wrap" class="fg full" style="display:none">
           <label>💸 Custos Fixos — Memórias</label>
-          <div style="background:#2e1a18;padding:11px;border-radius:8px;border:1px solid #5c2a26;display:grid;grid-template-columns:1fr 120px;gap:7px 10px;align-items:center">
-            <span style="font-size:13px;color:#e78a7c;font-weight:600">📄 Impressão</span>
-            <div class="mw"><input type="number" id="p-cf-impressao" value="379" step="0.01" min="0"></div>
-            <span style="font-size:13px;color:#e78a7c;font-weight:600">📦 Estojo</span>
-            <div class="mw"><input type="number" id="p-cf-estojo" value="112" step="0.01" min="0"></div>
-            <span style="font-size:13px;color:#e78a7c;font-weight:600">🎨 Ellem (capa)</span>
-            <div class="mw"><input type="number" id="p-cf-capa" value="75" step="0.01" min="0"></div>
+          <div style="background:#2e1a18;padding:11px;border-radius:8px;border:1px solid #5c2a26">
+            <div id="p-custos-memorias-rows" style="display:flex;flex-direction:column;gap:7px;margin-bottom:9px"></div>
+            <button type="button" onclick="addCustoMemoriasRow('','')" style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer;font-weight:700">＋ Adicionar custo</button>
           </div>
         </div>
         <div id="p-custos-movimento-wrap" class="fg full" style="display:none">
@@ -5622,10 +5618,16 @@ function openPacModal(pacId){
   document.getElementById('p-tipoPlano').value=tipoPlano;
   document.getElementById('p-valorCores').value=pac?.valorCores||'';
   const cfList=pac?.custosFixos||[];
-  document.getElementById('p-cf-impressao').value=cfList.find(c=>c.desc==='Impressão')?.valor??379;
-  document.getElementById('p-cf-estojo').value=cfList.find(c=>c.desc==='Estojo')?.valor??112;
-  document.getElementById('p-cf-capa').value=cfList.find(c=>c.desc==='Capa do Álbum')?.valor??75;
   document.getElementById('p-cf-edicao').value=cfList.find(c=>c.desc==='Edição')?.valor??250;
+  document.getElementById('p-custos-memorias-rows').innerHTML='';
+  const memRows=cfList.filter(c=>c.desc!=='Edição');
+  if(memRows.length){
+    memRows.forEach(c=>addCustoMemoriasRow(c.desc,c.valor));
+  }else{
+    addCustoMemoriasRow('Impressão',379);
+    addCustoMemoriasRow('Estojo',112);
+    addCustoMemoriasRow('Ellem (capa)',75);
+  }
   // Filmmaker rows
   document.getElementById('p-filmmaker-rows').innerHTML='';
   (pac?.filmmakerOptions||[]).forEach(f=>addFilmmakerRow(f.nome,f.valor));
@@ -5644,11 +5646,11 @@ function savePac(){
   const tipoPlano=document.getElementById('p-tipoPlano').value||'padrao';
   let custosFixos=[];let filmmakerOptions=[];
   if(tipoPlano==='memorias'||tipoPlano==='historias'){
-    custosFixos=[
-      {desc:'Impressão',valor:parseFloat(document.getElementById('p-cf-impressao').value)||0},
-      {desc:'Estojo',valor:parseFloat(document.getElementById('p-cf-estojo').value)||0},
-      {desc:'Ellem',valor:parseFloat(document.getElementById('p-cf-capa').value)||0}
-    ];
+    document.querySelectorAll('#p-custos-memorias-rows > div[data-cmr]').forEach(row=>{
+      const d=row.querySelector('.cmr-desc').value.trim();
+      const v=parseFloat(row.querySelector('.cmr-val').value)||0;
+      if(d)custosFixos.push({desc:d,valor:v});
+    });
   }
   if(tipoPlano==='movimento'||tipoPlano==='historias'){
     custosFixos=custosFixos.concat([{desc:'Edição',valor:parseFloat(document.getElementById('p-cf-edicao').value)||0}]);
@@ -6386,6 +6388,13 @@ function onTipoPlanoChange(){
   document.getElementById('p-custos-movimento-wrap').style.display=tipo==='movimento'||tipo==='historias'?'':'none';
 }
 // ── Adicionar linha de cinegrafista no modal de pacote ──
+function addCustoMemoriasRow(desc,valor){
+  const row=document.createElement('div');
+  row.setAttribute('data-cmr','1');
+  row.style.cssText='display:flex;gap:6px;align-items:center';
+  row.innerHTML=`<input type="text" placeholder="Descrição (ex: Impressão)" value="${(desc||'').replace(/"/g,'&quot;')}" style="flex:1;border:1.5px solid #5c2a26;border-radius:6px;padding:6px 9px;font-size:13px;font-family:Montserrat,sans-serif" class="cmr-desc"><div class="mw" style="width:110px"><input type="number" placeholder="R$" value="${valor||''}" min="0" step="0.01" style="border-color:#5c2a26" class="cmr-val"></div><button type="button" onclick="this.parentElement.remove()" style="background:#fca5a5;color:#e78a7c;border:none;border-radius:6px;padding:5px 10px;font:700 14px sans-serif;cursor:pointer;flex-shrink:0">✕</button>`;
+  document.getElementById('p-custos-memorias-rows').appendChild(row);
+}
 function addFilmmakerRow(nome,valor){
   const id='fmr_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
   const row=document.createElement('div');
