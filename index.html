@@ -1956,25 +1956,22 @@ td { padding: 13px 16px; font-size: 13.5px; }
 
     <!-- P-APARTAMENTO -->
     <div id="p-tab-ap" class="fin-subtab-panel">
-      <div class="fin-card" style="margin-bottom:16px;border-color:#4A3D28">
-        <div class="fin-hdr" style="background:#2A2417;border-bottom-color:#4A3D28"><h3>🏠 Contas do Apartamento</h3><span class="fin-sub" id="p-ap-sub"></span></div>
-        <div class="fin-tbl-wrap">
-          <table style="width:100%;border-collapse:collapse">
-            <thead><tr><th style="width:45%">Conta</th><th style="width:30%">Valor</th><th style="width:15%">Pago</th><th style="width:10%"></th></tr></thead>
-            <tbody id="p-ap-tb"></tbody>
-          </table>
+      <!-- PAGAMENTOS DA INQUILINA -->
+      <div class="fin-card" style="margin-bottom:16px;border-color:#4A3C20">
+        <div class="fin-hdr" style="background:#2A2616;border-bottom-color:#4A3C20"><h3>🏠 Pagamentos da Inquilina</h3></div>
+        <div style="padding:14px">
+          <div id="p-alug-lista" style="display:flex;flex-direction:column;gap:6px"></div>
+          <button class="fin-add-btn" onclick="toggleFinForm('p-alugf')" style="margin-top:8px">+ Registrar pagamento</button>
+          <div class="fin-add-form" id="p-alugf">
+            <div class="fin-row2">
+              <input type="text" id="p-alug-desc" placeholder="Ex: Março/2026">
+              <input type="number" id="p-alug-v" placeholder="Valor (R$)" step="0.01">
+              <input type="date" id="p-alug-dt">
+            </div>
+            <button class="fin-save-btn" onclick="savePessAlug()">Salvar</button>
+            <button class="fin-cancel-btn" onclick="toggleFinForm('p-alugf')">Cancelar</button>
+          </div>
         </div>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="fin-add-btn" onclick="toggleFinForm('p-apf')">+ Adicionar conta</button>
-      </div>
-      <div class="fin-add-form" id="p-apf">
-        <div class="fin-row2">
-          <input type="text" id="p-ap-n" placeholder="Nome (ex: Condomínio, Luz...)">
-          <input type="number" id="p-ap-v" placeholder="Valor (R$)" step="0.01">
-        </div>
-        <button class="fin-save-btn" onclick="savePessAP()">Salvar</button>
-        <button class="fin-cancel-btn" onclick="toggleFinForm('p-apf')">Cancelar</button>
       </div>
 
       <!-- PEDREIRO -->
@@ -2036,25 +2033,7 @@ td { padding: 13px 16px; font-size: 13.5px; }
             <button class="fin-cancel-btn" onclick="toggleFinForm('p-refpendf')">Cancelar</button>
           </div>
         </div>
-
-        <!-- PAGAMENTOS DA INQUILINA -->
-        <div>
-          <div style="font-size:12px;font-weight:700;color:#D8A24E;margin-bottom:8px;background:#2A2616;border-radius:8px;padding:7px 12px;border-left:3px solid #4A3C20">🏠 Pagamentos da inquilina</div>
-          <div id="p-alug-lista" style="display:flex;flex-direction:column;gap:6px"></div>
-          <button class="fin-add-btn" onclick="toggleFinForm('p-alugf')" style="margin-top:8px">+ Registrar pagamento</button>
-          <div class="fin-add-form" id="p-alugf">
-            <div class="fin-row2">
-              <input type="text" id="p-alug-desc" placeholder="Ex: Março/2026">
-              <input type="number" id="p-alug-v" placeholder="Valor (R$)" step="0.01">
-              <input type="date" id="p-alug-dt">
-            </div>
-            <button class="fin-save-btn" onclick="savePessAlug()">Salvar</button>
-            <button class="fin-cancel-btn" onclick="toggleFinForm('p-alugf')">Cancelar</button>
-          </div>
-        </div>
       </div>
-
-      <div></div>
 
     </div>
 
