@@ -1964,14 +1964,6 @@ td { padding: 13px 16px; font-size: 13.5px; }
             <tbody id="p-ap-tb"></tbody>
           </table>
         </div>
-        <!-- GARAGEM FIXA -->
-        <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:12px 14px;background:var(--n50);border-radius:var(--r-sm);border:1px solid var(--border);margin-top:10px">
-          <span style="display:flex;align-items:center;gap:12px">
-            <input type="checkbox" id="p-ap-chk-garagem" onchange="toggleGaragem(this.checked)" style="width:18px;height:18px;accent-color:var(--success);cursor:pointer;flex-shrink:0">
-            <span id="p-ap-label-garagem" style="font-size:14px;font-weight:700;color:var(--n900)">🚗 Garagem</span>
-          </span>
-          <span id="p-ap-val-garagem" style="font-size:13px;font-weight:700;color:var(--danger)">R$ 100,00</span>
-        </label>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="fin-add-btn" onclick="toggleFinForm('p-apf')">+ Adicionar conta</button>
@@ -8886,7 +8878,7 @@ function setPedreiroDescReemb(i,val){
   pessPedreiro[i].descReemb=val.trim();
   savePessData();
 }
-function renderPessAp(){renderPessAnaP();renderPessAlug();renderGaragem();renderPedreiro();
+function renderPessAp(){renderPessAnaP();renderPessAlug();renderPedreiro();
   // Contas
   const tb=document.getElementById('p-ap-tb');
   const parte=_pessApParte();
@@ -8947,22 +8939,6 @@ function editAPVal(i,val){
   savePessData();
   const cadaEl=document.getElementById('p-anap-valor-cada');
   if(cadaEl)cadaEl.textContent=fmtMoney(_pessApParte());
-}
-function toggleGaragem(val){
-  pessAP_garaGem_pago=val;
-  savePessData();
-  const lbl=document.getElementById('p-ap-label-garagem');
-  const vEl=document.getElementById('p-ap-val-garagem');
-  if(lbl){lbl.style.color=val?'var(--success)':'var(--n900)';lbl.style.textDecoration=val?'line-through':'none';}
-  if(vEl)vEl.style.color=val?'var(--muted)':'var(--danger)';
-}
-function renderGaragem(){
-  const chk=document.getElementById('p-ap-chk-garagem');
-  const lbl=document.getElementById('p-ap-label-garagem');
-  const vEl=document.getElementById('p-ap-val-garagem');
-  if(chk)chk.checked=pessAP_garaGem_pago;
-  if(lbl){lbl.style.color=pessAP_garaGem_pago?'var(--success)':'var(--n900)';lbl.style.textDecoration=pessAP_garaGem_pago?'line-through':'none';}
-  if(vEl)vEl.style.color=pessAP_garaGem_pago?'var(--muted)':'var(--danger)';
 }
 function savePessHugo(){
   const dt=document.getElementById('p-hugo-dt').value;
@@ -10150,23 +10126,53 @@ function renderPessAlug(){
   renderRefItens();
   renderRefPend();
 
-  // Lista de pagamentos da inquilina
+  // Lista de pagamentos da inquilina — tabela compacta, agrupada por ano
+  // (o ano atual já vem aberto, os anteriores ficam fechados por padrão),
+  // pra não virar uma lista gigante conforme os pagamentos acumulam.
   const lista=document.getElementById('p-alug-lista');
   if(lista){
     if(!pessAlug.length){
       lista.innerHTML='<div style="text-align:center;color:var(--muted);padding:16px;font-size:12px">Nenhum pagamento registrado.</div>';
     } else {
-      lista.innerHTML=pessAlug.map((a,i)=>`
-        <div style="display:flex;align-items:center;gap:10px;background:var(--n50);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 14px">
-          <div style="flex:1;min-width:0">
-            <div style="font-weight:600;font-size:13px;color:var(--n900)">${esc(a.desc||a.mes||'Pagamento')}</div>
-            ${(a.dt||a.data)?`<div style="font-size:11px;color:var(--muted);margin-top:2px">${((a.dt||a.data)).split('-').reverse().join('/')}</div>`:''}
+      const porAno={};
+      pessAlug.forEach((a,i)=>{
+        const ano=(a.dt||a.data)?(a.dt||a.data).slice(0,4):'Sem data';
+        (porAno[ano]=porAno[ano]||[]).push({...a,_i:i});
+      });
+      const anoAtual=String(new Date().getFullYear());
+      const anos=Object.keys(porAno).sort((x,y)=>y.localeCompare(x));
+      lista.innerHTML=anos.map(ano=>{
+        const itens=porAno[ano].slice().sort((x,y)=>(y.dt||y.data||'').localeCompare(x.dt||x.data||''));
+        const total=itens.reduce((s,a)=>s+(parseFloat(a.v)||0),0);
+        const aberto=ano===anoAtual;
+        const rows=itens.map(a=>`<tr>
+            <td style="color:var(--muted);font-size:12px;padding:6px 4px">${(a.dt||a.data)?((a.dt||a.data)).split('-').reverse().join('/'):'—'}</td>
+            <td style="font-size:12px;padding:6px 4px">${esc(a.desc||a.mes||'Pagamento')}</td>
+            <td style="text-align:right;font-weight:700;color:var(--success);padding:6px 4px">${fmtMoney(a.v)}</td>
+            <td style="padding:6px 4px"><button class="fin-del" onclick="delPessAlug(${a._i})">×</button></td>
+          </tr>`).join('');
+        return`<div class="conta-card">
+          <div class="conta-card-hdr" onclick="toggleAlugAno('${ano}')">
+            <span class="conta-toggle${aberto?' open':''}" id="alug-ctog-${ano}">▶</span>
+            <span class="conta-card-nome">${ano}<span style="font-size:11px;font-weight:500;color:var(--muted)"> · ${itens.length} pagamento(s)</span></span>
+            <span class="conta-card-valor" style="color:var(--success)">${fmtMoney(total)}</span>
           </div>
-          <div style="font-weight:800;color:var(--success);font-size:14px;white-space:nowrap">${fmtMoney(a.v)}</div>
-          <button class="fin-del" onclick="delPessAlug(${i})">×</button>
-        </div>`).join('');
+          <div class="conta-itens${aberto?' open':''}" id="alug-citens-${ano}">
+            <table style="width:100%;border-collapse:collapse">
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+        </div>`;
+      }).join('');
     }
   }
+}
+function toggleAlugAno(ano){
+  const el=document.getElementById('alug-citens-'+ano);
+  const tog=document.getElementById('alug-ctog-'+ano);
+  if(!el)return;
+  const open=el.classList.toggle('open');
+  if(tog)tog.classList.toggle('open',open);
 }
 function savePessAlug(){
   const desc=(document.getElementById('p-alug-desc')||{}).value||'';
@@ -10278,9 +10284,8 @@ function loadPessLocal(){
   _migrateGastosCat(pessGD,'Outros');
 }
 function zerarMesPess(){
-  if(!confirm('Zerar todos os tiques do mês? (Ana, Pedro, Garagem e Contas)'))return;
+  if(!confirm('Zerar todos os tiques do mês? (Ana, Pedro e Contas)'))return;
   pessAP.forEach(a=>a.pago=false);
-  pessAP_garaGem_pago=false;
   if(pessAnaP.length){pessAnaP[0].pagoAna=false;pessAnaP[0].pagoPedro=false;}
   savePessData();
   renderPessAp();
