@@ -7069,14 +7069,14 @@ function startFinEditVG(m,cell){
   finEditVG=m;
   const cur=finVG[m]||0;
   cell.outerHTML=`<input class="fin-vg-inp" id="fin-vg-inp" type="number" step="0.01" value="${cur||''}" placeholder="0,00"
-    onblur="commitFinVG()" onkeydown="if(event.key==='Enter')commitFinVG();if(event.key==='Escape'){finEditVG=null;renderFinResumo()}">`;
+    onblur="commitFinVG()" onkeydown="if(event.key==='Enter')commitFinVG();if(event.key==='Escape'){finEditVG=null;renderFinResumo();renderFinReserva()}">`;
   setTimeout(()=>{const i=document.getElementById('fin-vg-inp');if(i)i.focus();},10);
 }
 function commitFinVG(){
   if(!finEditVG)return;
   const inp=document.getElementById('fin-vg-inp');
   if(inp){const v=parseFloat(inp.value);if(!isNaN(v))finVG[finEditVG]=v;else delete finVG[finEditVG];}
-  finEditVG=null;saveFinData();renderFinResumo();
+  finEditVG=null;saveFinData();renderFinResumo();renderFinReserva();
 }
 function _openRGPopup(currentVal,label,onSave){
   const old=document.getElementById('rg-popup');if(old)old.remove();
@@ -7985,7 +7985,7 @@ function renderFinReserva(){
   MESES_FIN.forEach((m,idx)=>{
     if(idx>hoje||finVG[m]===undefined)return;
     acum+=finVG[m];total=acum;
-    rows+=`<tr><td>${m}</td><td style="font-weight:600">${fmtMoney(finVG[m])}</td><td style="color:var(--success);font-weight:700">${fmtMoney(acum)}</td></tr>`;
+    rows+=`<tr><td>${m}</td><td style="font-weight:600"><span onclick="startFinEditVG('${m}',this)" style="cursor:text" title="Clique para editar">${fmtMoney(finVG[m])}</span></td><td style="color:var(--success);font-weight:700">${fmtMoney(acum)}</td></tr>`;
   });
   const tb=document.getElementById('fin-res-tb');if(tb)tb.innerHTML=rows||`<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px">Nenhum valor no banco registrado ainda.</td></tr>`;
   const totEl=document.getElementById('fin-res-total');if(totEl)totEl.textContent=total?fmtMoney(total):'—';
@@ -8398,14 +8398,14 @@ function startPessEditVG(m,cell){
   pessEditVG=m;
   const cur=pessVG[m]||0;
   cell.outerHTML=`<input class="fin-vg-inp" id="p-vg-inp" type="number" step="0.01" value="${cur||''}" placeholder="0,00"
-    onblur="commitPessVG()" onkeydown="if(event.key==='Enter')commitPessVG();if(event.key==='Escape'){pessEditVG=null;renderPessResumo()}">`;
+    onblur="commitPessVG()" onkeydown="if(event.key==='Enter')commitPessVG();if(event.key==='Escape'){pessEditVG=null;renderPessResumo();renderPessReserva()}">`;
   setTimeout(()=>{const i=document.getElementById('p-vg-inp');if(i)i.focus();},10);
 }
 function commitPessVG(){
   if(!pessEditVG)return;
   const inp=document.getElementById('p-vg-inp');
   if(inp){const v=parseFloat(inp.value);if(!isNaN(v))pessVG[pessEditVG]=v;else delete pessVG[pessEditVG];}
-  pessEditVG=null;savePessData();renderPessResumo();
+  pessEditVG=null;savePessData();renderPessResumo();renderPessReserva();
 }
 function startPessRGEdit(){
   _openRGPopup(pessRG,'Reserva Guardada — Pessoal',v=>{pessRG=v;savePessData();renderPessResumo();});
@@ -8783,7 +8783,7 @@ function renderPessReserva(){
   MESES_FIN.forEach((m,idx)=>{
     if(idx>hoje||pessVG[m]===undefined)return;
     acum+=pessVG[m];total=acum;
-    rows+=`<tr><td>${m}</td><td style="font-weight:600">${fmtMoney(pessVG[m])}</td><td style="color:var(--success);font-weight:700">${fmtMoney(acum)}</td></tr>`;
+    rows+=`<tr><td>${m}</td><td style="font-weight:600"><span onclick="startPessEditVG('${m}',this)" style="cursor:text" title="Clique para editar">${fmtMoney(pessVG[m])}</span></td><td style="color:var(--success);font-weight:700">${fmtMoney(acum)}</td></tr>`;
   });
   const tb=document.getElementById('p-res-tb');if(tb)tb.innerHTML=rows||`<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px">Nenhum valor registrado ainda.</td></tr>`;
   const totEl=document.getElementById('p-res-total');if(totEl)totEl.textContent=total?fmtMoney(total):'—';
