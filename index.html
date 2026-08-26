@@ -1436,21 +1436,6 @@ td { padding: 13px 16px; font-size: 13.5px; }
     </div>
   </div>
 <!-- FREELA BOARD -->
-<div id="freela-section">
-  <div class="freela-hdr">
-    <div class="freela-hdr-left">
-      <span class="freela-hdr-title">🔍 Consultas de Freelas</span>
-      <span class="freela-count" id="freela-total-badge">0</span>
-    </div>
-    <div style="display:flex;gap:8px;align-items:center">
-      <button class="freela-toggle" id="freela-toggle-btn" onclick="toggleFreelaBoard()">▲ Recolher</button>
-      <button class="btn btn-g" style="font-size:12px;padding:5px 12px" onclick="openFreelaModal(null)">＋ Nova Consulta</button>
-    </div>
-  </div>
-  <div class="freela-board-wrap" id="freela-board-wrap">
-    <div class="freela-board" id="board-freela"></div>
-  </div>
-</div>
   <div class="srch-bar"><div class="srch-wrap"><input class="srch-inp" id="srch-op" placeholder="Buscar cliente..." oninput="renderOp()"></div></div>
   <div class="kb-wrap" id="kb-op"><div class="kb-board" id="board-op"></div></div>
   <div class="kb-scrollbar-track"><div class="kb-scrollbar-thumb" id="kb-thumb-op"></div></div>
@@ -1853,6 +1838,9 @@ td { padding: 13px 16px; font-size: 13.5px; }
           <input type="text" id="fin-conta-n" placeholder="Nome da conta (ex: Nubank, MEI...)">
           <input type="number" id="fin-conta-d" placeholder="Dia vencimento (1–31)" min="1" max="31">
         </div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin:8px 0 0;cursor:pointer">
+          <input type="checkbox" id="fin-conta-variavel"> 💵 Gasto variável — vou lançando aos poucos (ex: mercado), em vez de pagar tudo de uma vez
+        </label>
         <div id="fin-conta-scope" style="margin:8px 0 10px"></div>
         <button class="fin-save-btn" onclick="saveFinConta()">Salvar</button>
         <button class="fin-cancel-btn" onclick="toggleFinForm('fin-contas-f')">Cancelar</button>
@@ -2115,6 +2103,9 @@ td { padding: 13px 16px; font-size: 13.5px; }
           <input type="text" id="pess-conta-n" placeholder="Nome da conta (ex: Vivo, Spotify...)">
           <input type="number" id="pess-conta-d" placeholder="Dia vencimento (1–31)" min="1" max="31">
         </div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin:8px 0 0;cursor:pointer">
+          <input type="checkbox" id="pess-conta-variavel"> 💵 Gasto variável — vou lançando aos poucos (ex: mercado), em vez de pagar tudo de uma vez
+        </label>
         <div id="pess-conta-scope" style="margin:8px 0 10px"></div>
         <button class="fin-save-btn" onclick="savePessConta()">Salvar</button>
         <button class="fin-cancel-btn" onclick="toggleFinForm('pess-contas-f')">Cancelar</button>
@@ -6892,12 +6883,18 @@ function _contaValor(c,mes){
   }
   return _itemValorMes(c,mes);
 }
+// Soma dos lançamentos avulsos (gasto variável: "vou lançando aos poucos"
+// em vez de um vencimento fixo) registrados no mês pra essa conta.
+function _somaLancamentosMes(c,mes){
+  return ((c.lancamentos&&c.lancamentos[mes])||[]).reduce((s,l)=>s+(l.valor||0),0);
+}
 function _contaValorPendente(c,mes){
   mes=mes||_contasMesAtivo();
   if(c.itens&&c.itens.length){
     const itens=c.itens.filter(x=>_itemAtivoNoMes(x,mes));
     return itens.filter(x=>!_itemPagoMes(x,mes)).reduce((s,x)=>s+_itemValorMes(x,mes),0);
   }
+  if(c.gastoVariavel)return Math.max(0,parseFloat((_itemValorMes(c,mes)-_somaLancamentosMes(c,mes)).toFixed(2)));
   return _itemPagoMes(c,mes)?0:_itemValorMes(c,mes);
 }
 function _contaPagoMes(c,mes){
@@ -6906,6 +6903,7 @@ function _contaPagoMes(c,mes){
     const itens=c.itens.filter(x=>_itemAtivoNoMes(x,mes));
     return itens.length>0&&itens.every(x=>_itemPagoMes(x,mes));
   }
+  if(c.gastoVariavel){const total=_itemValorMes(c,mes);return total>0&&_somaLancamentosMes(c,mes)>=total;}
   return _itemPagoMes(c,mes);
 }
 function _contasDoMes(contas,mes){
@@ -9027,6 +9025,50 @@ function _somaGastosParaConta(nomeC, gd, mes){
   return found?soma:null;
 }
 
+// Conteúdo do accordion de uma conta: itens (vencimentos separados) OU,
+// pra conta de "gasto variável", a lista de lançamentos avulsos do mês —
+// mutuamente exclusivos (gastoVariavel só faz sentido sem itens).
+function _contaAccordionHTML(tipo,i,c,mes,itens,itensAtivos,temItens,pend,val){
+  if(c.gastoVariavel&&!temItens){
+    const lancs=(c.lancamentos&&c.lancamentos[mes])||[];
+    const soma=lancs.reduce((s,l)=>s+(l.valor||0),0);
+    return`${lancs.length?lancs.map((l,j)=>`<div class="conta-item">
+        <span class="conta-item-nome">${l.dia?`Dia ${l.dia}`:'Sem dia'}</span>
+        <span class="conta-item-val">${fmtMoney(l.valor)}</span>
+        <button class="fin-del" onclick="delLancamento('${tipo}',${i},${j})" title="Remover">×</button>
+      </div>`).join(''):`<div style="padding:10px 14px;font-size:11px;color:var(--muted)">Nenhum gasto lançado neste mês ainda.</div>`}
+      <div style="padding:8px 14px;border-top:1px dashed var(--border);display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <input type="number" id="${tipo}-lanc-d-${i}" placeholder="Dia" min="1" max="31" style="max-width:60px">
+        <input type="number" id="${tipo}-lanc-v-${i}" placeholder="R$ gasto" step="0.01" min="0" style="max-width:100px">
+        <button class="conta-item-btn-add" onclick="addLancamento('${tipo}',${i})">+ Lançar</button>
+        <span style="font-size:11px;color:var(--muted);margin-left:auto">Lançado ${fmtMoney(soma)} de ${fmtMoney(val)}</span>
+      </div>`;
+  }
+  return`${itens.map((x,j)=>{if(!_itemAtivoNoMes(x,mes))return '';const xPago=_itemPagoMes(x,mes);const xVal=_itemValorMes(x,mes);return`<div class="conta-item${xPago?' pago':''}" draggable="true"
+      ondragstart="contaDragStart(event,'${tipo}',${i},${j})" ondragend="contaDragEnd(event)">
+      <span class="conta-drag-handle">⠿</span>
+      <button class="ci-pag-btn${xPago?' pago':''}" onclick="pagarContaItem('${tipo}',${i},${j})" title="${xPago?'Desfazer':'Marcar como pago'}">${xPago?'✓':''}</button>
+      <span class="conta-item-nome" style="${xPago?'text-decoration:line-through;color:var(--muted)':''}">${esc(x.nome)}</span>
+      ${_periodoLabel(x)?`<span style="font-size:9px;font-weight:700;color:#e0a14e;background:#2a2113;border-radius:4px;padding:1px 5px;flex-shrink:0">▶ ${_periodoLabel(x)}</span>`:''}
+      <span class="conta-card-dia" style="font-size:10px;padding:1px 6px;cursor:pointer;flex-shrink:0" title="Clique para ${x.dia?'editar':'definir'} o dia do vencimento deste item" onclick="event.stopPropagation();editContaItemDia('${tipo}',${i},${j},this)">${x.dia?`Dia ${x.dia}`:'+ Dia'} <span style="font-size:9px;opacity:.4">✏️</span></span>
+      <span class="conta-item-val" style="${xPago?'color:var(--success,#6E879F)':''}cursor:pointer;text-decoration:underline dotted" title="Clique para editar" onclick="event.stopPropagation();editContaItemValor('${tipo}',${i},${j},this)">${fmtMoney(xVal)} <span style="font-size:10px;opacity:.4">✏️</span></span>
+      <button class="fin-del" onclick="delContaItem('${tipo}',${i},${j})" title="Remover">×</button>
+    </div>`}).join('')}
+    <div class="conta-item-add" id="${tipo}-ciadd-${i}" style="display:none;flex-direction:column;gap:6px">
+      <div style="display:flex;gap:6px;align-items:center">
+        <input type="text" id="${tipo}-ci-n-${i}" placeholder="Ex: Cartão Inter, Spotify...">
+        <input type="number" id="${tipo}-ci-v-${i}" placeholder="R$" step="0.01" min="0" style="max-width:90px">
+        <input type="number" id="${tipo}-ci-d-${i}" placeholder="Dia" min="1" max="31" style="max-width:60px">
+        <button class="conta-item-btn-add" onclick="addContaItem('${tipo}',${i})">+</button>
+        <button class="conta-item-btn-cancel" onclick="document.getElementById('${tipo}-ciadd-${i}').style.display='none'">✕</button>
+      </div>
+      ${_scopeHTML(tipo+'-ci-'+i)}
+    </div>
+    <div style="padding:8px 14px;border-top:1px dashed var(--border);display:flex;gap:8px;align-items:center">
+      <button class="fin-add-btn" style="margin:0;flex:1;padding:6px" onclick="document.getElementById('${tipo}-ciadd-${i}').style.display='flex';document.getElementById('${tipo}-ci-n-${i}').focus()">+ Adicionar item</button>
+      ${temItens?`<span style="font-size:11px;color:var(--muted)">${itensAtivos.length} item(ns) · falta ${fmtMoney(pend)} de ${fmtMoney(val)}</span>`:''}
+    </div>`;
+}
 // ══════════════════════════════════════════════
 // CONTAS A PAGAR — Empresa
 // ══════════════════════════════════════════════
@@ -9046,42 +9088,20 @@ function renderFinContas(){
     const pend=_contaValorPendente(c,mes);
     const temItens=itensAtivos.length>0;
     const pag=_contaPagoMes(c,mes);
+    const variavel=c.gastoVariavel&&!temItens;
     return`<div class="conta-card" style="${pag?'opacity:.6':''}">
       <div class="conta-card-hdr" onclick="toggleContaItens('fin',${i})">
         <span class="conta-toggle" id="fin-ctog-${i}">▶</span>
-        <span class="conta-card-nome" style="${pag?'text-decoration:line-through':''}">${esc(c.nome)}</span>
+        <span class="conta-card-nome" style="${pag?'text-decoration:line-through':''}">${esc(c.nome)}${variavel?' <span style="font-size:9px;font-weight:700;color:#66798D;background:#1a2e2e;border-radius:4px;padding:1px 5px">💵 variável</span>':''}</span>
         <span class="conta-card-valor" style="color:${pag?'var(--success,#6E879F)':'var(--accent)'}${!temItens?';cursor:pointer;text-decoration:underline dotted':''}" title="${!temItens?'Clique para editar o valor':'Falta pagar neste mês'}" onclick="event.stopPropagation();${!temItens?`editContaValor('fin',${i},this)`:''}">${fmtMoney(pend)}${!temItens?` <span style="font-size:10px;opacity:.4">✏️</span>`:''}</span>${pend!==val?`<span style="font-size:10.5px;color:var(--muted);white-space:nowrap;margin-left:6px">de ${fmtMoney(val)}</span>`:''}
         <span class="conta-card-dia" style="cursor:pointer" title="Clique para ${c.dia?'editar':'definir'} o dia do vencimento" onclick="event.stopPropagation();editContaDia('fin',${i},this)">${c.dia?`Dia ${c.dia}`:'+ Dia'} <span style="font-size:10px;opacity:.4">✏️</span></span>
         ${_periodoLabel(c)?`<span style="font-size:10px;font-weight:700;color:#e0a14e;background:#2a2113;border-radius:5px;padding:2px 7px">${_periodoLabel(c)}</span>`:''}
-        <button class="conta-card-pag ${pag?'sim':'nao'}" onclick="event.stopPropagation();pagarFinConta(${i})">${pag?'✓ Pago':'Pagar'}</button>
+        ${variavel?'':`<button class="conta-card-pag ${pag?'sim':'nao'}" onclick="event.stopPropagation();pagarFinConta(${i})">${pag?'✓ Pago':'Pagar'}</button>`}
         <button class="fin-del" onclick="event.stopPropagation();delFinConta(${i})">×</button>
       </div>
       <div class="conta-itens" id="fin-citens-${i}"
            ondragover="contaDragOver(event)" ondragleave="contaDragLeave(event)" ondrop="contaDrop(event,'fin',${i})">
-        ${itens.map((x,j)=>{if(!_itemAtivoNoMes(x,mes))return '';const xPago=_itemPagoMes(x,mes);const xVal=_itemValorMes(x,mes);return`<div class="conta-item${xPago?' pago':''}" draggable="true"
-          ondragstart="contaDragStart(event,'fin',${i},${j})" ondragend="contaDragEnd(event)">
-          <span class="conta-drag-handle">⠿</span>
-          <button class="ci-pag-btn${xPago?' pago':''}" onclick="pagarContaItem('fin',${i},${j})" title="${xPago?'Desfazer':'Marcar como pago'}">${xPago?'✓':''}</button>
-          <span class="conta-item-nome" style="${xPago?'text-decoration:line-through;color:var(--muted)':''}">${esc(x.nome)}</span>
-          ${_periodoLabel(x)?`<span style="font-size:9px;font-weight:700;color:#e0a14e;background:#2a2113;border-radius:4px;padding:1px 5px;flex-shrink:0">▶ ${_periodoLabel(x)}</span>`:''}
-          <span class="conta-card-dia" style="font-size:10px;padding:1px 6px;cursor:pointer;flex-shrink:0" title="Clique para ${x.dia?'editar':'definir'} o dia do vencimento deste item" onclick="event.stopPropagation();editContaItemDia('fin',${i},${j},this)">${x.dia?`Dia ${x.dia}`:'+ Dia'} <span style="font-size:9px;opacity:.4">✏️</span></span>
-          <span class="conta-item-val" style="${xPago?'color:var(--success,#6E879F)':''}cursor:pointer;text-decoration:underline dotted" title="Clique para editar" onclick="event.stopPropagation();editContaItemValor('fin',${i},${j},this)">${fmtMoney(xVal)} <span style="font-size:10px;opacity:.4">✏️</span></span>
-          <button class="fin-del" onclick="delContaItem('fin',${i},${j})" title="Remover">×</button>
-        </div>`}).join('')}
-        <div class="conta-item-add" id="fin-ciadd-${i}" style="display:none;flex-direction:column;gap:6px">
-          <div style="display:flex;gap:6px;align-items:center">
-            <input type="text" id="fin-ci-n-${i}" placeholder="Ex: Cartão Inter, Spotify...">
-            <input type="number" id="fin-ci-v-${i}" placeholder="R$" step="0.01" min="0" style="max-width:90px">
-            <input type="number" id="fin-ci-d-${i}" placeholder="Dia" min="1" max="31" style="max-width:60px">
-            <button class="conta-item-btn-add" onclick="addContaItem('fin',${i})">+</button>
-            <button class="conta-item-btn-cancel" onclick="document.getElementById('fin-ciadd-${i}').style.display='none'">✕</button>
-          </div>
-          ${_scopeHTML('fin-ci-'+i)}
-        </div>
-        <div style="padding:8px 14px;border-top:1px dashed var(--border);display:flex;gap:8px;align-items:center">
-          <button class="fin-add-btn" style="margin:0;flex:1;padding:6px" onclick="document.getElementById('fin-ciadd-${i}').style.display='flex';document.getElementById('fin-ci-n-${i}').focus()">+ Adicionar item</button>
-          ${temItens?`<span style="font-size:11px;color:var(--muted)">${itensAtivos.length} item(ns) · falta ${fmtMoney(pend)} de ${fmtMoney(val)}</span>`:''}
-        </div>
+        ${_contaAccordionHTML('fin',i,c,mes,itens,itensAtivos,temItens,pend,val)}
       </div>
     </div>`;
   }).join('');
@@ -9181,8 +9201,10 @@ function saveFinConta(){
   if(!nome){alert('Informe o nome da conta!');return;}
   if(dia<1||dia>31){alert('Dia inválido (1–31)!');return;}
   const vig=_lerScope('fin-conta');
-  finContas.push({id:Date.now(),nome,valor:0,dia,itens:[],mesInicio:vig.mesInicio,mesFim:vig.mesFim});
+  const variavel=document.getElementById('fin-conta-variavel')?.checked||false;
+  finContas.push({id:Date.now(),nome,valor:0,dia,itens:[],gastoVariavel:variavel,lancamentos:{},mesInicio:vig.mesInicio,mesFim:vig.mesFim});
   ['fin-conta-n','fin-conta-d'].forEach(id=>document.getElementById(id).value='');
+  const varEl=document.getElementById('fin-conta-variavel');if(varEl)varEl.checked=false;
   _resetScope('fin-conta');
   toggleFinForm('fin-contas-f');
   saveFinData();
@@ -9383,6 +9405,45 @@ function addContaItem(tipo,i){
     if(el&&!el.classList.contains('open')){el.classList.add('open');if(tog)tog.classList.add('open');}
   },50);
   toast('✅ Item adicionado!');
+}
+// ── Gasto variável: lançamentos avulsos (dia + valor) dentro do mês,
+// abatendo do valor total da conta em vez de um vencimento único ──
+function addLancamento(tipo,i){
+  const dEl=document.getElementById(tipo+'-lanc-d-'+i);
+  const vEl=document.getElementById(tipo+'-lanc-v-'+i);
+  const dia=parseInt(dEl?.value)||null;
+  const valor=parseFloat(vEl?.value)||0;
+  if(!valor){alert('Informe o valor gasto!');return;}
+  const arr=tipo==='fin'?finContas:pessContas;
+  const c=arr[i];if(!c)return;
+  const mes=_contasMesAtivo();
+  if(!c.lancamentos)c.lancamentos={};
+  if(!c.lancamentos[mes])c.lancamentos[mes]=[];
+  c.lancamentos[mes].push({id:uid(),dia,valor});
+  c.lancamentos[mes].sort((a,b)=>(a.dia||0)-(b.dia||0));
+  if(dEl)dEl.value='';if(vEl)vEl.value='';
+  if(tipo==='fin'){saveFinData();renderFinContas();}
+  else{savePessData();renderPessContas();}
+  setTimeout(()=>{
+    const el=document.getElementById(tipo+'-citens-'+i);
+    const tog=document.getElementById(tipo+'-ctog-'+i);
+    if(el&&!el.classList.contains('open')){el.classList.add('open');if(tog)tog.classList.add('open');}
+  },50);
+  toast('✅ Gasto lançado!');
+}
+function delLancamento(tipo,i,j){
+  const arr=tipo==='fin'?finContas:pessContas;
+  const c=arr[i];if(!c)return;
+  const mes=_contasMesAtivo();
+  if(!c.lancamentos||!c.lancamentos[mes])return;
+  c.lancamentos[mes].splice(j,1);
+  if(tipo==='fin'){saveFinData();renderFinContas();}
+  else{savePessData();renderPessContas();}
+  setTimeout(()=>{
+    const el=document.getElementById(tipo+'-citens-'+i);
+    const tog=document.getElementById(tipo+'-ctog-'+i);
+    if(el&&!el.classList.contains('open')){el.classList.add('open');if(tog)tog.classList.add('open');}
+  },50);
 }
 /* ══════════ REMOVER CONTA / ITEM — escolha do escopo de meses ══════════
    Uma conta pode valer só para um mês ou repetir por vários. Ao remover,
@@ -9718,42 +9779,20 @@ function renderPessContas(){
     const pend=_contaValorPendente(c,mes);
     const temItens=itensAtivos.length>0;
     const pag=_contaPagoMes(c,mes);
+    const variavel=c.gastoVariavel&&!temItens;
     return`<div class="conta-card" style="${pag?'opacity:.6':''}">
       <div class="conta-card-hdr" onclick="toggleContaItens('pess',${i})">
         <span class="conta-toggle" id="pess-ctog-${i}">▶</span>
-        <span class="conta-card-nome" style="${pag?'text-decoration:line-through':''}">${esc(c.nome)}</span>
+        <span class="conta-card-nome" style="${pag?'text-decoration:line-through':''}">${esc(c.nome)}${variavel?' <span style="font-size:9px;font-weight:700;color:#66798D;background:#1a2e2e;border-radius:4px;padding:1px 5px">💵 variável</span>':''}</span>
         <span class="conta-card-valor" style="color:${pag?'var(--success,#6E879F)':'var(--accent)'}${!temItens?';cursor:pointer;text-decoration:underline dotted':''}" title="${!temItens?'Clique para editar o valor':'Falta pagar neste mês'}" onclick="event.stopPropagation();${!temItens?`editContaValor('pess',${i},this)`:''}">${fmtMoney(pend)}${!temItens?` <span style="font-size:10px;opacity:.4">✏️</span>`:''}</span>${pend!==val?`<span style="font-size:10.5px;color:var(--muted);white-space:nowrap;margin-left:6px">de ${fmtMoney(val)}</span>`:''}
         <span class="conta-card-dia" style="cursor:pointer" title="Clique para ${c.dia?'editar':'definir'} o dia do vencimento" onclick="event.stopPropagation();editContaDia('pess',${i},this)">${c.dia?`Dia ${c.dia}`:'+ Dia'} <span style="font-size:10px;opacity:.4">✏️</span></span>
         ${_periodoLabel(c)?`<span style="font-size:10px;font-weight:700;color:#e0a14e;background:#2a2113;border-radius:5px;padding:2px 7px">${_periodoLabel(c)}</span>`:''}
-        <button class="conta-card-pag ${pag?'sim':'nao'}" onclick="event.stopPropagation();pagarPessConta(${i})">${pag?'✓ Pago':'Pagar'}</button>
+        ${variavel?'':`<button class="conta-card-pag ${pag?'sim':'nao'}" onclick="event.stopPropagation();pagarPessConta(${i})">${pag?'✓ Pago':'Pagar'}</button>`}
         <button class="fin-del" onclick="event.stopPropagation();delPessConta(${i})">×</button>
       </div>
       <div class="conta-itens" id="pess-citens-${i}"
            ondragover="contaDragOver(event)" ondragleave="contaDragLeave(event)" ondrop="contaDrop(event,'pess',${i})">
-        ${itens.map((x,j)=>{if(!_itemAtivoNoMes(x,mes))return '';const xPago=_itemPagoMes(x,mes);const xVal=_itemValorMes(x,mes);return`<div class="conta-item${xPago?' pago':''}" draggable="true"
-          ondragstart="contaDragStart(event,'pess',${i},${j})" ondragend="contaDragEnd(event)">
-          <span class="conta-drag-handle">⠿</span>
-          <button class="ci-pag-btn${xPago?' pago':''}" onclick="pagarContaItem('pess',${i},${j})" title="${xPago?'Desfazer':'Marcar como pago'}">${xPago?'✓':''}</button>
-          <span class="conta-item-nome" style="${xPago?'text-decoration:line-through;color:var(--muted)':''}">${esc(x.nome)}</span>
-          ${_periodoLabel(x)?`<span style="font-size:9px;font-weight:700;color:#e0a14e;background:#2a2113;border-radius:4px;padding:1px 5px;flex-shrink:0">▶ ${_periodoLabel(x)}</span>`:''}
-          <span class="conta-card-dia" style="font-size:10px;padding:1px 6px;cursor:pointer;flex-shrink:0" title="Clique para ${x.dia?'editar':'definir'} o dia do vencimento deste item" onclick="event.stopPropagation();editContaItemDia('pess',${i},${j},this)">${x.dia?`Dia ${x.dia}`:'+ Dia'} <span style="font-size:9px;opacity:.4">✏️</span></span>
-          <span class="conta-item-val" style="${xPago?'color:var(--success,#6E879F)':''}cursor:pointer;text-decoration:underline dotted" title="Clique para editar" onclick="event.stopPropagation();editContaItemValor('pess',${i},${j},this)">${fmtMoney(xVal)} <span style="font-size:10px;opacity:.4">✏️</span></span>
-          <button class="fin-del" onclick="delContaItem('pess',${i},${j})" title="Remover">×</button>
-        </div>`}).join('')}
-        <div class="conta-item-add" id="pess-ciadd-${i}" style="display:none;flex-direction:column;gap:6px">
-          <div style="display:flex;gap:6px;align-items:center">
-            <input type="text" id="pess-ci-n-${i}" placeholder="Ex: Netflix, Spotify...">
-            <input type="number" id="pess-ci-v-${i}" placeholder="R$" step="0.01" min="0" style="max-width:90px">
-            <input type="number" id="pess-ci-d-${i}" placeholder="Dia" min="1" max="31" style="max-width:60px">
-            <button class="conta-item-btn-add" onclick="addContaItem('pess',${i})">+</button>
-            <button class="conta-item-btn-cancel" onclick="document.getElementById('pess-ciadd-${i}').style.display='none'">✕</button>
-          </div>
-          ${_scopeHTML('pess-ci-'+i)}
-        </div>
-        <div style="padding:8px 14px;border-top:1px dashed var(--border);display:flex;gap:8px;align-items:center">
-          <button class="fin-add-btn" style="margin:0;flex:1;padding:6px" onclick="document.getElementById('pess-ciadd-${i}').style.display='flex';document.getElementById('pess-ci-n-${i}').focus()">+ Adicionar item</button>
-          ${temItens?`<span style="font-size:11px;color:var(--muted)">${itensAtivos.length} item(ns) · falta ${fmtMoney(pend)} de ${fmtMoney(val)}</span>`:''}
-        </div>
+        ${_contaAccordionHTML('pess',i,c,mes,itens,itensAtivos,temItens,pend,val)}
       </div>
     </div>`;
   }).join('');
@@ -9764,8 +9803,10 @@ function savePessConta(){
   if(!nome){alert('Informe o nome da conta!');return;}
   if(dia<1||dia>31){alert('Dia inválido (1–31)!');return;}
   const vig=_lerScope('pess-conta');
-  pessContas.push({id:Date.now(),nome,valor:0,dia,itens:[],mesInicio:vig.mesInicio,mesFim:vig.mesFim});
+  const variavel=document.getElementById('pess-conta-variavel')?.checked||false;
+  pessContas.push({id:Date.now(),nome,valor:0,dia,itens:[],gastoVariavel:variavel,lancamentos:{},mesInicio:vig.mesInicio,mesFim:vig.mesFim});
   ['pess-conta-n','pess-conta-d'].forEach(id=>document.getElementById(id).value='');
+  const varEl=document.getElementById('pess-conta-variavel');if(varEl)varEl.checked=false;
   _resetScope('pess-conta');
   toggleFinForm('pess-contas-f');
   savePessData();
