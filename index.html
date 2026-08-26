@@ -7171,7 +7171,8 @@ function renderFinFestas(){
     const card=opCards.find(c=>c.id===f.id);
     const vFull=card?.valorTotal||0;
     const vRes=card?.valorReserva||0;
-    const valorCell=`<span id="fin-v-${f.id}" style="color:var(--success);font-weight:700;cursor:pointer;text-decoration:underline dotted" title="Clique para editar" onclick="event.stopPropagation();inlineEditValor('${f.id}',this)">${fmtMoney(f.liq)}</span>`;
+    const brutoCell=`<span style="color:var(--muted);font-weight:700">${fmtMoney(f.v)}</span>`;
+    const valorCell=`<span id="fin-v-${f.id}" style="color:var(--success);font-weight:700;cursor:pointer;text-decoration:underline dotted" title="Clique para editar o valor total do plano" onclick="event.stopPropagation();inlineEditValor('${f.id}',this)">${fmtMoney(f.liq)}</span>`;
     const reservaCell=`<span id="fin-r-${f.id}" style="color:#7D95AE;font-weight:700;cursor:pointer;text-decoration:underline dotted" title="Clique para editar o valor pago" onclick="event.stopPropagation();inlineEditReserva('${f.id}')">${f.reserva>0?fmtMoney(f.reserva):''}</span>`;
     const restCell=f.rest<=0
       ?`<span style="color:var(--muted);font-size:12px">quitado</span>`
@@ -7186,6 +7187,7 @@ function renderFinFestas(){
     return`<tr onclick="openOpModal('${f.id}',null,event)" style="cursor:pointer">
       <td style="font-weight:600">${f.d>0?'Dia '+f.d:''}</td>
       <td><div style="font-weight:600">${esc(f.n)}</div><div style="font-size:11px;color:var(--muted)">${esc(f.t)}</div></td>
+      <td>${brutoCell}</td>
       <td id="fin-vcell-${f.id}">${valorCell}</td>
       <td id="fin-rcell-${f.id}" onclick="event.stopPropagation();inlineEditReserva('${f.id}')" style="cursor:pointer">${reservaCell}</td>
       <td onclick="event.stopPropagation()">${restCell}</td>
@@ -7195,7 +7197,7 @@ function renderFinFestas(){
       <td onclick="event.stopPropagation()"><button class="fin-del" onclick="event.stopPropagation();delFinFesta('${f.id}')" title="Excluir este card do kanban">×</button></td>
     </tr>`;
   }).join('');
-  tbl.innerHTML=`<table><thead><tr><th>Dia</th><th>Cliente</th><th>Valor</th><th style="color:#7D95AE">💰 Valor Pago</th><th style="color:#E06B5A">Falta pagar</th><th style="color:#E06B5A">💸 Custos</th><th style="color:#22c55e">🎁 Álbum</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+  tbl.innerHTML=`<table><thead><tr><th>Dia</th><th>Cliente</th><th>Valor Bruto</th><th>Líquido</th><th style="color:#7D95AE">💰 Valor Pago</th><th style="color:#E06B5A">Falta pagar</th><th style="color:#E06B5A">💸 Custos</th><th style="color:#22c55e">🎁 Álbum</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
   const totAll=festas.reduce((s,f)=>s+f.liq,0);
   const totPaid=festas.reduce((s,f)=>s+f.reserva,0);
   const totRest=festas.reduce((s,f)=>s+f.rest,0);
@@ -7562,7 +7564,7 @@ function saveInlineFalta(cardId){
   renderFinFestas();renderFinResumo();renderPessAll();
 }
 function inlineEditValor(cardId,triggerEl){
-  const cell=document.getElementById('fin-val-'+cardId);if(!cell)return;
+  const cell=document.getElementById('fin-vcell-'+cardId);if(!cell)return;
   cell.innerHTML=`<div style="display:flex;gap:5px;align-items:center" onclick="event.stopPropagation()">
     <input id="iiv-${cardId}" type="number" step="0.01" min="0" placeholder="Valor total (R$)"
       style="width:120px;border:2px solid #e0a14e;border-radius:7px;padding:5px 8px;font-size:13px;font-weight:700"
