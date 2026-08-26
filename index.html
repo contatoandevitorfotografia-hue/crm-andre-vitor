@@ -5248,6 +5248,17 @@ const CUSTOS_PADRAO_EVENTO=[
   {desc:'Transporte Jacareí ↔ SP',val:50,tipo:'empresa'},
   {desc:'Transporte Jacareí ↔ SP',val:50,tipo:'pessoal'},
 ];
+// syncFreelancerToAndre() (a sincronização real, hoje ativa) marca a festa
+// com _opFrlId apontando pra um card em opCards — NÃO em opCardsPess, que
+// nunca é populado na prática. _opId é de um sincronismo antigo e
+// desativado (syncAllDistrib), mas também apontava pra opCards quando
+// existia. Usar isso só pra achar os gastos pessoais (ex: transporte)
+// vinculados à festa, sem mexer no fluxo de edição de "valor pago".
+function _pessGastosDaFesta(f){
+  const id=f._opFrlId||f._opId;
+  const card=id?opCards.find(o=>o.id===id):null;
+  return (card?.gastosItens||[]).filter(g=>g.tipo==='pessoal').reduce((s,g)=>s+(g.val||0),0);
+}
 function syncAllDistrib(){
   // DESABILITADO: Sincronização automática removida para manter dados isolados
   // Entradas pessoais agora são completamente independentes
@@ -7497,8 +7508,7 @@ function savePessRest(mes,idx){
     // partir da falta informada, igual à mesma correção já feita do
     // lado Empresa.
     const entrada=pessFD[mes][idx];
-    const op=entrada._opId?opCardsPess.find(o=>o.id===entrada._opId):null;
-    const gastosPes=(op?.gastosItens||[]).filter(g=>g.tipo==='pessoal').reduce((s,g)=>s+(g.val||0),0);
+    const gastosPes=_pessGastosDaFesta(entrada);
     const andLiq=Math.max(0,(entrada.v||0)-gastosPes);
     const novoPago=Math.max(0,parseFloat((andLiq-val).toFixed(2)));
     _initPessVG(mes);
@@ -8291,14 +8301,10 @@ let contaSP=0;
 function _calcPessAReceber(mes){
   const F=pessFD[mes]||[];
   return F.reduce((s,f)=>{
-    const op=f._opId?opCardsPess.find(o=>o.id===f._opId):null;
-    const gp=(op?.gastosItens||[]).filter(g=>g.tipo==='pessoal').reduce((ss,g)=>ss+(g.val||0),0);
+    const gp=_pessGastosDaFesta(f);
     const liq=Math.max(0,f.v-gp);
-    // Quando a festa não está vinculada a um card (o caso comum), o valor já
-    // recebido é o campo "pago" da própria entrada — antes essa parte era
-    // ignorada aqui (mas não na aba Festas), fazendo o "A receber" do Resumo
-    // vir maior do que o real.
-    const vPago=op?(op.valorReserva??0):(f.pago||0);
+    // O valor já recebido é o campo "pago" da própria entrada.
+    const vPago=f.pago||0;
     return s+Math.max(0,liq-vPago);
   },0);
 }
@@ -8356,8 +8362,7 @@ function renderPessResumo(){
   const cCur=_calcPessMes(curMes);
   const aReceberCur=_calcPessAReceber(curMes);
   const pessLiqMes=(pessFD[curMes]||[]).reduce((s,f)=>{
-    const op=f._opId?opCardsPess.find(o=>o.id===f._opId):null;
-    const gp=(op?.gastosItens||[]).filter(g=>g.tipo==='pessoal').reduce((ss,g)=>ss+(g.val||0),0);
+    const gp=_pessGastosDaFesta(f);
     return s+Math.max(0,f.v-gp);
   },0);
   const disponivel=aReceberCur-cCur.pendG-cCur.pendD+cCur.vg;
@@ -8455,7 +8460,7 @@ function renderPessEntradas(){
   if(!F.length){tb.innerHTML=`<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px">Nenhuma entrada neste mês.</td></tr>`;}
   else tb.innerHTML=F.map((f,i)=>{
     const op=f._opId?opCardsPess.find(o=>o.id===f._opId):null;
-    const gastosPes=(op?.gastosItens||[]).filter(g=>g.tipo==='pessoal').reduce((s,g)=>s+(g.val||0),0);
+    const gastosPes=_pessGastosDaFesta(f);
     const _vPagoPess=op?(op.valorReserva??0):(f.pago||0);
     const _andShare=f.v;
     const _andLiq=Math.max(0,_andShare-gastosPes);
@@ -8475,7 +8480,7 @@ function renderPessEntradas(){
           title="Clique para editar o valor pago" onclick="event.stopPropagation();inlineEditReservaPess('${op.id}')">${fmtMoney(rest)}</span>`
       :`<span style="color:#E06B5A;font-weight:700">${fmtMoney(rest)}</span>`;
     const realIdx = (pessFD[pessCurF]||[]).indexOf(f);
-    const delBtn = f._opId
+    const delBtn = (f._opId||f._opFrlId)
       ? `<button class="fin-del" onclick="event.stopPropagation();delPessFesta('${pessCurF}',${realIdx},true)" title="Remover entrada">×</button>`
       : `<button class="fin-del" onclick="event.stopPropagation();delPessFesta('${pessCurF}',${realIdx},false)" title="Excluir">×</button>`;
     
@@ -8500,23 +8505,17 @@ function renderPessEntradas(){
     </tr>`;
   }).join('');
   const tot=F.reduce((s,f)=>{
-    const _op=f._opId?opCardsPess.find(o=>o.id===f._opId):null;
-    const _gp=(_op?.gastosItens||[]).filter(g=>g.tipo==='pessoal').reduce((ss,g)=>ss+(g.val||0),0);
+    const _gp=_pessGastosDaFesta(f);
     return s+Math.max(0,f.v-_gp);
   },0);
-  const totPaid=F.reduce((s,f)=>{
-    const _op=f._opId?opCardsPess.find(o=>o.id===f._opId):null;
-    const _vPago=_op?(_op.valorReserva??0):(f.pago||0);
-    return s+_vPago;
-  },0);
+  const totPaid=F.reduce((s,f)=>s+(f.pago||0),0);
   const totRest=F.reduce((s,f)=>{
-    const _op=f._opId?opCardsPess.find(o=>o.id===f._opId):null;
-    const _gp=(_op?.gastosItens||[]).filter(g=>g.tipo==='pessoal').reduce((ss,g)=>ss+(g.val||0),0);
-    const _vPago=_op?(_op.valorReserva??0):(f.pago||0);
+    const _gp=_pessGastosDaFesta(f);
+    const _vPago=f.pago||0;
     const _liq=Math.max(0,f.v-_gp);
     return s+Math.max(0,_liq-_vPago);
   },0);
-  const totCusto=F.reduce((s,f)=>{const _op=f._opId?opCardsPess.find(o=>o.id===f._opId):null;return s+(_op?.gastosItens||[]).filter(g=>g.tipo==='pessoal').reduce((ss,g)=>ss+(g.val||0),0);},0);
+  const totCusto=F.reduce((s,f)=>s+_pessGastosDaFesta(f),0);
   const totEl=document.getElementById('p-ftot');if(totEl)totEl.textContent=tot?fmtMoney(tot):'';
   const paidEl=document.getElementById('p-ftot-paid');if(paidEl)paidEl.textContent=totPaid?fmtMoney(totPaid):'';
   const restEl=document.getElementById('p-ftot-rest');if(restEl)restEl.textContent=totRest?fmtMoney(totRest):'';
@@ -9910,8 +9909,7 @@ function renderHistMes(){
     bruto=festas.reduce((s,f)=>s+f.v,0);
     // líquido = bruto - gastos pessoais de cada festa
     liquido=festas.reduce((s,f)=>{
-      const op=f._opId?opCardsPess.find(o=>o.id===f._opId):null;
-      const gp=(op?.gastosItens||[]).filter(g=>g.tipo==='pessoal').reduce((ss,g)=>ss+(g.val||0),0);
+      const gp=_pessGastosDaFesta(f);
       return s+Math.max(0,f.v-gp);
     },0);
     // transporte = gastos diários do mês com cat = __transporte__
