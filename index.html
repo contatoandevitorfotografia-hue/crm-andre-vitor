@@ -5241,12 +5241,16 @@ function calcRestante(){
   updateAvistaBox();
 }
 // Toda festa é em São Paulo, e ela mora em Jacareí — o deslocamento
-// (~R$100 ida e volta) já entra automaticamente em toda festa nova,
-// dividido meio a meio entre empresa e pessoal. Pode ser editado ou
-// removido card a card, se algum caso for diferente.
+// (ida R$65,40 na conta da empresa, volta R$65,40 na conta pessoal do
+// André) já entra automaticamente, detalhado item a item, em toda festa
+// nova. Pode ser editado ou removido card a card, se algum caso for diferente.
 const CUSTOS_PADRAO_EVENTO=[
-  {desc:'Transporte Jacareí ↔ SP',val:50,tipo:'empresa'},
-  {desc:'Transporte Jacareí ↔ SP',val:50,tipo:'pessoal'},
+  {desc:'Ida: Uber de casa até a rodoviária',val:15,tipo:'empresa'},
+  {desc:'Ida: Ônibus para São Paulo',val:45,tipo:'empresa'},
+  {desc:'Ida: Metrô',val:5.40,tipo:'empresa'},
+  {desc:'Volta: Uber da rodoviária até em casa',val:15,tipo:'pessoal'},
+  {desc:'Volta: Ônibus para Jacareí',val:45,tipo:'pessoal'},
+  {desc:'Volta: Metrô',val:5.40,tipo:'pessoal'},
 ];
 // syncFreelancerToAndre() (a sincronização real, hoje ativa) marca a festa
 // com _opFrlId apontando pra um card em opCards — NÃO em opCardsPess, que
