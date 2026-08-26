@@ -2018,21 +2018,6 @@ td { padding: 13px 16px; font-size: 13.5px; }
             <button class="fin-cancel-btn" onclick="toggleFinForm('p-refitemf')">Cancelar</button>
           </div>
         </div>
-
-        <!-- PENDÊNCIAS FUTURAS -->
-        <div style="margin-bottom:16px">
-          <div style="font-size:12px;font-weight:700;color:#D8A24E;margin-bottom:8px;background:#2A2316;border-radius:8px;padding:7px 12px;border-left:3px solid #5C4A24">📋 Pendências futuras <span style="font-size:10px;font-weight:500;color:#8B6A42">(não contam no total até serem pagas)</span></div>
-          <div id="p-ref-pend-lista" style="display:flex;flex-direction:column;gap:6px"></div>
-          <button class="fin-add-btn" onclick="toggleFinForm('p-refpendf')" style="margin-top:8px">+ Adicionar pendência</button>
-          <div class="fin-add-form" id="p-refpendf">
-            <div class="fin-row2">
-              <input type="text" id="p-refpend-desc" placeholder="Ex: Vidraçaria, Pintura...">
-              <input type="number" id="p-refpend-v" placeholder="Valor estimado (R$)" step="0.01">
-            </div>
-            <button class="fin-save-btn" onclick="saveRefPend()">Salvar</button>
-            <button class="fin-cancel-btn" onclick="toggleFinForm('p-refpendf')">Cancelar</button>
-          </div>
-        </div>
       </div>
 
     </div>
