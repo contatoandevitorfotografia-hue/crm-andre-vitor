@@ -1988,7 +1988,7 @@ td { padding: 13px 16px; font-size: 13.5px; }
         <div class="fin-hdr" style="background:#2E2616;border-bottom-color:#6B5526"><h3>🏗️ Reforma com Hugo</h3></div>
 
         <!-- RESUMO -->
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:16px">
           <div style="background:var(--n50);border-radius:10px;padding:12px;text-align:center">
             <div style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Total gasto</div>
             <div id="p-ref-total-gasto" style="font-size:16px;font-weight:800;color:var(--danger)">—</div>
@@ -2000,6 +2000,10 @@ td { padding: 13px 16px; font-size: 13.5px; }
           <div style="background:var(--n50);border-radius:10px;padding:12px;text-align:center">
             <div style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Saldo devedor</div>
             <div id="p-ref-saldo" style="font-size:16px;font-weight:800;color:var(--danger)">—</div>
+          </div>
+          <div style="background:var(--n50);border-radius:10px;padding:12px;text-align:center" title="Estimativa com base na média dos pagamentos já recebidos da inquilina">
+            <div style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Tempo p/ quitar</div>
+            <div id="p-ref-tempo" style="font-size:16px;font-weight:800;color:var(--accent)">—</div>
           </div>
         </div>
 
@@ -10085,6 +10089,26 @@ function renderPessAlug(){
   if(gastoEl)gastoEl.textContent=totalGasto?fmtMoney(totalGasto):'—';
   if(pagoEl)pagoEl.textContent=totalPago?fmtMoney(totalPago):'—';
   if(saldoEl){saldoEl.textContent=fmtMoney(Math.max(0,saldo));saldoEl.style.color=saldo<=0?'var(--success)':'var(--danger)';}
+
+  // Tempo estimado pra quitar, com base na média dos pagamentos da
+  // inquilina já recebidos (quanto mais ela paga, menor o saldo e mais
+  // rápido a conta some).
+  const tempoEl=document.getElementById('p-ref-tempo');
+  if(tempoEl){
+    const mediaPagamento=pessAlug.length?totalPago/pessAlug.length:0;
+    if(saldo<=0){
+      tempoEl.textContent='✅ Quitado!';tempoEl.style.color='var(--success)';
+    } else if(mediaPagamento>0){
+      const meses=Math.ceil(saldo/mediaPagamento);
+      const anos=Math.floor(meses/12),restMeses=meses%12;
+      const partes=[];
+      if(anos>0)partes.push(anos+(anos===1?' ano':' anos'));
+      if(restMeses>0||anos===0)partes.push(restMeses+(restMeses===1?' mês':' meses'));
+      tempoEl.textContent=partes.join(' e ');tempoEl.style.color='var(--accent)';
+    } else {
+      tempoEl.textContent='—';tempoEl.style.color='var(--muted)';
+    }
+  }
 
   // Lista de gastos (Hugo/Ana) e pendências
   renderRefItens();
