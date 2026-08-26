@@ -1891,7 +1891,7 @@ td { padding: 13px 16px; font-size: 13.5px; }
         <div id="p-sp-mes" style="margin-bottom:14px"></div>
         <div class="fin-tbl-wrap">
           <table style="width:100%;border-collapse:collapse">
-            <thead><tr><th>Dia</th><th>Cliente</th><th>Valor</th><th style="color:#7D95AE">💰 Valor Pago</th><th style="color:#E06B5A">Falta pagar</th><th>Custo</th><th>Status</th><th></th></tr></thead>
+            <thead><tr><th>Dia</th><th>Cliente</th><th>Valor Bruto</th><th>Líquido</th><th style="color:#7D95AE">💰 Valor Pago</th><th style="color:#E06B5A">Falta pagar</th><th>Custo</th><th>Status</th><th></th></tr></thead>
             <tbody id="p-ftb"></tbody>
           </table>
         </div>
@@ -8461,7 +8461,7 @@ function renderPessEntradas(){
   const F=(pessFD[pessCurF]||[]).sort((a,b)=>(a.d||0)-(b.d||0));
   const cntEl=document.getElementById('p-fcount');if(cntEl)cntEl.textContent=`${F.length} entrada(s)`;
   const tb=document.getElementById('p-ftb');if(!tb)return;
-  if(!F.length){tb.innerHTML=`<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px">Nenhuma entrada neste mês.</td></tr>`;}
+  if(!F.length){tb.innerHTML=`<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">Nenhuma entrada neste mês.</td></tr>`;}
   else tb.innerHTML=F.map((f,i)=>{
     const op=f._opId?opCardsPess.find(o=>o.id===f._opId):null;
     const gastosPes=_pessGastosDaFesta(f);
@@ -8489,7 +8489,8 @@ function renderPessEntradas(){
       : `<button class="fin-del" onclick="event.stopPropagation();delPessFesta('${pessCurF}',${realIdx},false)" title="Excluir">×</button>`;
     
     // Campos editáveis
-    const valorCell = `<span style="color:var(--success);font-weight:700;cursor:pointer;text-decoration:underline dotted" title="Clique para editar" onclick="editPessValor('${pessCurF}',${realIdx},this)">${fmtMoney(Math.max(0,f.v-gastosPes))}</span>`;
+    const brutoCell = `<span style="color:var(--muted);font-weight:700;cursor:pointer;text-decoration:underline dotted" title="Clique para editar o valor bruto (antes do desconto do gasto pessoal)" onclick="editPessValor('${pessCurF}',${realIdx},this)">${fmtMoney(f.v)}</span>`;
+    const valorCell = `<span style="color:var(--success);font-weight:700">${fmtMoney(Math.max(0,f.v-gastosPes))}</span>`;
     const pagoBtnHtml = op 
       ? `<span style="color:#7D95AE;font-weight:700;cursor:pointer;text-decoration:underline dotted" title="Clique para editar" onclick="event.stopPropagation();inlineEditReservaPess('${op.id}')">${_vPagoPess>0?fmtMoney(_vPagoPess):'— editar'}</span>`
       : `<span style="color:#7D95AE;font-weight:700;cursor:pointer;text-decoration:underline dotted" title="Clique para editar" onclick="event.stopPropagation();editPessPago('${pessCurF}',${realIdx},this)">${f.pago>0?fmtMoney(f.pago):'— editar'}</span>`;
@@ -8500,6 +8501,7 @@ function renderPessEntradas(){
     return`<tr style="cursor:default">
       <td style="font-weight:600">${f.d>0?'Dia '+f.d:''}</td>
       <td><div style="font-weight:600">${esc(f.n)}</div><div style="font-size:11px;color:var(--muted)">${esc(f.t||'')}</div></td>
+      <td>${brutoCell}</td>
       <td>${valorCell}</td>
       <td onclick="event.stopPropagation()">${pagoBtnHtml}</td>
       <td onclick="event.stopPropagation()">${restCell2}</td>
