@@ -371,6 +371,13 @@ select{background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;c
         <div class="fin-stat"><div class="fin-stat-lbl">💸 Pode Gastar</div><div class="fin-stat-val" id="fin-emp-disp">—</div></div>
       </div>
       <div id="fin-emp-contas"></div>
+      <div class="lst-add-row" style="margin-top:10px">
+        <input type="date" id="fin-emp-gd" style="max-width:126px;flex:0 0 auto">
+        <input type="number" id="fin-emp-gv" placeholder="Valor R$" step="0.01" min="0" style="max-width:92px;flex:0 0 auto">
+        <input type="text" id="fin-emp-gl" placeholder="Despesa (ex: material de escritório)...">
+        <button class="btn-add" onclick="addGastoAvulsoApp('fin')">+</button>
+      </div>
+      <div id="fin-emp-gastos"></div>
 
       <div class="sec-ttl" style="margin-top:10px">🏠 Pessoal</div>
       <div class="fin-stats">
@@ -378,6 +385,13 @@ select{background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;c
         <div class="fin-stat"><div class="fin-stat-lbl">💸 Pode Gastar</div><div class="fin-stat-val" id="fin-pess-disp">—</div></div>
       </div>
       <div id="fin-pess-contas"></div>
+      <div class="lst-add-row" style="margin-top:10px">
+        <input type="date" id="fin-pess-gd" style="max-width:126px;flex:0 0 auto">
+        <input type="number" id="fin-pess-gv" placeholder="Valor R$" step="0.01" min="0" style="max-width:92px;flex:0 0 auto">
+        <input type="text" id="fin-pess-gl" placeholder="Despesa (ex: farmácia)...">
+        <button class="btn-add" onclick="addGastoAvulsoApp('pess')">+</button>
+      </div>
+      <div id="fin-pess-gastos"></div>
     </section>
 
     <!-- PESSOAIS -->
@@ -701,13 +715,21 @@ function _calcFinMes(mes){
   const sobrou=totalAReceber-pendG-pendD+vg;
   return{pendG,pendD,vg,totalAReceber,sobrou,contasPendentes:contasMes.filter(c=>_contaValorPendente(c,mes)>0)};
 }
+// A sincronização real de festas (syncFreelancerToAndre, no CRM principal)
+// marca cada entrada com _opFrlId apontando pro card em opCards — não
+// _opId (de uma sincronização antiga já desativada) nem opCardsPess (que
+// nunca é populado de verdade). Mesma correção já feita no CRM principal.
+function _pessGastosDaFesta(f){
+  const id=f._opFrlId||f._opId;
+  const card=id?opCards.find(o=>o.id===id):null;
+  return (card?.gastosItens||[]).filter(g=>g.tipo==='pessoal').reduce((s,g)=>s+(g.val||0),0);
+}
 function _calcPessAReceber(mes){
   const F=pessFD[mes]||[];
   return F.reduce((s,f)=>{
-    const op=f._opId?opCardsPess.find(o=>o.id===f._opId):null;
-    const gp=(op?.gastosItens||[]).filter(g=>g.tipo==='pessoal').reduce((ss,g)=>ss+(g.val||0),0);
+    const gp=_pessGastosDaFesta(f);
     const liq=Math.max(0,f.v-gp);
-    const vPago=op?(op.valorReserva??0):(f.pago||0);
+    const vPago=f.pago||0;
     return s+Math.max(0,liq-vPago);
   },0);
 }
@@ -751,6 +773,81 @@ function renderFinanceiro(){
   pessEl.innerHTML=pess.contasPendentes.length
     ?pess.contasPendentes.map(c=>_finContaRowHTML(c,mes)).join('')
     :'<div class="empty">Nenhuma conta pessoal pendente este mês 🎉</div>';
+
+  // ── Outras despesas do mês (gastos avulsos, não de festa) ──
+  const _empG=(finDD[mes]||[]).slice().sort((a,b)=>(b.dt||'').localeCompare(a.dt||''));
+  const empGEl=document.getElementById('fin-emp-gastos');
+  if(empGEl)empGEl.innerHTML=_empG.length?_empG.map((d,i)=>_gastoAvulsoRowHTML('fin',mes,finDD[mes].indexOf(d),d)).join(''):'';
+  const _pessG=(pessDD[mes]||[]).slice().sort((a,b)=>(b.dt||'').localeCompare(a.dt||''));
+  const pessGEl=document.getElementById('fin-pess-gastos');
+  if(pessGEl)pessGEl.innerHTML=_pessG.length?_pessG.map((d,i)=>_gastoAvulsoRowHTML('pess',mes,pessDD[mes].indexOf(d),d)).join(''):'';
+}
+
+// ── Outras despesas (gastos avulsos, não de festa) ───────────
+// Mesma estrutura do "Diários" do CRM principal (finDD/pessDD): um gasto
+// pontual que já sai do banco na hora (marcado como pago), sem estar
+// ligado a nenhuma festa nem conta fixa.
+function _initFinVG(mes){
+  if(finVG[mes]===undefined){
+    const festas=_getFinFestas(mes);
+    finVG[mes]=festas.reduce((s,f)=>s+(f.reserva||0),0);
+  }
+}
+function _initPessVG(mes){
+  if(pessVG[mes]===undefined){
+    const F=pessFD[mes]||[];
+    pessVG[mes]=F.reduce((s,f)=>s+(f.pago||0),0);
+  }
+}
+function saveFinDataApp(){if(_finDb)_finDb.ref('crm26').update(JSON.parse(JSON.stringify({vg:finVG,dd:finDD})));}
+function savePessDataApp(){if(_finDb)_finDb.ref('pess26').update(JSON.parse(JSON.stringify({vg:pessVG,dd:pessDD})));}
+function _gastoAvulsoRowHTML(tipo,mes,i,d){
+  return`<div class="lst-item">
+    <div style="flex:1;min-width:0">
+      <div class="lst-txt">${esc(d.l||'Gasto')}</div>
+      <div class="lst-meta">${d.dt?d.dt.split('-').reverse().join('/'):''}</div>
+    </div>
+    <div style="font-size:14px;font-weight:800;color:var(--err);flex-shrink:0">${fmtM(d.v)}</div>
+    <button class="btn-del" onclick="delGastoAvulsoApp('${tipo}','${mes}',${i})">✕</button>
+  </div>`;
+}
+function addGastoAvulsoApp(tipo){
+  const pre=tipo==='fin'?'fin-emp':'fin-pess';
+  const dtEl=document.getElementById(pre+'-gd'), vEl=document.getElementById(pre+'-gv'), lEl=document.getElementById(pre+'-gl');
+  const v=parseFloat(vEl?.value)||0;
+  if(!v){toast('Preencha o valor!');return;}
+  const l=(lEl?.value||'').trim();
+  const dtVal=dtEl?.value||new Date().toISOString().slice(0,10);
+  const mes=_finCurMes();
+  if(tipo==='fin'){
+    if(!finDD[mes])finDD[mes]=[];
+    _initFinVG(mes);finVG[mes]-=v;
+    finDD[mes].push({dt:dtVal,v,l,p:true});
+    finDD[mes].sort((a,b)=>a.dt.localeCompare(b.dt));
+    saveFinDataApp();
+  }else{
+    if(!pessDD[mes])pessDD[mes]=[];
+    _initPessVG(mes);pessVG[mes]-=v;
+    pessDD[mes].push({dt:dtVal,v,l,p:true});
+    pessDD[mes].sort((a,b)=>a.dt.localeCompare(b.dt));
+    savePessDataApp();
+  }
+  if(dtEl)dtEl.value='';if(vEl)vEl.value='';if(lEl)lEl.value='';
+  renderFinanceiro();
+  toast('✅ Gasto registrado!');
+}
+function delGastoAvulsoApp(tipo,mes,i){
+  if(!confirm('Excluir este gasto?'))return;
+  if(tipo==='fin'){
+    const d=finDD[mes]?.[i];if(!d)return;
+    if(d.p){_initFinVG(mes);finVG[mes]+=d.v;}
+    finDD[mes].splice(i,1);saveFinDataApp();
+  }else{
+    const d=pessDD[mes]?.[i];if(!d)return;
+    if(d.p){_initPessVG(mes);pessVG[mes]+=d.v;}
+    pessDD[mes].splice(i,1);savePessDataApp();
+  }
+  renderFinanceiro();
 }
 
 // ── GASTOS (sincroniza com CRM via gastosItens) ──────────────
