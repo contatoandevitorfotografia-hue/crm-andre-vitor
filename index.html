@@ -5236,7 +5236,14 @@ function calcRestante(){
   autoRecalcParcelas();
   updateAvistaBox();
 }
-const CUSTOS_PADRAO_EVENTO=[];
+// Toda festa é em São Paulo, e ela mora em Jacareí — o deslocamento
+// (~R$100 ida e volta) já entra automaticamente em toda festa nova,
+// dividido meio a meio entre empresa e pessoal. Pode ser editado ou
+// removido card a card, se algum caso for diferente.
+const CUSTOS_PADRAO_EVENTO=[
+  {desc:'Transporte Jacareí ↔ SP',val:50,tipo:'empresa'},
+  {desc:'Transporte Jacareí ↔ SP',val:50,tipo:'pessoal'},
+];
 function syncAllDistrib(){
   // DESABILITADO: Sincronização automática removida para manter dados isolados
   // Entradas pessoais agora são completamente independentes
