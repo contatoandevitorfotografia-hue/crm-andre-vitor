@@ -3206,6 +3206,15 @@ td { padding: 13px 16px; font-size: 13.5px; }
         </div>
         <div id="bk-snap-list"></div>
       </div>
+      <div style="margin:16px 0 12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+          <div>
+            <div style="font-size:13px;font-weight:800;color:var(--text)">🔄 Corrigir sincronização</div>
+            <div style="font-size:11px;color:var(--muted);line-height:1.5">Use se o CRM estiver mostrando informações desatualizadas, mesmo depois de recarregar a página.</div>
+          </div>
+          <button class="btn btn-g btn-sm" onclick="corrigirSincronizacao()">Corrigir agora</button>
+        </div>
+      </div>
       <div style="background:var(--warning-light);border:1.5px solid var(--warning);border-radius:var(--r-sm);padding:12px 14px;font-size:12px;color:#E0A14E;line-height:1.6"><strong>⚠️ Atenção:</strong> Importar substitui <strong>todos os dados atuais.</strong> Sempre exporte antes de importar!</div>
     </div>
     <div class="mo-ftr"><button class="btn btn-g" onclick="closeMo('mo-backup')">Fechar</button></div>
@@ -10832,6 +10841,16 @@ function _norm(str){return String(str||'').normalize('NFD').replace(/[̀-ͯ]/g,'
 let toastTmr;
 function toast(msg,type){const el=document.getElementById('toast');document.getElementById('toast-msg').textContent=msg;el.className='toast show'+(type?' '+type:'');clearTimeout(toastTmr);toastTmr=setTimeout(()=>el.classList.remove('show'),3400)}
 
+// Botão de emergência pra destravar a sincronização quando a flag
+// "crm_dados_pending" ficou presa (ex.: navegador fechado offline antes do
+// envio confirmar) e o CRM fica preso mostrando dados antigos.
+function corrigirSincronizacao(){
+  openCfm('Corrigir sincronização?','Isso descarta qualquer edição local que ainda não foi confirmada no servidor e recarrega a página buscando os dados mais atuais. Use quando o CRM estiver mostrando informações desatualizadas.',()=>{
+    localStorage.removeItem('crm_dados_pending');
+    localStorage.removeItem('crm_dados_pending_ts');
+    location.reload();
+  });
+}
 function openBackupModal(){
   updateBackupBanner();
   const last=localStorage.getItem('crm_last_backup');
