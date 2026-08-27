@@ -3603,9 +3603,18 @@ function albCardHTML(c,cc){
     <div class="pc-name">${esc(c.titulo||'Sem título')}</div>
     ${c.cliente?`<div class="pc-child">👤 ${esc(c.cliente)}</div>`:''}
     ${c.dataEvento?`<div class="pc-date">📅 ${fmtDate(c.dataEvento)}</div>`:''}
+    <label style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:11px;font-weight:700;color:${c.tagEncomendada?'var(--success)':'var(--muted)'};cursor:pointer" onclick="event.stopPropagation()">
+      <input type="checkbox" ${c.tagEncomendada?'checked':''} onchange="toggleAlbTag('${c.id}',this.checked)" style="width:14px;height:14px;accent-color:var(--success);cursor:pointer">
+      🏷️ Tag encomendada
+    </label>
     ${(c.fotoCapa||c.fotoContracapa)?`<div style="font-size:11px;font-weight:700;color:#E0A14E;margin-top:5px">📸 ${c.fotoCapa?'Capa: '+esc(c.fotoCapa):''}${c.fotoCapa&&c.fotoContracapa?' · ':''}${c.fotoContracapa?'Contracapa: '+esc(c.fotoContracapa):''}</div>`:''}
     ${c.obs?`<div style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.4">${esc(c.obs.slice(0,80))}${c.obs.length>80?'…':''}</div>`:''}
   </div>`;
+}
+function toggleAlbTag(id,val){
+  const c=albCards.find(a=>a.id===id);if(!c)return;
+  c.tagEncomendada=val;c.updatedAt=Date.now();
+  savAlb();
 }
 function fillAlbColSelect(selected){
   document.getElementById('f-alb-col').innerHTML=_visibleCols('alb',ALB_COLS).map(c=>`<option value="${c.id}"${c.id===selected?' selected':''}>${c.emoji} ${c.name}</option>`).join('');
