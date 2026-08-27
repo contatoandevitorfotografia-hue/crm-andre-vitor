@@ -5513,6 +5513,31 @@ function copyClientMsg(){
     const ta=document.createElement('textarea');ta.value=msg;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('📋 Dados copiados!','green');
   });
 }
+// Cada parcela com data cadastrada (e ainda não recebida) vira uma
+// pendência de cliente vinculada, pra entrar automaticamente na fila de
+// lembrete/push que já existe pra pendências (_verificarPopupsPendencias),
+// sem precisar de nenhum mecanismo novo de notificação.
+function _syncParcelasPendencias(card){
+  const nome=card.nomePais||card.titulo||'Cliente';
+  const parcelas=card.parcelasItens||[];
+  const ativasIds=parcelas.filter(p=>p.data&&!p.recebido).map(p=>p.id);
+  // remove pendências vinculadas a parcelas que sumiram ou já foram recebidas
+  pendencias=pendencias.filter(p=>p._parcelaOpId!==card.id||ativasIds.includes(p._parcelaId));
+  parcelas.forEach(p=>{
+    if(!p.data||p.recebido)return;
+    const texto=`💳 Cobrar ${nome} — ${p.label}${p.valor?` (${fmtMoney(p.valor)})`:''}`;
+    const existente=pendencias.find(pe=>pe._parcelaOpId===card.id&&pe._parcelaId===p.id);
+    if(existente){
+      existente.texto=texto;existente.prazo=p.data;existente.clienteNome=nome;
+      existente.notifDt=_calcNotifDt(p.data,'','mesmo_dia_manha','','');
+    }else{
+      pendencias.push({id:uid(),texto,clienteNome:nome,prazo:p.data,hora:'',notifOpcao:'mesmo_dia_manha',
+        notifDt:_calcNotifDt(p.data,'','mesmo_dia_manha','',''),status:'pendente',criadoEm:Date.now(),
+        rec:{ativa:false,tipo:'semanal',dias:[],diaMes:null},_parcelaOpId:card.id,_parcelaId:p.id});
+    }
+  });
+  savPen();
+}
 function saveOpCard(){
   const nomePais=document.getElementById('f-nomePais').value.trim();
   if(!nomePais){toast('⚠️ Informe o nome dos pais!','orange');document.getElementById('f-nomePais').focus();return}
@@ -5532,10 +5557,11 @@ function saveOpCard(){
   if(newCol==='perdido')clearParaPerdido(data);
   _syncVGReservaChange(oldCard,data);saveFinData();
   if(editingOpId){const i=opCards.findIndex(c=>c.id===editingOpId);if(i!==-1)opCards[i]=data;else opCards.push(data)}else opCards.push(data);
+  _syncParcelasPendencias(data);
   const wasConf2=oldCol==='confirmado'||oldCol==='confirmado-pendencias';
   const isConf2=newCol==='confirmado'||newCol==='confirmado-pendencias';
   if(!wasConf2&&isConf2){autoSyncToProjects(data);toast('✅ Salvo · 🎬 Adicionado automaticamente em Projetos!','green')}else toast('✅ Cliente salvo!','green');
-  savOp();closeMo('mo-op');try{syncFreelancerToAndre(data);renderOp();renderPr();renderFin();renderAgenda();}catch(err){console.error(err);}if(window._pendingFreelaRemove){deleteFreelaCardById(window._pendingFreelaRemove);window._pendingFreelaRemove=null;}
+  savOp();closeMo('mo-op');try{syncFreelancerToAndre(data);renderOp();renderPr();renderFin();renderAgenda();renderPendencias();}catch(err){console.error(err);}if(window._pendingFreelaRemove){deleteFreelaCardById(window._pendingFreelaRemove);window._pendingFreelaRemove=null;}
 }
 function fillPrColSelect(selected){
   const opt=c=>`<option value="${c.id}"${c.id===selected?' selected':''}>${c.emoji} ${c.name}</option>`;
@@ -5906,8 +5932,11 @@ function _cntRow(c){
   const linkHref=temLink?(/^https?:\/\//i.test(c.link.trim())?c.link.trim():'https://'+c.link.trim().replace(/^\/+/,'')):'';
   const temFoto=!!c.foto;
   const fotoAberta=_fotosAbertas.has(c.id);
+  const hojeCnt=new Date().toISOString().slice(0,10);
+  const atrasado=!isDone&&c.dataPub&&c.dataPub<hojeCnt;
+  const ehHoje=!isDone&&c.dataPub===hojeCnt;
   if(_editingId===c.id&&_editingTipo==='cnt'){
-    return`<div class="lista-item${isDone?' done':''}">
+    return`<div class="pend-item${isDone?' done':''}">
       <span style="font-size:16px;flex-shrink:0">${icon}</span>
       <input id="edit-inp-${c.id}" class="lista-edit-inp" type="text" value="${esc(c.texto)}"
         onkeydown="if(event.key==='Enter')saveEdit('cnt','${c.id}');if(event.key==='Escape')cancelEdit()">
@@ -5915,11 +5944,11 @@ function _cntRow(c){
       <button class="lista-edit-cancel" onclick="cancelEdit()">✕</button>
     </div>`;
   }
-  return`<div style="border-radius:10px;overflow:hidden;margin-bottom:2px">
-    <div class="lista-item${isDone?' done':''}" style="border-radius:${(notaAberta||linkAberto||fotoAberta)?'10px 10px 0 0':'10px'};margin-bottom:0">
+  return`<div style="border-radius:10px;overflow:hidden;margin-bottom:5px">
+    <div class="pend-item${isDone?' done':''}" style="${atrasado?'border-color:var(--danger);background:#2E1A18':ehHoje?'border-color:var(--warning);background:var(--warning-light)':''};flex-wrap:wrap;border-radius:${(notaAberta||linkAberto||fotoAberta)?'10px 10px 0 0':'10px'};margin-bottom:0">
       ${temFoto?`<img src="${c.foto}" onclick="event.stopPropagation();_abrirFotoLightbox('${c.foto}')" style="width:34px;height:34px;object-fit:cover;border-radius:6px;cursor:zoom-in;flex-shrink:0" title="Ver foto">`:`<span style="font-size:16px;flex-shrink:0">${icon}</span>`}
       <div style="flex:1;min-width:0">
-        <div class="lista-item-text">${esc(c.texto)}<span style="margin-left:6px;font-size:11px;color:var(--muted)">${c.tipo}</span></div>
+        <div class="lista-item-text" style="${isDone?'text-decoration:line-through;color:var(--muted)':''}">${esc(c.texto)}<span style="margin-left:6px;font-size:11px;color:var(--muted)">${c.tipo}</span></div>
         ${c.clienteNome?`<div style="font-size:11px;color:var(--muted);margin-top:2px">👤 ${esc(c.clienteNome)}</div>`:''}
         ${temNota&&!notaAberta?`<div style="font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">📝 ${esc(c.notas)}</div>`:''}
         ${temLink&&!linkAberto?`<div style="font-size:11px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><a href="${esc(linkHref)}" target="_blank" rel="noopener noreferrer" style="color:var(--primary)">🔗 ${esc(c.link)}</a></div>`:''}
@@ -6118,38 +6147,28 @@ function saveNotifPen(id){
 function _penRow(p){
   const feito=p.status==='feito';
   const hoje=new Date().toISOString().slice(0,10);
-  const vencida=!feito&&p.prazo&&p.prazo<hoje;
-  if(_editingId===p.id&&_editingTipo==='pen'){
-    return`<div class="lista-item${feito?' done':''}" ${vencida?'style="border-left:3px solid var(--danger)"':''}>
-      <div class="lista-check${feito?' checked':''}" onclick="togglePendencia('${p.id}')">${feito?'✓':''}</div>
-      <input id="edit-inp-${p.id}" class="lista-edit-inp" type="text" value="${esc(p.texto)}"
-        onkeydown="if(event.key==='Enter')saveEdit('pen','${p.id}');if(event.key==='Escape')cancelEdit()">
-      <button class="lista-edit-save" onclick="saveEdit('pen','${p.id}')">✓</button>
-      <button class="lista-edit-cancel" onclick="cancelEdit()">✕</button>
-    </div>`;
-  }
+  const atrasado=!feito&&p.prazo&&p.prazo<hoje;
+  const ehHoje=!feito&&p.prazo===hoje;
+  const isEdit=_editingId===p.id&&_editingTipo==='pen';
+  const dt=p.prazo?fmtDate(p.prazo):'';
   const notifLabel={'na_hora':'Na hora','1h_antes':'1h antes','mesmo_dia_manha':'Mesmo dia 08h','1_dia_antes':'1 dia antes','1_dia_antes_manha':'1 dia antes 08h','personalizado':'Personalizado'}[p.notifOpcao]||'';
   const notifStr=p.notifDt&&p.notifDt.data?`🔔 ${notifLabel}: ${new Date(p.notifDt.data+'T'+p.notifDt.hora).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})} às ${p.notifDt.hora}`:(p.notifOpcao&&p.notifOpcao!=='nenhum'?'':'');
-  return`<div class="lista-item${feito?' done':''}" ${vencida?'style="border-left:3px solid var(--danger)"':''}>
-    <div class="lista-check${feito?' checked':''}" onclick="togglePendencia('${p.id}')">${feito?'✓':''}</div>
-    <div style="flex:1;min-width:0">
-      <div class="lista-item-text">${esc(p.texto)}</div>
-      ${p.rec&&p.rec.ativa&&_recLabel(p.rec)?`<div style="font-size:10px;color:#7B5FA0;font-weight:700;margin-top:2px">🔁 ${_recLabel(p.rec)}</div>`:''}
-      ${p.clienteNome?`<div style="font-size:11px;color:var(--muted);margin-top:2px">👤 ${esc(p.clienteNome)}</div>`:''}
-      <div style="margin-top:5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-        <input type="date" value="${p.prazo||''}" onchange="setPenPrazo('${p.id}',this.value)"
-          style="font:500 11px 'Montserrat',sans-serif;color:${vencida?'var(--danger)':'var(--n700)'};border:1px solid ${vencida?'var(--danger)':'var(--border)'};border-radius:6px;padding:3px 7px;background:${vencida?'#fff5f5':'var(--n50)'};outline:none;cursor:pointer">
-        <input type="time" value="${p.hora||''}" onchange="setPenHora('${p.id}',this.value)"
-          style="font:500 11px 'Montserrat',sans-serif;color:var(--n700);border:1px solid var(--border);border-radius:6px;padding:3px 7px;background:var(--n50);outline:none;cursor:pointer">
-        ${p.prazo?`<button onclick="setPenPrazo('${p.id}','')" style="font-size:10px;color:var(--muted);background:none;border:none;cursor:pointer;padding:0" title="Remover prazo">✕</button>`:''}
-      </div>
-      ${notifStr?`<div style="font-size:10px;color:var(--muted);margin-top:3px">${notifStr}</div>`:(!feito?`<div style="font-size:10px;color:var(--muted);margin-top:3px;opacity:.5">🔕 Sem lembrete</div>`:'')}
-    </div>
-    <span class="lista-badge pill-${p.status}">${feito?'Feito':'Pendente'}</span>
-    <button onclick="editRecPen('${p.id}')" title="Configurar recorrência" style="background:none;border:1.5px solid ${p.rec&&p.rec.ativa?'#7B5FA0':'var(--border)'};border-radius:7px;padding:4px 7px;cursor:pointer;font-size:13px;flex-shrink:0">🔁</button>
-    ${!feito?`<button onclick="editNotifPen('${p.id}')" title="Configurar lembrete" style="background:none;border:1.5px solid var(--border);border-radius:7px;padding:4px 7px;cursor:pointer;font-size:13px;flex-shrink:0">🔔</button>`:''}
+  return`<div class="pend-item${feito?' done':''}" style="${atrasado?'border-color:var(--danger);background:#2E1A18':ehHoje?'border-color:var(--warning);background:var(--warning-light)':''};flex-wrap:wrap">
+    <input type="checkbox" ${feito?'checked':''} onchange="togglePendencia('${p.id}')">
+    ${isEdit
+      ? `<input type="text" id="edit-inp-${p.id}" value="${esc(p.texto)}" onblur="saveEdit('pen','${p.id}')" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')cancelEdit()" style="flex:1;border:1.5px solid var(--primary);border-radius:6px;padding:5px 8px;font:600 13px 'Montserrat',sans-serif;color:var(--n900);outline:none">`
+      : `<label ondblclick="startEdit('pen','${p.id}')" style="flex:1;min-width:130px">${esc(p.texto)}
+          ${p.rec&&p.rec.ativa&&_recLabel(p.rec)?`<span style="display:block;font-size:10px;color:#7B5FA0;font-weight:700;margin-top:2px">🔁 ${_recLabel(p.rec)}</span>`:''}
+          ${p.clienteNome?`<span style="display:block;font-size:11px;color:var(--muted);margin-top:2px">👤 ${esc(p.clienteNome)}</span>`:''}
+          ${notifStr?`<span style="display:block;font-size:10px;color:var(--muted);margin-top:2px">${notifStr}</span>`:''}
+        </label>`}
+    <input type="date" value="${p.prazo||''}" onchange="setPenPrazo('${p.id}',this.value)" title="Data" style="padding:4px 7px;border:1.5px solid var(--border);border-radius:6px;font:600 11px 'Montserrat',sans-serif;color:${atrasado?'var(--danger)':ehHoje?'var(--warning)':'var(--n700)'};outline:none;background:var(--surface);max-width:135px">
+    <input type="time" value="${p.hora||''}" onchange="setPenHora('${p.id}',this.value)" title="Hora" style="padding:4px 7px;border:1.5px solid var(--border);border-radius:6px;font:600 11px 'Montserrat',sans-serif;color:var(--n700);outline:none;background:var(--surface);max-width:95px">
+    ${atrasado?`<span class="pend-badge warn" style="background:var(--danger-light);color:var(--danger)">Atrasado</span>`:ehHoje?`<span class="pend-badge warn" style="background:var(--warning-light);color:var(--warning)">Hoje</span>`:dt?`<span class="pend-badge ok" style="background:var(--n100);color:var(--muted)">${dt}</span>`:''}
+    <button onclick="editRecPen('${p.id}')" title="Configurar recorrência" style="background:none;border:1.5px solid ${p.rec&&p.rec.ativa?'#7B5FA0':'var(--border)'};border-radius:6px;color:${p.rec&&p.rec.ativa?'#7B5FA0':'var(--muted)'};width:auto;padding:4px 7px;cursor:pointer;font-size:13px">🔁</button>
+    ${!feito?`<button onclick="editNotifPen('${p.id}')" title="Configurar lembrete" style="background:none;border:1.5px solid var(--border);border-radius:6px;padding:4px 7px;cursor:pointer;font-size:13px">🔔</button>`:''}
     <button class="lista-item-edit" onclick="startEdit('pen','${p.id}')" title="Editar">✏️</button>
-    <button class="lista-item-del" onclick="delPendencia('${p.id}')">✕</button>
+    <button class="pend-rm" onclick="delPendencia('${p.id}')" title="Remover">✕</button>
   </div>
   <div id="pen-notif-edit-${p.id}" style="display:none;margin:-6px 0 4px;background:var(--n100);border-radius:0 0 8px 8px;padding:10px 12px;border:1px solid var(--border);border-top:none">
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:6px">
@@ -7243,8 +7262,9 @@ function delFinFesta(cardId){
   MESES_FIN.forEach(m=>{
     if(finDD[m])finDD[m]=finDD[m].filter(e=>e._opId!==cardId);
   });
+  pendencias=pendencias.filter(p=>p._parcelaOpId!==cardId);savPen();
   savOp();saveFinData();
-  renderOp();renderFin();
+  renderOp();renderFin();renderPendencias();
   toast('🗑️ Removido da Empresa','');
 }
 function quickChangeStatus(cardId){
@@ -10371,7 +10391,7 @@ function closeMo(id){document.getElementById(id).classList.add('hidden')}
 function moOverlay(e,id){if(e.target===document.getElementById(id))closeMo(id)}
 function confirmDel(type){
   openCfm('Excluir?','Esta ação não pode ser desfeita.',()=>{
-    if(type==='op'){const delId=editingOpId;opCards=opCards.filter(c=>c.id!==delId);MESES_FIN.forEach(m=>{if(pessFD[m])pessFD[m]=pessFD[m].filter(e=>e._opId!==delId&&e._opFrlId!==delId)});savOp();savePessData();renderOp();renderPr();renderFin();renderAgenda();closeMo('mo-op')}
+    if(type==='op'){const delId=editingOpId;opCards=opCards.filter(c=>c.id!==delId);MESES_FIN.forEach(m=>{if(pessFD[m])pessFD[m]=pessFD[m].filter(e=>e._opId!==delId&&e._opFrlId!==delId)});pendencias=pendencias.filter(p=>p._parcelaOpId!==delId);savPen();savOp();savePessData();renderOp();renderPr();renderFin();renderAgenda();renderPendencias();closeMo('mo-op')}
     else if(type==='pr'){prCards=prCards.filter(c=>c.id!==editingPrId);savPr();renderPr();renderAgenda();closeMo('mo-pr')}
     else if(type==='alb'){albCards=albCards.filter(c=>c.id!==editingAlbId);savAlb();renderAlb();closeMo('mo-alb')}
     else if(type==='pac'){packages=packages.filter(p=>p.id!==editingPacId);savPac();renderPac();closeMo('mo-pac')}
