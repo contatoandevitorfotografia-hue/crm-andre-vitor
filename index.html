@@ -7125,7 +7125,9 @@ function renderFinResumo(){
     if(!c.festas.length&&!c.G.length&&!c.D.length&&!c.vg)return;
     const isPassado=_idxMesContas(m)<_idxMesAtual;
     // Meses passados: contas já foram pagas na época — não mostrar como pendente
-    if(m!==_mesMesAtual){c.pendG=0;}
+    // (meses futuros continuam mostrando o pendente real, senão fica parecendo
+    // que já está tudo pago sem nem ter chegado o mês)
+    if(isPassado){c.pendG=0;}
     const ok=c.sobrou>1000,wa=c.sobrou>=0&&c.sobrou<=1000,no=c.sobrou<0;
     const bdg=ok?'fin-badge-ok':wa?'fin-badge-wa':'fin-badge-no';
     const st=ok?'💰 Ok':wa?'⚠️ Atenção':'🛑 Limite';
@@ -8433,7 +8435,9 @@ function renderPessResumo(){
     if(!aReceber&&!c.totalF&&!c.totalG&&!c.totalD&&!c.vg&&!c.pendIF)return;
     const isPassado=_idxMesContas(m)<_idxMesAtualP;
     // Meses passados: contas já foram pagas na época — não mostrar como pendente
-    if(m!==_mesMesAtualP){c.pendG=0;}
+    // (meses futuros continuam mostrando o pendente real, senão fica parecendo
+    // que já está tudo pago sem nem ter chegado o mês)
+    if(isPassado){c.pendG=0;}
     const ok=c.sobrou>300,no=c.sobrou<0;
     const bdg=ok?'fin-badge-ok':no?'fin-badge-no':'fin-badge-wa';
     const st=ok?'💰 Ok':no?'🛑 Limite':'⚠️ Atenção';
