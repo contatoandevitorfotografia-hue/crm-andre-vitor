@@ -2600,7 +2600,7 @@ td { padding: 13px 16px; font-size: 13.5px; }
       </div>
       <div class="fs">
         <div class="fs-title">👤 Cliente</div>
-        <div class="fg"><input type="text" id="f-alb-cliente" placeholder="Nome do cliente..."></div>
+        <div class="fg"><select id="f-alb-cliente"><option value="">Sem cliente vinculado</option></select></div>
       </div>
       <div class="fs">
         <div class="fs-title">📸 Fotos Escolhidas</div>
@@ -2819,6 +2819,10 @@ td { padding: 13px 16px; font-size: 13.5px; }
       <div class="cl-det-layout">
         <div class="cl-det-profile"><div class="fs-title" style="margin-bottom:14px">👤 Perfil</div><div id="cl-det-info"></div></div>
         <div class="cl-det-hist"><div class="fs-title" style="margin-bottom:14px">📋 Histórico de Eventos</div><div id="cl-det-history"></div></div>
+      </div>
+      <div style="margin-top:22px" id="cl-det-albuns-wrap">
+        <div class="fs-title" style="margin-bottom:12px">📒 Álbuns</div>
+        <div id="cl-det-albuns"></div>
       </div>
       <div style="margin-top:22px">
         <div class="fs-title" style="margin-bottom:12px">📄 Contratos</div>
@@ -3606,6 +3610,11 @@ function albCardHTML(c,cc){
 function fillAlbColSelect(selected){
   document.getElementById('f-alb-col').innerHTML=_visibleCols('alb',ALB_COLS).map(c=>`<option value="${c.id}"${c.id===selected?' selected':''}>${c.emoji} ${c.name}</option>`).join('');
 }
+function fillAlbClienteSelect(selectedId){
+  const sel=document.getElementById('f-alb-cliente');if(!sel)return;
+  sel.innerHTML='<option value="">Sem cliente vinculado</option>'+[...clients].sort((a,b)=>(a.nome||'').localeCompare(b.nome||'')).map(c=>`<option value="${c.id}">${esc(c.nome)}</option>`).join('');
+  sel.value=selectedId||'';
+}
 function openAlbModal(cardId,defaultCol,event){
   if(event)event.stopPropagation();
   editingAlbId=cardId;
@@ -3615,7 +3624,7 @@ function openAlbModal(cardId,defaultCol,event){
   document.getElementById('btn-alb-transfer').style.display=card?'inline-flex':'none';
   fillAlbColSelect(card?card.coluna:(defaultCol||'alb-selecao'));
   document.getElementById('f-alb-titulo').value=card?.titulo||'';
-  document.getElementById('f-alb-cliente').value=card?.cliente||'';
+  fillAlbClienteSelect(card?.clienteId||'');
   document.getElementById('f-alb-fotoCapa').value=card?.fotoCapa||'';
   document.getElementById('f-alb-fotoContracapa').value=card?.fotoContracapa||'';
   document.getElementById('f-alb-obs').value=card?.obs||'';
@@ -3787,11 +3796,14 @@ function saveAlbCard(){
   const titulo=document.getElementById('f-alb-titulo').value.trim();
   if(!titulo){toast('⚠️ Informe o nome do álbum!','orange');return}
   const oldCard=editingAlbId?albCards.find(c=>c.id===editingAlbId):null;
+  const clienteId=document.getElementById('f-alb-cliente').value||'';
+  const clienteSel=clienteId?clients.find(c=>c.id===clienteId):null;
   const data={
     id:editingAlbId||uid(),
     coluna:document.getElementById('f-alb-col').value,
     titulo,
-    cliente:document.getElementById('f-alb-cliente').value.trim(),
+    clienteId,
+    cliente:clienteSel?clienteSel.nome:(oldCard?.cliente||''),
     fotoCapa:document.getElementById('f-alb-fotoCapa').value.trim(),
     fotoContracapa:document.getElementById('f-alb-fotoContracapa').value.trim(),
     obs:document.getElementById('f-alb-obs').value.trim(),
@@ -10593,6 +10605,14 @@ function openClientDetail(clientId){
   const evs=getClientEvents(cl);const histDiv=document.getElementById('cl-det-history');
   if(!evs.length){histDiv.innerHTML=`<div style="text-align:center;padding:30px 10px;color:var(--muted)"><div style="font-size:36px;margin-bottom:10px">📭</div><div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:5px">Nenhum evento encontrado</div><div style="font-size:12px;line-height:1.6">Certifique-se que o WhatsApp <strong>${esc(cl.telefone||'(não informado)')}</strong> é o mesmo do card de Oportunidades.</div></div>`}
   else{const sorted=[...evs].sort((a,b)=>!a.dataEvento?1:!b.dataEvento?-1:new Date(b.dataEvento)-new Date(a.dataEvento));histDiv.innerHTML=sorted.map(ev=>{const col=OP_COLS.find(c=>c.id===ev.coluna);return `<div class="hist-item" style="--cc:${col?.color||'#a98be0'}" onclick="openOpModal('${ev.id}',null,event);closeMo('mo-cl-det')"><div class="hist-top"><div><div class="hist-date">📅 ${ev.dataEvento?fmtDate(ev.dataEvento):'Sem data'}${ev.horario?' às '+ev.horario:''}</div><div class="hist-event">${esc(ev.titulo||_nomesCriancas(ev)||ev.tipo||'Evento sem nome')}</div><div class="hist-meta">${ev.tipo?esc(ev.tipo):''}${ev.local?' · 📍 '+esc(ev.local):''}${ev.pacoteCustom?' · '+esc(ev.pacoteCustom):''}</div>${ev.galeria?`<div style="margin-top:4px"><a href="${esc(ev.galeria)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="font-size:12px;font-weight:700;color:var(--primary)">🔗 Ver Galeria</a></div>`:''}${_pagamentoHistLabel(ev)}</div><div class="hist-right">${ev.valorTotal?`<div class="hist-valor">${fmtMoney(ev.valorTotal)}</div>`:''}<span class="hist-phase" style="background:${col?.color||'#a98be0'}22;color:${col?.color||'#a98be0'}">${col?.emoji||''} ${col?.name||ev.coluna}</span></div></div></div>`}).join('')}
+  const albsCl=albCards.filter(a=>a.clienteId===cl.id);
+  const albWrap=document.getElementById('cl-det-albuns-wrap');
+  if(albWrap)albWrap.style.display=albsCl.length?'':'none';
+  const albDiv=document.getElementById('cl-det-albuns');
+  if(albDiv)albDiv.innerHTML=albsCl.map(a=>{
+    const col=ALB_COLS.find(c=>c.id===a.coluna);
+    return`<div class="hist-item" style="--cc:${col?.color||'#a98be0'}" onclick="openAlbModal('${a.id}',null,event);closeMo('mo-cl-det')"><div class="hist-top"><div><div class="hist-event">${esc(a.titulo)}</div>${(a.fotoCapa||a.fotoContracapa)?`<div class="hist-meta">📸 ${a.fotoCapa?'Capa: '+esc(a.fotoCapa):''}${a.fotoCapa&&a.fotoContracapa?' · ':''}${a.fotoContracapa?'Contracapa: '+esc(a.fotoContracapa):''}</div>`:''}</div><div class="hist-right"><span class="hist-phase" style="background:${col?.color||'#a98be0'}22;color:${col?.color||'#a98be0'}">${col?.emoji||''} ${col?.name||a.coluna}</span></div></div></div>`;
+  }).join('');
   renderClientContracts(cl,evs);renderClientNotes(cl);document.getElementById('mo-cl-det').classList.remove('hidden');
 }
 function editCurrentClient(){closeMo('mo-cl-det');setTimeout(()=>openClientModal(viewingClId),120)}
