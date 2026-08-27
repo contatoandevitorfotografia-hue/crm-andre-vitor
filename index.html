@@ -2603,6 +2603,13 @@ td { padding: 13px 16px; font-size: 13.5px; }
         <div class="fg"><input type="text" id="f-alb-cliente" placeholder="Nome do cliente..."></div>
       </div>
       <div class="fs">
+        <div class="fs-title">📸 Fotos Escolhidas</div>
+        <div class="g2">
+          <div class="fg"><label>Capa</label><input type="text" id="f-alb-fotoCapa" placeholder="Ex: 042"></div>
+          <div class="fg"><label>Contracapa</label><input type="text" id="f-alb-fotoContracapa" placeholder="Ex: 057"></div>
+        </div>
+      </div>
+      <div class="fs">
         <div class="fs-title">📝 Observações</div>
         <div class="fg"><textarea id="f-alb-obs" placeholder="Detalhes do álbum, pedidos, gráfica..."></textarea></div>
       </div>
@@ -3592,6 +3599,7 @@ function albCardHTML(c,cc){
     <div class="pc-name">${esc(c.titulo||'Sem título')}</div>
     ${c.cliente?`<div class="pc-child">👤 ${esc(c.cliente)}</div>`:''}
     ${c.dataEvento?`<div class="pc-date">📅 ${fmtDate(c.dataEvento)}</div>`:''}
+    ${(c.fotoCapa||c.fotoContracapa)?`<div style="font-size:11px;font-weight:700;color:#E0A14E;margin-top:5px">📸 ${c.fotoCapa?'Capa: '+esc(c.fotoCapa):''}${c.fotoCapa&&c.fotoContracapa?' · ':''}${c.fotoContracapa?'Contracapa: '+esc(c.fotoContracapa):''}</div>`:''}
     ${c.obs?`<div style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.4">${esc(c.obs.slice(0,80))}${c.obs.length>80?'…':''}</div>`:''}
   </div>`;
 }
@@ -3608,6 +3616,8 @@ function openAlbModal(cardId,defaultCol,event){
   fillAlbColSelect(card?card.coluna:(defaultCol||'alb-selecao'));
   document.getElementById('f-alb-titulo').value=card?.titulo||'';
   document.getElementById('f-alb-cliente').value=card?.cliente||'';
+  document.getElementById('f-alb-fotoCapa').value=card?.fotoCapa||'';
+  document.getElementById('f-alb-fotoContracapa').value=card?.fotoContracapa||'';
   document.getElementById('f-alb-obs').value=card?.obs||'';
   document.getElementById('mo-alb').classList.remove('hidden');
   document.getElementById('f-alb-titulo').focus();
@@ -3782,6 +3792,8 @@ function saveAlbCard(){
     coluna:document.getElementById('f-alb-col').value,
     titulo,
     cliente:document.getElementById('f-alb-cliente').value.trim(),
+    fotoCapa:document.getElementById('f-alb-fotoCapa').value.trim(),
+    fotoContracapa:document.getElementById('f-alb-fotoContracapa').value.trim(),
     obs:document.getElementById('f-alb-obs').value.trim(),
     dataEvento:oldCard?.dataEvento||'',
     criadoEm:oldCard?.criadoEm||Date.now(),
