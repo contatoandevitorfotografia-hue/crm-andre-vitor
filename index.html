@@ -3608,13 +3608,13 @@ function albCardHTML(c,cc){
       🏷️ Tag encomendada
     </label>
     ${(c.fotoCapa||c.fotoContracapa)?`<div style="font-size:11px;font-weight:700;color:#E0A14E;margin-top:5px">📸 ${c.fotoCapa?'Capa: '+esc(c.fotoCapa):''}${c.fotoCapa&&c.fotoContracapa?' · ':''}${c.fotoContracapa?'Contracapa: '+esc(c.fotoContracapa):''}</div>`:''}
-    ${c.obs?`<div style="font-size:11px;font-weight:700;color:#E0A14E;background:#2e2213;border:1px solid #5c4a26;border-radius:6px;padding:6px 8px;margin-top:6px;line-height:1.4">📌 ${esc(c.obs.slice(0,80))}${c.obs.length>80?'…':''}</div>`:''}
+    ${c.obs?`<div style="font-size:11px;font-weight:700;color:${c.tagEncomendada?'var(--muted)':'#E0A14E'};background:${c.tagEncomendada?'var(--n50)':'#2e2213'};border:1px solid ${c.tagEncomendada?'var(--border)':'#5c4a26'};border-radius:6px;padding:6px 8px;margin-top:6px;line-height:1.4;${c.tagEncomendada?'text-decoration:line-through':''}">📌 ${esc(c.obs.slice(0,80))}${c.obs.length>80?'…':''}</div>`:''}
   </div>`;
 }
 function toggleAlbTag(id,val){
   const c=albCards.find(a=>a.id===id);if(!c)return;
   c.tagEncomendada=val;c.updatedAt=Date.now();
-  savAlb();
+  savAlb();renderAlb();
 }
 function fillAlbColSelect(selected){
   document.getElementById('f-alb-col').innerHTML=_visibleCols('alb',ALB_COLS).map(c=>`<option value="${c.id}"${c.id===selected?' selected':''}>${c.emoji} ${c.name}</option>`).join('');
