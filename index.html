@@ -1347,6 +1347,27 @@ td { padding: 13px 16px; font-size: 13.5px; }
 @media(prefers-reduced-motion:reduce){
   #mo-contract *,#mo-contract *::before,#mo-contract *::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
 }
+/* ── Calendário customizado (substitui o seletor nativo de <input type="date">,
+   que em alguns navegadores — Safari incluso — só abre clicando bem no
+   ícone, dando a impressão de que "não abre nada" e obrigando a digitar) ── */
+input[type="date"]{cursor:pointer}
+.dp-cal{position:fixed;z-index:10000;background:var(--surface,#1a1f27);border:1.5px solid var(--border,#2a3140);border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,.5);padding:10px;width:240px;font-family:'Montserrat',sans-serif;animation:dpPop .12s ease}
+@keyframes dpPop{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.dp-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding:0 2px}
+.dp-hdr span{font-size:13px;font-weight:700;color:var(--n900,#e5e9f0);text-transform:capitalize}
+.dp-hdr button{background:none;border:none;color:var(--muted,#8a95a5);font-size:16px;font-weight:700;cursor:pointer;padding:2px 8px;border-radius:6px;line-height:1}
+.dp-hdr button:hover{background:var(--n100,#242b38);color:var(--n900,#e5e9f0)}
+.dp-week{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:2px}
+.dp-week span{text-align:center;font-size:10px;font-weight:700;color:var(--muted,#8a95a5);padding:2px 0}
+.dp-days{display:grid;grid-template-columns:repeat(7,1fr);gap:1px}
+.dp-days span{display:flex;align-items:center;justify-content:center;height:28px;font-size:12px;font-weight:600;color:var(--n900,#e5e9f0);border-radius:7px;cursor:pointer}
+.dp-days span:empty{cursor:default}
+.dp-days span:not(:empty):hover{background:var(--n100,#242b38)}
+.dp-days .dp-hoje{color:var(--primary,#2C7A7B);font-weight:800}
+.dp-days .dp-sel{background:var(--primary,#2C7A7B);color:#fff}
+.dp-ftr{display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--border,#2a3140)}
+.dp-ftr button{background:none;border:none;font-size:11px;font-weight:700;color:var(--primary,#2C7A7B);cursor:pointer;padding:4px 6px}
+.dp-ftr button:hover{text-decoration:underline}
 </style>
 </head>
 <body>
@@ -12614,6 +12635,94 @@ function _verificarLembreteAnaP(){
   );
   _enviarPushMobile('🏠 Dia 20 — Cobrar!','Cobrar Ana e Pedro pelo apartamento.','dia20');
 }
+
+// ══════════════════════════════════════════════
+// CALENDÁRIO CUSTOMIZADO — vale pra todo <input type="date"> do CRM
+// ══════════════════════════════════════════════
+// O seletor nativo do navegador é inconsistente (no Safari, por exemplo,
+// só abre clicando exatamente no iconezinho — clicar no resto do campo só
+// deixa digitar na mão). Em vez de mexer em cada campo de data um por um,
+// intercepta o clique em QUALQUER <input type="date"> da tela e mostra
+// esse calendário próprio, que escreve de volta no mesmo input e dispara
+// 'change' — os onchange já existentes continuam funcionando sem alteração.
+let _dpEl=null,_dpInput=null,_dpYear=null,_dpMonth=null;
+const _DP_MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const _DP_DIAS=['D','S','T','Q','Q','S','S'];
+function _closeDatePicker(){
+  if(_dpEl){_dpEl.remove();_dpEl=null;}
+  _dpInput=null;
+  document.removeEventListener('mousedown',_dpOutsideClick,true);
+  document.removeEventListener('keydown',_dpEscClose,true);
+}
+function _dpOutsideClick(e){
+  if(_dpEl&&!_dpEl.contains(e.target)&&e.target!==_dpInput)_closeDatePicker();
+}
+function _dpEscClose(e){if(e.key==='Escape')_closeDatePicker();}
+function _openDatePicker(inp){
+  if(_dpInput===inp){_closeDatePicker();return;}
+  _closeDatePicker();
+  _dpInput=inp;
+  const cur=inp.value?new Date(inp.value+'T12:00:00'):new Date();
+  _dpYear=cur.getFullYear();_dpMonth=cur.getMonth();
+  _dpEl=document.createElement('div');
+  _dpEl.className='dp-cal';
+  document.body.appendChild(_dpEl);
+  _renderDatePicker();
+  const r=inp.getBoundingClientRect();
+  const maxLeft=window.innerWidth-248;
+  _dpEl.style.left=Math.max(4,Math.min(r.left,maxLeft))+'px';
+  const abaixo=r.bottom+260<window.innerHeight;
+  _dpEl.style.top=(abaixo?r.bottom+4:r.top-266)+'px';
+  setTimeout(()=>{
+    document.addEventListener('mousedown',_dpOutsideClick,true);
+    document.addEventListener('keydown',_dpEscClose,true);
+  },0);
+}
+function _dpNav(delta){
+  _dpMonth+=delta;
+  if(_dpMonth<0){_dpMonth=11;_dpYear--;}
+  if(_dpMonth>11){_dpMonth=0;_dpYear++;}
+  _renderDatePicker();
+}
+function _dpSetInputValue(ds){
+  if(!_dpInput)return;
+  _dpInput.value=ds;
+  _dpInput.dispatchEvent(new Event('input',{bubbles:true}));
+  _dpInput.dispatchEvent(new Event('change',{bubbles:true}));
+  _closeDatePicker();
+}
+function _dpPick(ds){_dpSetInputValue(ds);}
+function _dpClear(){_dpSetInputValue('');}
+function _dpHoje(){_dpSetInputValue(new Date().toISOString().slice(0,10));}
+function _renderDatePicker(){
+  if(!_dpEl)return;
+  const hoje=new Date().toISOString().slice(0,10);
+  const selecionado=_dpInput?.value||'';
+  const first=new Date(_dpYear,_dpMonth,1).getDay();
+  const totalDias=new Date(_dpYear,_dpMonth+1,0).getDate();
+  let dias='';
+  for(let i=0;i<first;i++)dias+=`<span></span>`;
+  for(let d=1;d<=totalDias;d++){
+    const ds=`${_dpYear}-${String(_dpMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isHoje=ds===hoje,isSel=ds===selecionado;
+    dias+=`<span class="${isSel?'dp-sel':isHoje?'dp-hoje':''}" onclick="_dpPick('${ds}')">${d}</span>`;
+  }
+  _dpEl.innerHTML=`
+    <div class="dp-hdr">
+      <button type="button" onclick="_dpNav(-1)">‹</button>
+      <span>${_DP_MESES[_dpMonth]} ${_dpYear}</span>
+      <button type="button" onclick="_dpNav(1)">›</button>
+    </div>
+    <div class="dp-week">${_DP_DIAS.map(d=>`<span>${d}</span>`).join('')}</div>
+    <div class="dp-days">${dias}</div>
+    <div class="dp-ftr"><button type="button" onclick="_dpClear()">Limpar</button><button type="button" onclick="_dpHoje()">Hoje</button></div>`;
+}
+document.addEventListener('mousedown',e=>{
+  const inp=e.target.closest('input[type="date"]');
+  if(!inp||inp.disabled)return;
+  e.preventDefault();
+  _openDatePicker(inp);
+});
 
 // Checar ao carregar e a cada minuto
 function _initTarefasChecks(){
