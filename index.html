@@ -3758,20 +3758,20 @@ function confirmTransfer(){
       const destIsAlb=dest==='alb';
       if(destIsAlb){
         const novo=kind==='alb'?{...card,id:uid(),coluna:col,criadoEm:Date.now(),updatedAt:Date.now()}:prToAlbData(card,col);
-        if(mode==='copiar'){novo.copiaDe=card.id;albCards.push(novo);}
-        else if(kind==='alb'){card.coluna=col;card.updatedAt=Date.now();}
-        else{albCards.push(novo);prCards=prCards.filter(c=>c.id!==id);savPr();}
+        if(mode==='copiar'){novo.copiaDe=card.id;albCards.push(novo);_syncAlbMontarPendencia(novo);}
+        else if(kind==='alb'){card.coluna=col;card.updatedAt=Date.now();_syncAlbMontarPendencia(card);}
+        else{albCards.push(novo);prCards=prCards.filter(c=>c.id!==id);savPr();_syncAlbMontarPendencia(novo);}
         savAlb();
       }else{
         const novo=kind==='alb'?albToPrData(card,col):{...card,id:uid(),coluna:col,criadoEm:Date.now(),updatedAt:Date.now()};
         if(mode==='copiar'){novo.copiaDe=card.id;prCards.push(novo);}
-        else if(kind==='alb'){prCards.push(novo);albCards=albCards.filter(c=>c.id!==id);savAlb();}
+        else if(kind==='alb'){prCards.push(novo);albCards=albCards.filter(c=>c.id!==id);savAlb();pendencias=pendencias.filter(p=>p._albCardId!==id);savPen();}
         else{card.coluna=col;card.updatedAt=Date.now();}
         savPr();
       }
       closeMo('mo-trf');
       closeMo(kind==='alb'?'mo-alb':'mo-pr');
-      renderPr();renderAlb();renderAgenda();
+      renderPr();renderAlb();renderAgenda();renderPendencias();
       switchProjTab(destIsAlb?'alb':dest);
       toast(`${di.emoji} ${mode==='copiar'?'Cópia criada em':'Movido para'} ${di.label}!`,'green');
     }
@@ -3800,7 +3800,24 @@ function saveAlbCard(){
     updatedAt:Date.now()
   };
   if(editingAlbId){const i=albCards.findIndex(c=>c.id===editingAlbId);if(i!==-1)albCards[i]=data;else albCards.push(data)}else albCards.push(data);
-  savAlb();closeMo('mo-alb');try{renderAlb();}catch(err){console.error(err);}toast('📒 Álbum salvo!','green');
+  savAlb();_syncAlbMontarPendencia(data);closeMo('mo-alb');try{renderAlb();renderPendencias();}catch(err){console.error(err);}toast('📒 Álbum salvo!','green');
+}
+// Entrar na coluna "Montar álbum" (por arraste ou pelo seletor de Fase)
+// cria automaticamente uma Pendência de cliente lembrando de montar esse
+// álbum; sair dela remove a pendência vinculada (o trabalho já não está
+// mais "esperando ser montado").
+function _syncAlbMontarPendencia(card){
+  const jaExiste=pendencias.find(p=>p._albCardId===card.id);
+  if(card.coluna==='alb-montar'){
+    if(jaExiste)return;
+    pendencias.unshift({id:uid(),texto:`🖼️ Montar álbum — ${card.titulo}`,clienteNome:card.cliente||'',
+      prazo:'',hora:'',status:'pendente',criadoEm:Date.now(),
+      rec:{ativa:false,tipo:'semanal',dias:[],diaMes:null},_albCardId:card.id});
+    savPen();
+  }else if(jaExiste){
+    pendencias=pendencias.filter(p=>p._albCardId!==card.id);
+    savPen();
+  }
 }
 
 function switchTab(tab,btn){
@@ -4476,6 +4493,7 @@ function onDrop(e,board,targetCol){
   }else if(board==='alb'){
     const card=albCards.find(c=>c.id===id);if(!card||card.coluna===targetCol)return;
     card.coluna=targetCol;card.updatedAt=Date.now();savAlb();renderAlb();
+    _syncAlbMontarPendencia(card);renderPendencias();
     const col=ALB_COLS.find(c=>c.id===targetCol);toast(`${col.emoji} Movido para ${col.name}`,'green');
   }
 }
@@ -10405,7 +10423,7 @@ function confirmDel(type){
   openCfm('Excluir?','Esta ação não pode ser desfeita.',()=>{
     if(type==='op'){const delId=editingOpId;opCards=opCards.filter(c=>c.id!==delId);MESES_FIN.forEach(m=>{if(pessFD[m])pessFD[m]=pessFD[m].filter(e=>e._opId!==delId&&e._opFrlId!==delId)});pendencias=pendencias.filter(p=>p._parcelaOpId!==delId);savPen();savOp();savePessData();renderOp();renderPr();renderFin();renderAgenda();renderPendencias();closeMo('mo-op')}
     else if(type==='pr'){prCards=prCards.filter(c=>c.id!==editingPrId);savPr();renderPr();renderAgenda();closeMo('mo-pr')}
-    else if(type==='alb'){albCards=albCards.filter(c=>c.id!==editingAlbId);savAlb();renderAlb();closeMo('mo-alb')}
+    else if(type==='alb'){const delId=editingAlbId;albCards=albCards.filter(c=>c.id!==delId);pendencias=pendencias.filter(p=>p._albCardId!==delId);savPen();savAlb();renderAlb();renderPendencias();closeMo('mo-alb')}
     else if(type==='pac'){packages=packages.filter(p=>p.id!==editingPacId);savPac();renderPac();closeMo('mo-pac')}
     else if(type==='frl'){freelancers=freelancers.filter(f=>f.id!==editingFrlId);savFrl();renderFrl();closeMo('mo-frl')}
     else if(type==='cl'){clients=clients.filter(c=>c.id!==editingClId);savCl();renderClientes();closeMo('mo-cl')}
@@ -10427,7 +10445,7 @@ function abrirOrcamento(id){
   if(c.telefone)    params.set('tel',     c.telefone);
   window.open(base + '?' + params.toString(), '_blank');
 }
-function qDel(board,id,event){event.stopPropagation();openCfm('Excluir?','Esta ação não pode ser desfeita.',()=>{if(board==='op'){opCards=opCards.filter(c=>c.id!==id);MESES_FIN.forEach(m=>{if(pessFD[m])pessFD[m]=pessFD[m].filter(e=>e._opId!==id&&e._opFrlId!==id)});savOp();savePessData();renderOp();renderPr();renderFin();renderAgenda()}else if(board==='pr'){prCards=prCards.filter(c=>c.id!==id);savPr();renderPr();renderAgenda()}else if(board==='alb'){albCards=albCards.filter(c=>c.id!==id);savAlb();renderAlb()}toast('🗑️ Removido','')})}
+function qDel(board,id,event){event.stopPropagation();openCfm('Excluir?','Esta ação não pode ser desfeita.',()=>{if(board==='op'){opCards=opCards.filter(c=>c.id!==id);MESES_FIN.forEach(m=>{if(pessFD[m])pessFD[m]=pessFD[m].filter(e=>e._opId!==id&&e._opFrlId!==id)});savOp();savePessData();renderOp();renderPr();renderFin();renderAgenda()}else if(board==='pr'){prCards=prCards.filter(c=>c.id!==id);savPr();renderPr();renderAgenda()}else if(board==='alb'){albCards=albCards.filter(c=>c.id!==id);pendencias=pendencias.filter(p=>p._albCardId!==id);savPen();savAlb();renderAlb();renderPendencias()}toast('🗑️ Removido','')})}
 function getClientEvents(cl){if(!cl.telefone)return[];const tel=cl.telefone.replace(/\D/g,'');return opCards.filter(c=>c.telefone&&c.telefone.replace(/\D/g,'')===tel)}
 function getClientTags(cl){
   const raw=(cl.tags||'').toLowerCase().match(/#[\w\u00C0-\u024F]+/g)||[];
