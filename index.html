@@ -2501,6 +2501,10 @@ input[type="date"]{cursor:pointer}
       <div class="fs" id="sec-obs">
         <div class="fs-title">📝 Observações</div>
         <div class="fg"><textarea id="f-obs" placeholder="Pedidos especiais, detalhes, anotações..."></textarea></div>
+        <div id="f-obs-cl-notes" style="display:none;margin-top:10px">
+          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">📌 Notas da Ficha do Cliente</div>
+          <div id="f-obs-cl-notes-list" style="display:flex;flex-direction:column;gap:6px"></div>
+        </div>
       </div>
       <div class="fs" id="sec-pendencias">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
@@ -4576,6 +4580,7 @@ function selectClient(clientId){
   const cl=clients.find(c=>c.id===clientId);if(!cl)return;
   document.getElementById('f-nomePais').value=cl.nome||'';
   document.getElementById('f-tel').value=cl.telefone||'';
+  _renderOpClienteNotes(cl.telefone);
   document.getElementById('cl-selected-name').textContent='👤 '+cl.nome;
   document.getElementById('cl-selected-badge').style.display='flex';
   document.getElementById('cl-search-input').value='';
@@ -4676,6 +4681,7 @@ function focusPacChips(){
 function fillPacSelect(){ renderPacChips(); }
 function clearOpForm(){
   ['f-titulo','f-nomePais','f-tel','f-nomeCrianca','f-idade','f-nomeCrianca2','f-idade2','f-data','f-horario','f-horarioFim','f-local','f-tipo','f-pacoteCustom','f-galeria','f-galeriaClienteId','f-obs','f-motivo','f-detalhe','f-pend-obs'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});
+  const _obsNotesW=document.getElementById('f-obs-cl-notes');if(_obsNotesW)_obsNotesW.style.display='none';
   document.getElementById('btn-abrir-galeria').style.display='none';
   const _bvg=document.getElementById('btn-ver-galeria');if(_bvg)_bvg.style.display='none';
   ['f-valorPlano','f-valorTotal','f-valorEmpresa','f-valorAndre','f-valorReserva','f-valorRestante','f-gastos','f-valorCores'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});const _fvp=document.getElementById('f-valorPlano');if(_fvp)_fvp.dataset.auto='1';const _vcW=document.getElementById('f-valor-cores-wrap');if(_vcW)_vcW.style.display='none';gastosItensTemp=[];renderGastosItens();parcelasItensTemp=[];renderParcelasItens();_gastoTipo='empresa';setGastoTipo('empresa');_albumGuardado=false;_renderAlbumGuardadoBtn();const _cpE=document.getElementById('f-pagoEmpresa');if(_cpE)_cpE.checked=false;const _cpA=document.getElementById('f-pagoAndre');if(_cpA)_cpA.checked=false;
@@ -4740,6 +4746,21 @@ function addPendenciaCustom(){
   pendenciasTemp.push({id:uid(),label,done:false});inp.value='';renderPendList();
 }
 function addPendencia(){addPendenciaCustom();}
+// Mostra, dentro da ficha da festa, as anotações já feitas na Ficha do
+// Cliente (mesmo cliente vinculado pelo telefone) — só como referência,
+// sem misturar com o campo Observações (que é livre e específico do card).
+function _renderOpClienteNotes(telefone){
+  const wrap=document.getElementById('f-obs-cl-notes');if(!wrap)return;
+  const tel=(telefone||'').replace(/\D/g,'');
+  const cl=tel?clients.find(c=>c.telefone&&c.telefone.replace(/\D/g,'')===tel):null;
+  const notes=cl?.notes||[];
+  if(!notes.length){wrap.style.display='none';return;}
+  wrap.style.display='';
+  document.getElementById('f-obs-cl-notes-list').innerHTML=notes.map(n=>`<div style="background:var(--n50);border:1px solid var(--border);border-radius:8px;padding:7px 10px">
+    <div style="font-size:10px;color:var(--muted);margin-bottom:2px">${fmtDate(n.date)}</div>
+    <div style="font-size:12px;color:var(--n700)">${esc(n.text)}</div>
+  </div>`).join('');
+}
 function openOpModal(cardId,defaultCol,event,fromProj){
   if(event)event.stopPropagation();editingOpId=cardId;opFromProj=!!fromProj;
   const card=cardId?opCards.find(c=>c.id===cardId):null;
@@ -4812,6 +4833,7 @@ function openOpModal(cardId,defaultCol,event,fromProj){
     parcelasItensTemp=[...(card.parcelasItens||[])];
     onFormaPagChange();renderParcelasItens();
     document.getElementById('f-obs').value=card.obs||'';
+    _renderOpClienteNotes(card.telefone);
     const galEl=document.getElementById('f-galeria');galEl.value=card.galeria||'';
     document.getElementById('btn-abrir-galeria').style.display=card.galeria?'inline-flex':'none';
     const galCidEl=document.getElementById('f-galeriaClienteId');if(galCidEl)galCidEl.value=card.galeriaClienteId||'';
