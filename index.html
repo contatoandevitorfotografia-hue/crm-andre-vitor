@@ -4049,6 +4049,7 @@ function opCardHTML(c,cc){
     ${_getCriancas(c).map(crianca=>`<div class="c-child">🎈 <strong>${esc(crianca.nome)}</strong>${crianca.idade?' · '+esc(crianca.idade):''}</div>`).join('')}
     ${lost}${pendNote}
     ${c.local?`<div style="font-size:11px;color:var(--muted);margin-top:3px">📍 ${esc(c.local)}</div>`:''}
+    ${c.obs?`<div style="font-size:11px;font-weight:700;color:#E0A14E;background:#2e2213;border:1px solid #5c4a26;border-radius:6px;padding:6px 8px;margin-top:5px;line-height:1.4">📌 ${esc(c.obs.slice(0,100))}${c.obs.length>100?'…':''}</div>`:''}
     <div class="c-footer">
       ${dateStr?`<span class="c-date">📅 ${dateStr}${c.horario?' · '+c.horario:''}</span>`:'<span></span>'}
       ${valor?`<span class="c-valor">${valor}</span>`:''}
