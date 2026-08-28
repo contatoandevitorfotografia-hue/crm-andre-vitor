@@ -3629,8 +3629,17 @@ function albCardHTML(c,cc){
       🏷️ Tag encomendada
     </label>
     ${(c.fotoCapa||c.fotoContracapa)?`<div style="font-size:11px;font-weight:700;color:#E0A14E;margin-top:5px">📸 ${c.fotoCapa?'Capa: '+esc(c.fotoCapa):''}${c.fotoCapa&&c.fotoContracapa?' · ':''}${c.fotoContracapa?'Contracapa: '+esc(c.fotoContracapa):''}</div>`:''}
+    ${c.coluna==='alb-grafica'?`<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:6px;font-size:11px;font-weight:700;color:#4E7C84" onclick="event.stopPropagation()">
+      📬 Previsão de chegada:
+      <input type="date" value="${c.previsaoChegada||''}" onchange="setAlbPrevisao('${c.id}',this.value)" style="background:var(--n50);border:1px solid var(--border);border-radius:6px;padding:2px 6px;color:var(--n900);font-size:11px;font-weight:700">
+    </div>`:''}
     ${c.obs?`<div style="font-size:11px;font-weight:700;color:#E0A14E;background:#2e2213;border:1px solid #5c4a26;border-radius:6px;padding:6px 8px;margin-top:6px;line-height:1.4">📌 ${esc(c.obs.slice(0,80))}${c.obs.length>80?'…':''}</div>`:''}
   </div>`;
+}
+function setAlbPrevisao(id,val){
+  const c=albCards.find(a=>a.id===id);if(!c)return;
+  c.previsaoChegada=val;c.updatedAt=Date.now();
+  savAlb();
 }
 function toggleAlbTag(id,val){
   const c=albCards.find(a=>a.id===id);if(!c)return;
