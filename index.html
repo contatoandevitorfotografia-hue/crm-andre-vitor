@@ -4027,7 +4027,10 @@ function opCardHTML(c,cc){
     const _es=calcEmpresaShare(c);
     const _ge=(c.gastosItens||[]).filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
     const _liq=Math.max(0,_es-_ge);
-    liqBadge=`<span class="pend-badge ok" style="background:#13251c;color:#7fd99a" title="Valor líquido após os gastos do evento">🟢 Líquido: ${fmtMoney(_liq)}</span>`;
+    const _as=calcAndreShare(c);
+    const _gp=(c.gastosItens||[]).filter(g=>g.tipo==='pessoal').reduce((s,g)=>s+(g.val||0),0);
+    const _aliq=Math.max(0,_as-_gp);
+    liqBadge=`<span class="pend-badge ok" style="background:#13251c;color:#7fd99a" title="Valor líquido da Empresa, após os gastos do evento">🟢 Empresa: ${fmtMoney(_liq)}</span> <span class="pend-badge ok" style="background:#1D2630;color:#7D95AE" title="Valor líquido do André, após os gastos do evento">🔵 André: ${fmtMoney(_aliq)}</span>`;
   }
   const isNewLead = c.origem === 'landpage' && c.coluna === 'novo-contato';
   const isSouFreela = c.tipoExecucao === 'sou-freela';
