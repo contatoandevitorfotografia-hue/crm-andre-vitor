@@ -4988,9 +4988,9 @@ function renderGastosItens(){
   const empresa=gastosItensTemp.map((g,i)=>({...g,_i:i})).filter(g=>(g.tipo||'empresa')==='empresa');
   const pessoal=gastosItensTemp.map((g,i)=>({...g,_i:i})).filter(g=>g.tipo==='pessoal');
   const album=gastosItensTemp.map((g,i)=>({...g,_i:i})).filter(g=>g.tipo==='album');
-  const rowHTML=(g)=>{const isAlbum=g.tipo==='album';const isPes=g.tipo==='pessoal';const bg=isPes?'#16202e':isAlbum?'#1a2e1a':'#fff';const border=isPes?'#bfdbfe':isAlbum?'#4ade80':'#5c2a26';const valColor=isPes?'#1d4ed8':isAlbum?'#22c55e':'#dc2626';const btnColor=isPes?'#1d4ed8':isAlbum?'#22c55e':'#dc2626';return`
+  const rowHTML=(g)=>{const isAlbum=g.tipo==='album';const isPes=g.tipo==='pessoal';const bg=isPes?'#16202e':isAlbum?'#1a2e1a':'#fff';const border=isPes?'#bfdbfe':isAlbum?'#4ade80':'#5c2a26';const valColor=isPes?'#1d4ed8':isAlbum?'#22c55e':'#dc2626';const btnColor=isPes?'#1d4ed8':isAlbum?'#22c55e':'#dc2626';const descColor=(isPes||isAlbum)?'var(--text)':'#1a1a1a';return`
     <div style="display:flex;align-items:center;gap:7px;background:${bg};border:1px solid ${border};border-radius:8px;padding:7px 10px;">
-      <span style="flex:1;font-size:13px;color:var(--text)">${esc(g.desc)}</span>
+      <span style="flex:1;font-size:13px;color:${descColor}">${esc(g.desc)}</span>
       <span style="font-size:13px;font-weight:700;color:${valColor};white-space:nowrap">${fmtMoney(g.val)}</span>
       <button type="button" onclick="removeGastoItem(${g._i})" style="background:none;border:none;cursor:pointer;color:${btnColor};font-size:16px;padding:0 2px;line-height:1">✕</button>
     </div>`;};
@@ -7434,6 +7434,17 @@ function saveQuickPag(cardId){
   const inp=document.getElementById('qep-input');
   const pago=parseFloat(inp?.value)||0;
   const total=(card.valorEmpresa||0)+(card.valorAndre||0)||card.valorTotal||0;
+  const _esChkQP=calcEmpresaShare(card);
+  const _geChkQP=(card.gastosItens||[]).filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
+  const _liqChkQP=Math.max(0,_esChkQP-_geChkQP);
+  if(_liqChkQP>0&&pago>_liqChkQP*1.3){
+    openCfm('Confirma esse valor?',`O líquido desta festa é ${fmtMoney(_liqChkQP)}, mas você digitou ${fmtMoney(pago)}. Tem certeza que é esse o valor pago?`,()=>_commitQuickPag(cardId,pago));
+    return;
+  }
+  _commitQuickPag(cardId,pago);
+}
+function _commitQuickPag(cardId,pago){
+  const card=opCards.find(c=>c.id===cardId);if(!card)return;
   const _valorAntesQP=card.valorReserva||0,_statusAntesQP=card.statusPag;
   _ajustaVGReservaSimples(card,pago);saveFinData();
   card.valorReserva=pago;
@@ -7501,6 +7512,19 @@ function inlineEditReserva(cardId){
 function saveInlineVR(cardId){
   const inp=document.getElementById('ievr-'+cardId);if(!inp)return;
   const val=parseFloat(inp.value)||0;
+  const card=opCards.find(c=>c.id===cardId);if(!card)return;
+  const _esChk=calcEmpresaShare(card);
+  const _geChk=(card.gastosItens||[]).filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
+  const _liqChk=Math.max(0,_esChk-_geChk);
+  // Valor digitado bem acima do líquido da festa costuma ser engano de digitação
+  // (ex: digitar o valor total da festa em vez do valor pago) — confirma antes.
+  if(_liqChk>0&&val>_liqChk*1.3){
+    openCfm('Confirma esse valor?',`O líquido desta festa é ${fmtMoney(_liqChk)}, mas você digitou ${fmtMoney(val)}. Tem certeza que é esse o valor pago?`,()=>_commitInlineVR(cardId,val));
+    return;
+  }
+  _commitInlineVR(cardId,val);
+}
+function _commitInlineVR(cardId,val){
   const card=opCards.find(c=>c.id===cardId);if(!card)return;
   const _valorAntesVR=card.valorReserva||0,_statusAntesVR=card.statusPag;
   _ajustaVGReservaSimples(card,val);saveFinData();
