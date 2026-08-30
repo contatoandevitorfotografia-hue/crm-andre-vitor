@@ -2007,21 +2007,12 @@ input[type="date"]{cursor:pointer}
         </div>
       </div>
 
-      <!-- PEDREIRO -->
-      <div class="fin-card" style="margin-top:16px;border-color:#5c5230">
-        <div class="fin-hdr" style="background:#211d12;border-bottom-color:#5c5230">
-          <h3>👷 Pedreiro</h3>
-          <span class="fin-sub">10 × R$ 2.700 · <span id="p-ped-resumo" style="font-weight:700;color:var(--accent)">—</span></span>
-        </div>
-        <div id="p-ped-boxes" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:14px 0 6px"></div>
-      </div>
-
       <!-- REFORMA COM HUGO -->
       <div class="fin-card" style="margin-top:16px;border-color:#6B5526">
         <div class="fin-hdr" style="background:#2E2616;border-bottom-color:#6B5526"><h3>🏗️ Reforma com Hugo</h3></div>
 
         <!-- RESUMO -->
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:16px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;padding:14px">
           <div style="background:var(--n50);border-radius:10px;padding:12px;text-align:center">
             <div style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Total gasto</div>
             <div id="p-ref-total-gasto" style="font-size:16px;font-weight:800;color:var(--danger)">—</div>
@@ -2040,21 +2031,34 @@ input[type="date"]{cursor:pointer}
           </div>
         </div>
 
-        <!-- GASTOS DO HUGO/ANA -->
-        <div style="margin-bottom:16px">
-          <div style="font-size:12px;font-weight:700;color:#D8A24E;margin-bottom:8px;background:#2E2616;border-radius:8px;padding:7px 12px;border-left:3px solid #6B5526">🛒 Gastos do Hugo / Ana</div>
-          <div id="p-ref-itens-lista" style="display:flex;flex-direction:column;gap:6px"></div>
-          <button class="fin-add-btn" onclick="toggleFinForm('p-refitemf')" style="margin-top:8px">+ Adicionar gasto</button>
-          <div class="fin-add-form" id="p-refitemf">
-            <div class="fin-row2">
-              <input type="text" id="p-refitem-desc" placeholder="Ex: Vaso sanitário, Tinta...">
-              <input type="number" id="p-refitem-v" placeholder="Valor (R$)" step="0.01">
-              <input type="date" id="p-refitem-dt">
+        <!-- GASTOS DO HUGO/ANA (recolhido por padrão) -->
+        <div style="padding:0 14px 14px">
+          <button type="button" id="p-ref-gastos-toggle" onclick="toggleRefGastos()" style="width:100%;display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:700;color:#D8A24E;background:#2E2616;border:none;border-radius:8px;padding:9px 12px;border-left:3px solid #6B5526;cursor:pointer;font-family:'Montserrat',sans-serif">
+            <span>🛒 Gastos do Hugo / Ana</span><span id="p-ref-gastos-arrow">▼</span>
+          </button>
+          <div id="p-ref-gastos-box" style="display:none;margin-top:8px">
+            <div id="p-ref-itens-lista" style="display:flex;flex-direction:column;gap:6px"></div>
+            <button class="fin-add-btn" onclick="toggleFinForm('p-refitemf')" style="margin-top:8px">+ Adicionar gasto</button>
+            <div class="fin-add-form" id="p-refitemf">
+              <div class="fin-row2">
+                <input type="text" id="p-refitem-desc" placeholder="Ex: Vaso sanitário, Tinta...">
+                <input type="number" id="p-refitem-v" placeholder="Valor (R$)" step="0.01">
+                <input type="date" id="p-refitem-dt">
+              </div>
+              <button class="fin-save-btn" onclick="saveRefItem()">Salvar</button>
+              <button class="fin-cancel-btn" onclick="toggleFinForm('p-refitemf')">Cancelar</button>
             </div>
-            <button class="fin-save-btn" onclick="saveRefItem()">Salvar</button>
-            <button class="fin-cancel-btn" onclick="toggleFinForm('p-refitemf')">Cancelar</button>
           </div>
         </div>
+      </div>
+
+      <!-- PEDREIRO -->
+      <div class="fin-card" style="margin-top:16px;border-color:#5c5230">
+        <div class="fin-hdr" style="background:#211d12;border-bottom-color:#5c5230">
+          <h3>👷 Pedreiro</h3>
+          <span class="fin-sub">10 × R$ 2.700 · <span id="p-ped-resumo" style="font-weight:700;color:var(--accent)">—</span></span>
+        </div>
+        <div id="p-ped-boxes" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:14px 0 6px"></div>
       </div>
 
     </div>
@@ -10244,6 +10248,13 @@ function toggleRefPend(i,val){
   toast(val?'✅ Pago! Entrou no total gasto.':'↩️ Desmarcado','green');
 }
 function delRefPend(i){if(!confirm('Excluir pendência?'))return;pessRefPend.splice(i,1);savePessData();renderRefPend();renderPessAlug();}
+function toggleRefGastos(){
+  const box=document.getElementById('p-ref-gastos-box');const arrow=document.getElementById('p-ref-gastos-arrow');
+  if(!box)return;
+  const open=box.style.display==='none';
+  box.style.display=open?'':'none';
+  if(arrow)arrow.textContent=open?'▲':'▼';
+}
 function saveRefItem(){
   const desc=document.getElementById('p-refitem-desc').value.trim();
   const v=parseFloat(document.getElementById('p-refitem-v').value)||0;
