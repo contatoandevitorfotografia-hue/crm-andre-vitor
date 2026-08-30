@@ -335,6 +335,7 @@ select{background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;c
         <div class="lst-add-row">
           <input type="text" id="lst-pen-inp" placeholder="Nova pendência com cliente..." onkeydown="if(event.key==='Enter')addLstPen()">
           <input type="date" id="lst-pen-prazo" style="background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;color:var(--txt);padding:8px 10px;font-size:12px;outline:none;font-family:'Montserrat',sans-serif;flex-shrink:0">
+          <input type="time" id="lst-pen-hora" style="width:74px;background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;color:var(--txt);padding:8px 6px;font-size:12px;outline:none;font-family:'Montserrat',sans-serif;flex-shrink:0">
           <button class="btn-add" onclick="addLstPen()">+</button>
         </div>
         <div id="lst-pen-list"></div>
@@ -345,6 +346,7 @@ select{background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;c
         <div class="lst-add-row">
           <input type="text" id="lst-pgr-inp" placeholder="O que precisa fazer?" onkeydown="if(event.key==='Enter')addLstPgr()">
           <input type="date" id="lst-pgr-prazo" style="background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;color:var(--txt);padding:8px 10px;font-size:12px;outline:none;font-family:'Montserrat',sans-serif;flex-shrink:0">
+          <input type="time" id="lst-pgr-hora" style="width:74px;background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;color:var(--txt);padding:8px 6px;font-size:12px;outline:none;font-family:'Montserrat',sans-serif;flex-shrink:0">
           <button class="btn-add" onclick="addLstPgr()">+</button>
         </div>
         <div id="lst-pgr-list"></div>
@@ -1671,14 +1673,28 @@ function renderLstConteudos(){
   el.innerHTML=html;
 }
 
+// Ordena por data (e hora) crescente — sem data fica sempre por último
+function _sortPend(arr){
+  return [...arr].sort((a,b)=>{
+    if(!a.prazo&&!b.prazo)return 0;
+    if(!a.prazo)return 1;
+    if(!b.prazo)return -1;
+    const ta=a.prazo+' '+(a.hora||'00:00');
+    const tb=b.prazo+' '+(b.hora||'00:00');
+    return ta<tb?-1:ta>tb?1:0;
+  });
+}
+
 // — Pendências de Clientes —
+let _editingPen=null;
 function addLstPen(){
   const inp=document.getElementById('lst-pen-inp');
   const txt=inp.value.trim();if(!txt)return;
   const prazo=document.getElementById('lst-pen-prazo').value||'';
+  const hora=document.getElementById('lst-pen-hora').value||'';
   pendencias.unshift({id:Date.now().toString(36)+Math.random().toString(36).slice(2),
-    texto:txt,clienteId:'',clienteNome:'',prazo,status:'pendente',criadoEm:Date.now()});
-  inp.value='';document.getElementById('lst-pen-prazo').value='';
+    texto:txt,clienteId:'',clienteNome:'',prazo,hora,status:'pendente',criadoEm:Date.now()});
+  inp.value='';document.getElementById('lst-pen-prazo').value='';document.getElementById('lst-pen-hora').value='';
   saveD();renderLstPendencias();
   toast('✅ Pendência adicionada');
 }
@@ -1691,23 +1707,51 @@ function delLstPen(id){
   pendencias=pendencias.filter(x=>x.id!==id);
   saveD();renderLstPendencias();
 }
+function editLstPen(id){_editingPen=id;renderLstPendencias();}
+function cancelLstPenEdit(){_editingPen=null;renderLstPendencias();}
+function saveLstPenEdit(id){
+  const p=pendencias.find(x=>x.id===id);if(!p)return;
+  const txt=(document.getElementById('epen-txt-'+id)?.value||'').trim();
+  if(!txt){toast('⚠️ Digite o texto da pendência');return;}
+  p.texto=txt;
+  p.prazo=document.getElementById('epen-data-'+id)?.value||'';
+  p.hora=document.getElementById('epen-hora-'+id)?.value||'';
+  _editingPen=null;
+  saveD();renderLstPendencias();
+  toast('✅ Pendência atualizada');
+}
 function renderLstPendencias(){
   const el=document.getElementById('lst-pen-list');if(!el)return;
   if(!pendencias.length){el.innerHTML='<div class="empty">Nenhuma pendência com clientes 🎉</div>';return;}
-  const abertas=pendencias.filter(p=>p.status==='pendente');
-  const feitas=pendencias.filter(p=>p.status==='feito');
+  const abertas=_sortPend(pendencias.filter(p=>p.status==='pendente'));
+  const feitas=_sortPend(pendencias.filter(p=>p.status==='feito'));
   const row=p=>{
     const done=p.status==='feito';
     const hoje=new Date().toISOString().slice(0,10);
     const venc=p.prazo&&p.prazo<hoje&&!done;
+    if(_editingPen===p.id){
+      return`<div class="lst-item">
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
+          <input type="text" id="epen-txt-${p.id}" value="${esc(p.texto)}" style="background:var(--surf);border:1.5px solid var(--acc);border-radius:8px;padding:8px 10px;color:var(--txt);font-size:13px;outline:none;font-family:'Montserrat',sans-serif">
+          <div style="display:flex;gap:6px">
+            <input type="date" id="epen-data-${p.id}" value="${p.prazo||''}" style="flex:1;min-width:0;background:var(--surf);border:1.5px solid var(--brd);border-radius:8px;padding:6px 8px;color:var(--txt);font-size:12px;outline:none;font-family:'Montserrat',sans-serif">
+            <input type="time" id="epen-hora-${p.id}" value="${p.hora||''}" style="width:78px;flex-shrink:0;background:var(--surf);border:1.5px solid var(--brd);border-radius:8px;padding:6px 8px;color:var(--txt);font-size:12px;outline:none;font-family:'Montserrat',sans-serif">
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <button class="btn-add" style="padding:6px 10px" onclick="saveLstPenEdit('${p.id}')">✓</button>
+          <button class="btn-del" onclick="cancelLstPenEdit()">✕</button>
+        </div>
+      </div>`;
+    }
     return`<div class="lst-item${done?' done':''}">
       <div class="chk${done?' on':''}" onclick="toggleLstPen('${p.id}')"></div>
-      <div style="flex:1;min-width:0">
+      <div style="flex:1;min-width:0" onclick="editLstPen('${p.id}')">
         <div class="lst-txt">${esc(p.texto)}</div>
         ${p.clienteNome?`<div class="lst-meta">👤 ${esc(p.clienteNome)}</div>`:''}
-        ${p.prazo?`<div class="lst-meta" style="color:${venc?'var(--err)':'var(--mut)'}">📅 ${p.prazo.split('-').reverse().join('/')}</div>`:''}
+        ${p.prazo?`<div class="lst-meta" style="color:${venc?'var(--err)':'var(--mut)'}">📅 ${p.prazo.split('-').reverse().join('/')}${p.hora?' às '+p.hora:''}</div>`:''}
       </div>
-      <button class="btn-del" onclick="delLstPen('${p.id}')">✕</button>
+      <button class="btn-del" onclick="event.stopPropagation();delLstPen('${p.id}')">✕</button>
     </div>`;
   };
   let html=abertas.length?abertas.map(row).join(''):'<div class="empty" style="padding:12px">Tudo em dia com os clientes! 🎉</div>';
@@ -1716,13 +1760,15 @@ function renderLstPendencias(){
 }
 
 // — Pendências Gerais —
+let _editingPgr=null;
 function addLstPgr(){
   const inp=document.getElementById('lst-pgr-inp');
   const txt=inp.value.trim();if(!txt)return;
   const prazo=document.getElementById('lst-pgr-prazo').value||'';
+  const hora=document.getElementById('lst-pgr-hora').value||'';
   pendenciasGerais.unshift({id:Date.now().toString(36)+Math.random().toString(36).slice(2),
-    texto:txt,prazo,status:'pendente',criadoEm:Date.now()});
-  inp.value='';document.getElementById('lst-pgr-prazo').value='';
+    texto:txt,prazo,hora,status:'pendente',criadoEm:Date.now()});
+  inp.value='';document.getElementById('lst-pgr-prazo').value='';document.getElementById('lst-pgr-hora').value='';
   saveD();renderLstPgr();
   toast('✅ Pendência adicionada');
 }
@@ -1735,22 +1781,50 @@ function delLstPgr(id){
   pendenciasGerais=pendenciasGerais.filter(x=>x.id!==id);
   saveD();renderLstPgr();
 }
+function editLstPgr(id){_editingPgr=id;renderLstPgr();}
+function cancelLstPgrEdit(){_editingPgr=null;renderLstPgr();}
+function saveLstPgrEdit(id){
+  const p=pendenciasGerais.find(x=>x.id===id);if(!p)return;
+  const txt=(document.getElementById('epgr-txt-'+id)?.value||'').trim();
+  if(!txt){toast('⚠️ Digite o texto da pendência');return;}
+  p.texto=txt;
+  p.prazo=document.getElementById('epgr-data-'+id)?.value||'';
+  p.hora=document.getElementById('epgr-hora-'+id)?.value||'';
+  _editingPgr=null;
+  saveD();renderLstPgr();
+  toast('✅ Pendência atualizada');
+}
 function renderLstPgr(){
   const el=document.getElementById('lst-pgr-list');if(!el)return;
   if(!pendenciasGerais.length){el.innerHTML='<div class="empty">Nenhuma pendência. Tudo certo! ✅</div>';return;}
-  const abertas=pendenciasGerais.filter(p=>p.status==='pendente');
-  const feitas=pendenciasGerais.filter(p=>p.status==='feito');
+  const abertas=_sortPend(pendenciasGerais.filter(p=>p.status==='pendente'));
+  const feitas=_sortPend(pendenciasGerais.filter(p=>p.status==='feito'));
   const hoje=new Date().toISOString().slice(0,10);
   const row=p=>{
     const done=p.status==='feito';
     const venc=p.prazo&&p.prazo<hoje&&!done;
+    if(_editingPgr===p.id){
+      return`<div class="lst-item">
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
+          <input type="text" id="epgr-txt-${p.id}" value="${esc(p.texto)}" style="background:var(--surf);border:1.5px solid var(--acc);border-radius:8px;padding:8px 10px;color:var(--txt);font-size:13px;outline:none;font-family:'Montserrat',sans-serif">
+          <div style="display:flex;gap:6px">
+            <input type="date" id="epgr-data-${p.id}" value="${p.prazo||''}" style="flex:1;min-width:0;background:var(--surf);border:1.5px solid var(--brd);border-radius:8px;padding:6px 8px;color:var(--txt);font-size:12px;outline:none;font-family:'Montserrat',sans-serif">
+            <input type="time" id="epgr-hora-${p.id}" value="${p.hora||''}" style="width:78px;flex-shrink:0;background:var(--surf);border:1.5px solid var(--brd);border-radius:8px;padding:6px 8px;color:var(--txt);font-size:12px;outline:none;font-family:'Montserrat',sans-serif">
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <button class="btn-add" style="padding:6px 10px" onclick="saveLstPgrEdit('${p.id}')">✓</button>
+          <button class="btn-del" onclick="cancelLstPgrEdit()">✕</button>
+        </div>
+      </div>`;
+    }
     return`<div class="lst-item${done?' done':''}">
       <div class="chk${done?' on':''}" onclick="toggleLstPgr('${p.id}')"></div>
-      <div style="flex:1;min-width:0">
+      <div style="flex:1;min-width:0" onclick="editLstPgr('${p.id}')">
         <div class="lst-txt">${esc(p.texto)}</div>
-        ${p.prazo?`<div class="lst-meta" style="color:${venc?'var(--err)':'var(--mut)'}">📅 ${p.prazo.split('-').reverse().join('/')}</div>`:''}
+        ${p.prazo?`<div class="lst-meta" style="color:${venc?'var(--err)':'var(--mut)'}">📅 ${p.prazo.split('-').reverse().join('/')}${p.hora?' às '+p.hora:''}</div>`:''}
       </div>
-      <button class="btn-del" onclick="delLstPgr('${p.id}')">✕</button>
+      <button class="btn-del" onclick="event.stopPropagation();delLstPgr('${p.id}')">✕</button>
     </div>`;
   };
   let html=abertas.length?abertas.map(row).join(''):'<div class="empty" style="padding:12px">Tudo resolvido! 🎉</div>';
