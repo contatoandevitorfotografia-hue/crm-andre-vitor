@@ -766,6 +766,18 @@ body {
   color: #fff;
 }
 
+.sb-btn-newtab {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 13px;
+  padding: 3px 5px;
+  border-radius: 6px;
+  opacity: 0;
+  transition: opacity .15s, background .15s;
+}
+.sb-btn:hover .sb-btn-newtab { opacity: .55; }
+.sb-btn-newtab:hover { opacity: 1 !important; background: rgba(255,255,255,.15); }
+
 .sb-foot {
   font-size: 7px;
   letter-spacing: 1.8px;
@@ -1376,17 +1388,17 @@ input[type="date"]{cursor:pointer}
 <aside class="sb">
   <div class="sb-logo">📸</div>
   <nav class="sb-nav">
-    <button class="sb-btn active" data-tab="dashboard" data-label="Dashboard" onclick="switchTab('dashboard',this)">🏠<span class="sb-btn-label">Dashboard</span></button>
-    <button class="sb-btn" data-tab="clientes" data-label="Clientes" onclick="switchTab('clientes',this)">👥<span class="sb-btn-label">Clientes</span></button>
-    <button class="sb-btn" data-tab="indicacoes" data-label="Indicações" onclick="switchTab('indicacoes',this)">💛<span class="sb-btn-label">Indicações</span></button>
-    <button class="sb-btn" data-tab="agenda" data-label="Agenda" onclick="switchTab('agenda',this)">📅<span class="sb-btn-label">Agenda</span></button>
-    <button class="sb-btn" data-tab="oportunidades" data-label="Oportunidades" onclick="switchTab('oportunidades',this)">📋<span class="sb-btn-label">Oportunidades</span></button>
-    <button class="sb-btn" data-tab="projetos" data-label="Projetos" onclick="switchTab('projetos',this)">🎬<span class="sb-btn-label">Projetos</span></button>
-    <button class="sb-btn" data-tab="financeiro" data-label="Financeiro" onclick="switchTab('financeiro',this)">💰<span class="sb-btn-label">Financeiro</span></button>
-    <button class="sb-btn" data-tab="pacotes" data-label="Pacotes" onclick="switchTab('pacotes',this)">📦<span class="sb-btn-label">Pacotes</span></button>
-    <button class="sb-btn" data-tab="freelancers" data-label="Freelancers" onclick="switchTab('freelancers',this)">🤝<span class="sb-btn-label">Freelancers</span></button>
-    <button class="sb-btn" data-tab="listas" data-label="Listas" onclick="switchTab('listas',this)">📝<span class="sb-btn-label">Listas</span></button>
-    <button class="sb-btn" data-tab="mensagens" data-label="Mensagens" onclick="switchTab('mensagens',this)">💬<span class="sb-btn-label">Mensagens</span></button>
+    <button class="sb-btn active" data-tab="dashboard" data-label="Dashboard" onclick="switchTab('dashboard',this)">🏠<span class="sb-btn-label">Dashboard</span><span class="sb-btn-newtab" onclick="event.stopPropagation();abrirTabNovaAba('dashboard')" title="Abrir em nova aba">↗</span></button>
+    <button class="sb-btn" data-tab="clientes" data-label="Clientes" onclick="switchTab('clientes',this)">👥<span class="sb-btn-label">Clientes</span><span class="sb-btn-newtab" onclick="event.stopPropagation();abrirTabNovaAba('clientes')" title="Abrir em nova aba">↗</span></button>
+    <button class="sb-btn" data-tab="indicacoes" data-label="Indicações" onclick="switchTab('indicacoes',this)">💛<span class="sb-btn-label">Indicações</span><span class="sb-btn-newtab" onclick="event.stopPropagation();abrirTabNovaAba('indicacoes')" title="Abrir em nova aba">↗</span></button>
+    <button class="sb-btn" data-tab="agenda" data-label="Agenda" onclick="switchTab('agenda',this)">📅<span class="sb-btn-label">Agenda</span><span class="sb-btn-newtab" onclick="event.stopPropagation();abrirTabNovaAba('agenda')" title="Abrir em nova aba">↗</span></button>
+    <button class="sb-btn" data-tab="oportunidades" data-label="Oportunidades" onclick="switchTab('oportunidades',this)">📋<span class="sb-btn-label">Oportunidades</span><span class="sb-btn-newtab" onclick="event.stopPropagation();abrirTabNovaAba('oportunidades')" title="Abrir em nova aba">↗</span></button>
+    <button class="sb-btn" data-tab="projetos" data-label="Projetos" onclick="switchTab('projetos',this)">🎬<span class="sb-btn-label">Projetos</span><span class="sb-btn-newtab" onclick="event.stopPropagation();abrirTabNovaAba('projetos')" title="Abrir em nova aba">↗</span></button>
+    <button class="sb-btn" data-tab="financeiro" data-label="Financeiro" onclick="switchTab('financeiro',this)">💰<span class="sb-btn-label">Financeiro</span><span class="sb-btn-newtab" onclick="event.stopPropagation();abrirTabNovaAba('financeiro')" title="Abrir em nova aba">↗</span></button>
+    <button class="sb-btn" data-tab="pacotes" data-label="Pacotes" onclick="switchTab('pacotes',this)">📦<span class="sb-btn-label">Pacotes</span><span class="sb-btn-newtab" onclick="event.stopPropagation();abrirTabNovaAba('pacotes')" title="Abrir em nova aba">↗</span></button>
+    <button class="sb-btn" data-tab="freelancers" data-label="Freelancers" onclick="switchTab('freelancers',this)">🤝<span class="sb-btn-label">Freelancers</span><span class="sb-btn-newtab" onclick="event.stopPropagation();abrirTabNovaAba('freelancers')" title="Abrir em nova aba">↗</span></button>
+    <button class="sb-btn" data-tab="listas" data-label="Listas" onclick="switchTab('listas',this)">📝<span class="sb-btn-label">Listas</span><span class="sb-btn-newtab" onclick="event.stopPropagation();abrirTabNovaAba('listas')" title="Abrir em nova aba">↗</span></button>
+    <button class="sb-btn" data-tab="mensagens" data-label="Mensagens" onclick="switchTab('mensagens',this)">💬<span class="sb-btn-label">Mensagens</span><span class="sb-btn-newtab" onclick="event.stopPropagation();abrirTabNovaAba('mensagens')" title="Abrir em nova aba">↗</span></button>
   </nav>
   <button class="sb-foot" onclick="openBackupModal()" title="Backup & Restaurar"><span class="sb-foot-icon">💾</span>AVF</button>
   <button class="sb-foot" onclick="sairDaConta()" title="Sair da conta" id="btn-sair"><span class="sb-foot-icon">🚪</span><span id="conta-email" style="font-size:9px;opacity:.7"></span></button>
@@ -3893,6 +3905,14 @@ function switchTab(tab,btn){
   if(tab==='clientes')renderClientes();
   if(tab==='indicacoes')renderIndicacoes();
   if(tab==='mensagens')renderMensagens();
+  try{history.replaceState(null,'',location.pathname+location.search+'#'+tab);}catch(e){}
+}
+// Abre uma outra página do CRM em uma aba nova do navegador (mesma sessão,
+// mesmos dados — graças ao localStorage/Firebase compartilhados), sem
+// perder o que está aberto na aba atual.
+function abrirTabNovaAba(tab){
+  const base=location.href.split('#')[0];
+  window.open(base+'#'+tab,'_blank');
 }
 function renderDashboard(){
   const now=new Date();
@@ -11382,6 +11402,16 @@ function toggleFreelaBoard(){
   applyFreelaToggle();
 }
 loadFreela();load();_limparAbril2026();initAgenda();renderDashboard();renderFreela();applyFreelaToggle();
+// Se a aba foi aberta com #nomeDaAba (ex.: abrindo em nova aba pelo ↗ do menu),
+// já abre direto naquela página em vez do Dashboard padrão.
+(function(){
+  const _tabsValidas=['dashboard','clientes','indicacoes','agenda','oportunidades','projetos','financeiro','pacotes','freelancers','listas','mensagens'];
+  const _h=(location.hash||'').replace('#','');
+  if(_h&&_h!=='dashboard'&&_tabsValidas.includes(_h)){
+    const _btn=document.querySelector('.sb-btn[data-tab="'+_h+'"]');
+    if(_btn)switchTab(_h,_btn);
+  }
+})();
 
 function _limparAbril2026(){
   if(localStorage.getItem('_abril2026_limpo'))return;
