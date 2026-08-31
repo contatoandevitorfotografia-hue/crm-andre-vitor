@@ -3506,7 +3506,7 @@ function confirmarImport(){
     valorTotal:0,valorReserva:0,dataReserva:'',valorRestante:0,dataRestante:'',
     statusPag:'pendente',gastos:0,gastosItens:[],formaPag:'avista',nParcelas:1,parcelasItens:[],
     obs:d.obs||'',motivo:'',detalhe:'',pendencias:[],followupDate:'',
-    criadoEm:d.criadoEm||Date.now(),updatedAt:Date.now()
+    criadoEm:d.criadoEm||Date.now(),updatedAt:Date.now(),_novoAuto:true
   };
   opCards.unshift(newCard);savOp();renderOp();renderFin();renderAgenda();
   // Cria pendência automática
@@ -4007,12 +4007,13 @@ function opCardHTML(c,cc){
     const _aliq=Math.max(0,_as-_gp);
     liqBadge=`<span class="pend-badge ok" style="background:#13251c;color:#7fd99a" title="Valor líquido da Empresa, após os gastos do evento">🟢 Empresa: ${fmtMoney(_liq)}</span> <span class="pend-badge ok" style="background:#132a45;color:#60a5fa" title="Valor líquido do André, após os gastos do evento">🔵 André: ${fmtMoney(_aliq)}</span>`;
   }
-  const isNewLead = c.origem === 'landpage' && c.coluna === 'novo-contato';
+  const isNewLead = (c.origem === 'landpage' || c._novoAuto) && c.coluna === 'novo-contato';
+  const isAutoAssinado = !!c._assinadoAuto && c.coluna === 'contrato-assinado';
   const isSouFreela = c.tipoExecucao === 'sou-freela';
   const isFreelaContratei = !isSouFreela && (c.tipoExecucao === 'freelancer' || !!c.freelancerId);
   const parceiroNomeOp = isSouFreela && c.parceiroId ? (clients.find(cl=>cl.id===c.parceiroId)?.nome||'') : '';
   const frlNomeOp = isFreelaContratei && c.freelancerId ? (freelancers.find(f=>f.id===c.freelancerId)?.nome||'') : '';
-  const leadStyle = isNewLead ? ';background:#13251c;border-left:3px solid #22c55e' : isSouFreela ? ';background:#241715;border-left:3px solid #b05a45' : isFreelaContratei ? ';background:#202A34;border-left:3px solid #71869A' : '';
+  const leadStyle = isNewLead ? ';background:#13251c;border-left:3px solid #22c55e' : isAutoAssinado ? ';background:#2e2410;border-left:3px solid #eab308' : isSouFreela ? ';background:#241715;border-left:3px solid #b05a45' : isFreelaContratei ? ';background:#202A34;border-left:3px solid #71869A' : '';
   const pendOpenList=(c.pendencias||[]).filter(p=>!p.done);
   const pendBox=pendOpenList.length?`<div style="font-size:11px;font-weight:700;color:#E0A14E;background:#2e2213;border:1px solid #5c4a26;border-radius:6px;padding:6px 8px;margin-top:6px;line-height:1.4">${pendOpenList.map(p=>`📌 ${esc((p.label||'').slice(0,100))}${(p.label||'').length>100?'…':''}`).join('<br>')}</div>`:'';
   return `<div class="card" draggable="true" data-id="${c.id}" style="--cc:${cc}${leadStyle}" ondragstart="onDS(event,'${c.id}','op')" ondragend="onDE2(event)" onclick="openOpModal('${c.id}',null,event)">
@@ -4029,6 +4030,7 @@ function opCardHTML(c,cc){
     ${c.valorTotal?`<span class="c-tag ${tagCls}" style="cursor:pointer" onclick="event.stopPropagation();quickEditPag('${c.id}')" title="Editar pagamento">${tagTxt} ✏️</span>`:''}
     ${liqBadge}
     ${isNewLead ? `<span style="font-size:9px;background:#1D2630;color:#9FB5CB;padding:2px 7px;border-radius:10px;font-weight:600;letter-spacing:.04em">🌐 LEAD</span>` : ''}
+    ${isAutoAssinado ? `<span style="font-size:9px;background:#3a2e0a;color:#eab308;padding:2px 7px;border-radius:10px;font-weight:600;letter-spacing:.04em">✍️ ASSINOU AGORA</span>` : ''}
     ${isSouFreela?`<span style="display:inline-flex;align-items:center;gap:3px;font-size:9.5px;font-weight:700;color:#e0c6b9;background:#2b211d;border:1px solid #8f6f60;border-radius:20px;padding:2px 7px;margin-top:2px">📸 Sou o freela${parceiroNomeOp?' · '+esc(parceiroNomeOp):''}</span>`:''}
     ${isFreelaContratei?`<span style="display:inline-flex;align-items:center;gap:3px;font-size:9.5px;font-weight:700;color:#d7dfe3;background:#22282d;border:1px solid #65727b;border-radius:20px;padding:2px 7px;margin-top:2px">🤝 Freela contratado${frlNomeOp?' · '+esc(frlNomeOp):''}</span>`:''}
     ${contractBadge}${pendBadge}${fuBadge}
@@ -10452,7 +10454,7 @@ function initLeadsFirebase(){
       if(!lead||!lead.id)return;
       // evita duplicar se já existe
       if(opCards.find(c=>c.id===lead.id))return;
-      opCards.unshift({...lead,coluna:'novo-contato'});
+      opCards.unshift({...lead,coluna:'novo-contato',_novoAuto:true});
       savOp();renderOp();renderFin();renderAgenda();
       toast('📲 Novo lead da landpage: '+( lead.nomePais||'Sem nome'),'green');
       // remove do Firebase após importar
@@ -11453,7 +11455,7 @@ function processarPendingLead(){
       statusPag:'pendente', gastos:0, gastosItens:[], formaPag:'avista',
       nParcelas:1, parcelasItens:[],
       obs: obsExtra, motivo:'', detalhe:'', pendencias:[], followupDate:'',
-      criadoEm: Date.now(), updatedAt: Date.now()
+      criadoEm: Date.now(), updatedAt: Date.now(), _novoAuto:true
     };
     opCards.unshift(newCard); savOp(); renderOp(); renderFin(); renderAgenda();
     pendencias.unshift({
@@ -12498,7 +12500,7 @@ async function syncContractStatus(cardId,notify){
   try{
     const res=await fetch(`${contractSystemBase(ct)}/api/public/contracts/${encodeURIComponent(ct.token)}/status`,{cache:'no-store'});const data=await res.json();if(!res.ok)throw new Error(data.error||'Falha ao consultar contrato.');
     const wasAccepted=ct.status==='accepted';const before=JSON.stringify([ct.status,ct.version,ct.url,ct.acceptedAt,ct.protocol,ct.imageConsent,ct.pdfUrl,card.coluna]);ct.status=data.status;ct.version=data.contractVersion||ct.version;ct.url=data.contractUrl||ct.url;ct.acceptedAt=data.acceptedAt||ct.acceptedAt;ct.protocol=data.acceptanceId||ct.protocol;ct.imageConsent=data.imageConsent||ct.imageConsent;ct.pdfUrl=data.summaryPdfUrl||ct.pdfUrl;ct.lastCheckedAt=new Date().toISOString();
-    if(data.status==='accepted'&&['novo-contato','orcamento-enviado','negociacao','contrato-enviado'].includes(card.coluna))card.coluna='contrato-assinado';
+    if(data.status==='accepted'&&['novo-contato','orcamento-enviado','negociacao','contrato-enviado'].includes(card.coluna)){card.coluna='contrato-assinado';if(!wasAccepted)card._assinadoAuto=true;}
     const changed=before!==JSON.stringify([ct.status,ct.version,ct.url,ct.acceptedAt,ct.protocol,ct.imageConsent,ct.pdfUrl,card.coluna]);
     if(changed){card.updatedAt=Date.now();savOp();renderOp();renderDashboard();}
     if(data.status==='accepted'&&!wasAccepted&&notify)toast('✅ Contrato assinado! Evento movido automaticamente.','green');
