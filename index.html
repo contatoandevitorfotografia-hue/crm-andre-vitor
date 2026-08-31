@@ -12265,36 +12265,49 @@ function contractLinkedClient(card){
   return clients.find(c=>(c.nome||'').trim().toLowerCase()===nm)||null;
 }
 function contractPaymentMethod(card){
-  if(card.formaPag==='pix-2x')return'Pix em 2 parcelas';
-  if(card.formaPag==='cartao')return`Cartão de crédito em ${card.nParcelas||1}x`;
-  if(card.formaPag==='avista')return'Pagamento à vista';
-  return card.formaPag||'Pix';
+  const forma=_migraFormaPag(card.formaPag||'avista');
+  if(forma==='pix-2x')return'Pix em 2 parcelas';
+  if(forma==='cartao')return'Cartão de crédito em até 10x';
+  return'Pagamento à vista';
+}
+// Monta a condição de pagamento já com os valores/datas reais daquela
+// festa (em vez do antigo texto genérico "combinados entre as partes").
+// Recebe a forma de pagamento separada do card pra também servir os
+// presets do contrato (ex: usuário troca a forma manualmente no formulário).
+function contractPaymentTermsForForma(forma,card){
+  forma=_migraFormaPag(forma||'avista');
+  const total=card?.valorTotal||0;
+  if(forma==='pix-2x'){
+    const parc=card?.parcelasItens||[];
+    const p1=parc[0],p2=parc[1];
+    const v1=(p1&&p1.valor)||parseFloat((total/2).toFixed(2));
+    const v2=(p2&&p2.valor)||parseFloat((total-v1).toFixed(2));
+    const prazo2=p2?.data?`até o dia ${fmtDate(p2.data)}`:'na semana da festa';
+    return`Pagamento via Pix, em 2 parcelas, através de link de pagamento online: a 1ª, no valor de ${fmtMoney(v1)}, no ato da reserva da data e assinatura deste contrato; e a 2ª, no valor de ${fmtMoney(v2)}, a ser paga ${prazo2}.`;
+  }
+  if(forma==='cartao'){
+    return`Pagamento à vista, no valor total de ${fmtMoney(total)}, realizado no ato da reserva da data e assinatura deste contrato, através de link de pagamento parcelado em até 10x sem juros.`;
+  }
+  return`Pagamento à vista, no valor total de ${fmtMoney(total)}, realizado no ato da reserva da data e assinatura deste contrato.`;
 }
 function contractPaymentTerms(card){
-  if(card.formaPag==='pix-2x')return'Pagamento via Pix em 2 parcelas, nas datas e valores combinados entre as partes.';
-  if(card.formaPag==='cartao')return`Pagamento por cartão de crédito em ${card.nParcelas||1} parcela${Number(card.nParcelas||1)!==1?'s':''}.`;
-  if(card.formaPag==='avista')return'Pagamento à vista, no valor e prazo combinados entre as partes.';
-  return'Pagamento conforme valores, forma e vencimentos combinados entre as partes.';
+  return contractPaymentTermsForForma(card.formaPag,card);
 }
 /* ── Formas de pagamento pré-salvas (contrato) ──
-   Combina algumas opções padrão com as formas que já existem de verdade
-   nos clientes cadastrados, para o botão "clique para preencher" sempre
-   refletir o que já está sendo usado no painel. ── */
+   Só as 3 formas de pagamento realmente usadas — os textos são montados
+   na hora com os dados reais da festa aberta no contrato (ct-op-id). ── */
 const CT_PAY_PRESETS=[
-  {label:'💰 À vista',method:'Pagamento à vista',terms:'Pagamento à vista, no valor e prazo combinados entre as partes.'},
-  {label:'💠 Pix em 2x',method:'Pix em 2 parcelas',terms:'Pagamento via Pix em 2 parcelas, nas datas e valores combinados entre as partes.'},
-  {label:'💳 Cartão de crédito',method:'Cartão de crédito',terms:'Pagamento por cartão de crédito, conforme parcelamento combinado entre as partes.'},
-  {label:'🏦 Transferência bancária',method:'Transferência bancária',terms:'Pagamento via transferência bancária (TED/Pix), no valor e prazo combinados entre as partes.'},
+  {label:'💰 À vista',method:'Pagamento à vista',forma:'avista'},
+  {label:'💠 Pix em 2x',method:'Pix em 2 parcelas',forma:'pix-2x'},
+  {label:'💳 Cartão de crédito em até 10x',method:'Cartão de crédito em até 10x',forma:'cartao'},
 ];
+function _ctCurrentCard(){
+  const id=document.getElementById('ct-op-id')?.value;
+  return id?opCards.find(c=>c.id===id):null;
+}
 function ctPayOptions(){
-  const seen=new Map();
-  CT_PAY_PRESETS.forEach(p=>seen.set(p.method,p));
-  opCards.forEach(c=>{
-    if(!c.formaPag)return;
-    const method=contractPaymentMethod(c);
-    if(!seen.has(method))seen.set(method,{label:'👤 '+method,method,terms:contractPaymentTerms(c)});
-  });
-  return[...seen.values()];
+  const card=_ctCurrentCard();
+  return CT_PAY_PRESETS.map(p=>({label:p.label,method:p.method,terms:contractPaymentTermsForForma(p.forma,card)}));
 }
 function renderCtPayOptions(){
   const opts=ctPayOptions();
