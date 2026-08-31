@@ -4013,7 +4013,7 @@ function opCardHTML(c,cc){
   const isFreelaContratei = !isSouFreela && (c.tipoExecucao === 'freelancer' || !!c.freelancerId);
   const parceiroNomeOp = isSouFreela && c.parceiroId ? (clients.find(cl=>cl.id===c.parceiroId)?.nome||'') : '';
   const frlNomeOp = isFreelaContratei && c.freelancerId ? (freelancers.find(f=>f.id===c.freelancerId)?.nome||'') : '';
-  const leadStyle = isNewLead ? ';background:#13251c;border-left:3px solid #22c55e' : isAutoAssinado ? ';background:#2e2410;border-left:3px solid #eab308' : isSouFreela ? ';background:#241715;border-left:3px solid #b05a45' : isFreelaContratei ? ';background:#202A34;border-left:3px solid #71869A' : '';
+  const leadStyle = isNewLead ? ';background:#332b06;border-left:3px solid #facc15' : isAutoAssinado ? ';background:#2e2410;border-left:3px solid #eab308' : isSouFreela ? ';background:#241715;border-left:3px solid #b05a45' : isFreelaContratei ? ';background:#202A34;border-left:3px solid #71869A' : '';
   const pendOpenList=(c.pendencias||[]).filter(p=>!p.done);
   const pendBox=pendOpenList.length?`<div style="font-size:11px;font-weight:700;color:#E0A14E;background:#2e2213;border:1px solid #5c4a26;border-radius:6px;padding:6px 8px;margin-top:6px;line-height:1.4">${pendOpenList.map(p=>`📌 ${esc((p.label||'').slice(0,100))}${(p.label||'').length>100?'…':''}`).join('<br>')}</div>`:'';
   return `<div class="card" draggable="true" data-id="${c.id}" style="--cc:${cc}${leadStyle}" ondragstart="onDS(event,'${c.id}','op')" ondragend="onDE2(event)" onclick="openOpModal('${c.id}',null,event)">
@@ -4029,7 +4029,7 @@ function opCardHTML(c,cc){
     </div>
     ${c.valorTotal?`<span class="c-tag ${tagCls}" style="cursor:pointer" onclick="event.stopPropagation();quickEditPag('${c.id}')" title="Editar pagamento">${tagTxt} ✏️</span>`:''}
     ${liqBadge}
-    ${isNewLead ? `<span style="font-size:9px;background:#1D2630;color:#9FB5CB;padding:2px 7px;border-radius:10px;font-weight:600;letter-spacing:.04em">🌐 LEAD</span>` : ''}
+    ${isNewLead ? `<span style="font-size:9px;background:#3a3106;color:#facc15;padding:2px 7px;border-radius:10px;font-weight:600;letter-spacing:.04em">🌐 LEAD</span>` : ''}
     ${isAutoAssinado ? `<span style="font-size:9px;background:#3a2e0a;color:#eab308;padding:2px 7px;border-radius:10px;font-weight:600;letter-spacing:.04em">✍️ ASSINOU AGORA</span>` : ''}
     ${isSouFreela?`<span style="display:inline-flex;align-items:center;gap:3px;font-size:9.5px;font-weight:700;color:#e0c6b9;background:#2b211d;border:1px solid #8f6f60;border-radius:20px;padding:2px 7px;margin-top:2px">📸 Sou o freela${parceiroNomeOp?' · '+esc(parceiroNomeOp):''}</span>`:''}
     ${isFreelaContratei?`<span style="display:inline-flex;align-items:center;gap:3px;font-size:9.5px;font-weight:700;color:#d7dfe3;background:#22282d;border:1px solid #65727b;border-radius:20px;padding:2px 7px;margin-top:2px">🤝 Freela contratado${frlNomeOp?' · '+esc(frlNomeOp):''}</span>`:''}
