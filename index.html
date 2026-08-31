@@ -2266,55 +2266,6 @@ input[type="date"]{cursor:pointer}
       </div>
       <div class="fs" id="sec-financeiro">
         <div class="fs-title">💳 Financeiro</div>
-        <!-- BLOCOS INDEPENDENTES: EMPRESA E ANDRÉ PESSOAL -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:11px">
-          <!-- BLOCO EMPRESA -->
-          <div style="background:#fff7ed;border:2px solid #5c4326;border-radius:10px;padding:12px">
-            <div style="font-size:11px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">💼 Empresa</div>
-            <div style="display:flex;flex-direction:column;gap:8px;font-size:12px">
-              <div>
-                <label style="font-size:10px;font-weight:600;color:#92400e;display:block;margin-bottom:2px">Valor</label>
-                <input type="number" id="f-emp-valor" placeholder="0,00" min="0" step="0.01" oninput="onValorEmpresaChange()" style="width:100%;border:1.5px solid #d97706;border-radius:6px;padding:7px;font-size:13px;font-weight:700;color:#92400e;background:#fffbf0">
-              </div>
-              <div>
-                <label style="font-size:10px;font-weight:600;color:#92400e;display:block;margin-bottom:2px">Valor Pago</label>
-                <input type="number" id="f-emp-pago" placeholder="0,00" min="0" step="0.01" oninput="onValorEmpresaChange()" style="width:100%;border:1.5px solid #d97706;border-radius:6px;padding:7px;font-size:13px;font-weight:700;color:#92400e;background:#fffbf0">
-              </div>
-              <div>
-                <label style="font-size:10px;font-weight:600;color:#92400e;display:block;margin-bottom:2px">Falta Pagar</label>
-                <input type="number" id="f-emp-falta" placeholder="0,00" min="0" step="0.01" oninput="onValorEmpresaChange()" style="width:100%;border:1.5px solid #d97706;border-radius:6px;padding:7px;font-size:13px;font-weight:700;color:#92400e;background:#fffbf0">
-              </div>
-              <div>
-                <label style="font-size:10px;font-weight:600;color:#92400e;display:block;margin-bottom:2px">Custos</label>
-                <input type="number" id="f-emp-custos" placeholder="0,00" min="0" step="0.01" oninput="onValorEmpresaChange()" style="width:100%;border:1.5px solid #d97706;border-radius:6px;padding:7px;font-size:13px;font-weight:700;color:#92400e;background:#fffbf0">
-              </div>
-            </div>
-          </div>
-
-          <!-- BLOCO ANDRÉ PESSOAL -->
-          <div style="background:#16202e;border:2px solid #bfdbfe;border-radius:10px;padding:12px">
-            <div style="font-size:11px;font-weight:700;color:#6ba3e0;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">👤 André Pessoal</div>
-            <div style="display:flex;flex-direction:column;gap:8px;font-size:12px">
-              <div>
-                <label style="font-size:10px;font-weight:600;color:#6ba3e0;display:block;margin-bottom:2px">Valor</label>
-                <input type="number" id="f-and-valor" placeholder="0,00" min="0" step="0.01" oninput="onValorAndreChange()" style="width:100%;border:1.5px solid #2563eb;border-radius:6px;padding:7px;font-size:13px;font-weight:700;color:#1d4ed8;background:#0f172a">
-              </div>
-              <div>
-                <label style="font-size:10px;font-weight:600;color:#6ba3e0;display:block;margin-bottom:2px">Valor Pago</label>
-                <input type="number" id="f-and-pago" placeholder="0,00" min="0" step="0.01" oninput="onValorAndreChange()" style="width:100%;border:1.5px solid #2563eb;border-radius:6px;padding:7px;font-size:13px;font-weight:700;color:#1d4ed8;background:#0f172a">
-              </div>
-              <div>
-                <label style="font-size:10px;font-weight:600;color:#6ba3e0;display:block;margin-bottom:2px">Falta Pagar</label>
-                <input type="number" id="f-and-falta" placeholder="0,00" min="0" step="0.01" oninput="onValorAndreChange()" style="width:100%;border:1.5px solid #2563eb;border-radius:6px;padding:7px;font-size:13px;font-weight:700;color:#1d4ed8;background:#0f172a">
-              </div>
-              <div>
-                <label style="font-size:10px;font-weight:600;color:#6ba3e0;display:block;margin-bottom:2px">Custos</label>
-                <input type="number" id="f-and-custos" placeholder="0,00" min="0" step="0.01" oninput="onValorAndreChange()" style="width:100%;border:1.5px solid #2563eb;border-radius:6px;padding:7px;font-size:13px;font-weight:700;color:#1d4ed8;background:#0f172a">
-              </div>
-            </div>
-          </div>
-        </div>
-
         <!-- Hidden fields para compatibilidade -->
         <input type="hidden" id="f-valorEmpresa">
         <input type="hidden" id="f-valorAndre">
@@ -4546,7 +4497,6 @@ function clearParaPerdido(card){
   card.dataReserva='';card.dataRestante='';card.dataPrimeiroPagamento='';card.dataQuitacao='';card.valorPrimeiroPagamento=0;
   card.gastos=0;card.gastosItens=[];
   card.parcelasItens=[];card.nParcelas=1;card.formaPag='avista';
-  card.pagoEmpresaVal=0;card.custosEmpresa=0;card.pagoAndreVal=0;card.custosAndre=0;
   card.pagoEmpresa=false;card.pagoAndre=false;card.valorReservaPess=0;
   card.pacoteId='';card.pacoteCustom='';
   card.galeria='';card.galeriaClienteId='';card.followupDate='';card.obs='';
@@ -4827,19 +4777,6 @@ function openOpModal(cardId,defaultCol,event,fromProj){
     }
     document.getElementById('f-valorEmpresa').value=_vEmp||'';
     document.getElementById('f-valorAndre').value=_vAnd||'';
-
-    // Preenche novos campos EMPRESA e ANDRÉ independentes
-    document.getElementById('f-emp-valor').value=_vEmp||'0.00';
-    document.getElementById('f-emp-pago').value=card.pagoEmpresaVal||'0.00';
-    document.getElementById('f-emp-custos').value=card.custosEmpresa||'0.00';
-    const empFalta=Math.max(0,(_vEmp||0)-(parseFloat(card.pagoEmpresaVal)||0));
-    document.getElementById('f-emp-falta').value=empFalta>0?empFalta.toFixed(2):'0.00';
-
-    document.getElementById('f-and-valor').value=_vAnd||'0.00';
-    document.getElementById('f-and-pago').value=card.pagoAndreVal||'0.00';
-    document.getElementById('f-and-custos').value=card.custosAndre||'0.00';
-    const andFalta=Math.max(0,(_vAnd||0)-(parseFloat(card.pagoAndreVal)||0));
-    document.getElementById('f-and-falta').value=andFalta>0?andFalta.toFixed(2):'0.00';
 
     document.getElementById('f-valorReserva').value=card.valorReserva||card.valorSinal||'';
     document.getElementById('f-dataReserva').value=card.dataReserva||'';
@@ -5284,33 +5221,6 @@ function onValorPlanoChange(){
   onValorChange();
 }
 
-// ── Novos handlers para campos independentes de Empresa e André ──
-function onValorEmpresaChange(){
-  const valor=parseFloat(document.getElementById('f-emp-valor').value)||0;
-  const pago=parseFloat(document.getElementById('f-emp-pago').value)||0;
-  const falta=Math.max(0,valor-pago);
-  document.getElementById('f-emp-falta').value=falta>0?falta.toFixed(2):'0.00';
-
-  // Atualiza hidden field
-  document.getElementById('f-valorEmpresa').value=valor;
-
-  // Recalcula totais
-  calcRestante();
-}
-
-function onValorAndreChange(){
-  const valor=parseFloat(document.getElementById('f-and-valor').value)||0;
-  const pago=parseFloat(document.getElementById('f-and-pago').value)||0;
-  const falta=Math.max(0,valor-pago);
-  document.getElementById('f-and-falta').value=falta>0?falta.toFixed(2):'0.00';
-
-  // Atualiza hidden field
-  document.getElementById('f-valorAndre').value=valor;
-
-  // Recalcula totais
-  calcRestante();
-}
-
 function calcRestante(){
   const emp=parseFloat(document.getElementById('f-valorEmpresa')?.value)||0;
   const and=parseFloat(document.getElementById('f-valorAndre')?.value)||0;
@@ -5672,7 +5582,7 @@ function saveOpCard(){
   const newCol=document.getElementById('f-col').value;
   const oldCard=editingOpId?opCards.find(c=>c.id===editingOpId):null;
   const oldCol=oldCard?.coluna;
-  const data={id:editingOpId||uid(),coluna:newCol,somenteProjeto:oldCard?.somenteProjeto||opFromProj||false,titulo:document.getElementById('f-titulo').value.trim(),nomePais,telefone:document.getElementById('f-tel').value.trim(),nomeCrianca:document.getElementById('f-nomeCrianca').value.trim(),idade:document.getElementById('f-idade').value.trim(),nomeCrianca2:document.getElementById('f-nomeCrianca2').value.trim(),idade2:document.getElementById('f-idade2').value.trim(),dataEvento:document.getElementById('f-data').value,horario:document.getElementById('f-horario').value,horarioFim:document.getElementById('f-horarioFim').value,local:document.getElementById('f-local').value.trim(),tipo:document.getElementById('f-tipo').value,pacoteId:(getSelectedPacIds()[0]||''),pacoteIds:getSelectedPacIds(),pacoteCustom:document.getElementById('f-pacoteCustom').value.trim(),tipoExecucao:document.getElementById('f-execucao').value||'proprio',freelancerId:document.getElementById('f-freelancerId').value||'',parceiroId:(document.getElementById('f-execucao').value==='sou-freela'?document.getElementById('f-op-parceiroId')?.value||'':''),filmmakerNome:(()=>{const s=document.getElementById('f-filmakerId');if(!s)return '';const v=s.value||'';if(v==='__outro__'){return (document.getElementById('f-filmakerCustom')?.value||'').trim();}return v;})(),filmmakerCusto:(()=>{const _fids=getSelectedPacIds();const fNome=document.getElementById('f-filmakerId')?.value||'';const allFmOpts=_fids.flatMap(id=>{const p=packages.find(pk=>pk.id===id);return p?.filmmakerOptions||[];});const opt=allFmOpts.find(f=>f.nome===fNome);return opt?opt.valor:0;})(),valorEmpresa:parseFloat(document.getElementById('f-valorEmpresa')?.value)||0,valorAndre:parseFloat(document.getElementById('f-valorAndre')?.value)||0,valorFreelancer:parseFloat(document.getElementById('f-valorFreelancer')?.value)||0,valorTotal:(parseFloat(document.getElementById('f-valorEmpresa')?.value)||0)+(parseFloat(document.getElementById('f-valorAndre')?.value)||0),valorCoresJob:0,pagoEmpresaVal:parseFloat(document.getElementById('f-emp-pago')?.value)||0,custosEmpresa:parseFloat(document.getElementById('f-emp-custos')?.value)||0,pagoAndreVal:parseFloat(document.getElementById('f-and-pago')?.value)||0,custosAndre:parseFloat(document.getElementById('f-and-custos')?.value)||0,valorReserva:parseFloat(document.getElementById('f-valorReserva').value)||0,dataReserva:document.getElementById('f-dataReserva').value,valorRestante:parseFloat(document.getElementById('f-valorRestante').value)||0,dataRestante:document.getElementById('f-dataRestante').value,statusPag:document.getElementById('f-statusPag').value,gastos:gastosItensTemp.reduce((s,g)=>s+(g.val||0),0),gastosItens:[...gastosItensTemp],formaPag:document.getElementById('f-formaPag').value,avistaDesconto:document.getElementById('f-avistaDesconto')?.checked||false,nParcelas:parseInt(document.getElementById('f-nParcelas').value)||1,parcelasItens:[...parcelasItensTemp],galeria:document.getElementById('f-galeria').value.trim(),galeriaClienteId:document.getElementById('f-galeriaClienteId')?.value.trim()||'',obs:oldCard?.obs||'',motivo:document.getElementById('f-motivo').value,detalhe:document.getElementById('f-detalhe').value.trim(),pendObs:document.getElementById('f-pend-obs')?.value.trim()||'',pendencias:[...pendenciasTemp],pagoEmpresa:document.getElementById('f-pagoEmpresa')?.checked||false,pagoAndre:document.getElementById('f-pagoAndre')?.checked||false,followupDate:document.getElementById('f-followup').value||'',albumGuardado:_albumGuardado,contrato:oldCard?.contrato||null,criadoEm:oldCard?.criadoEm||Date.now(),updatedAt:Date.now()};
+  const data={id:editingOpId||uid(),coluna:newCol,somenteProjeto:oldCard?.somenteProjeto||opFromProj||false,titulo:document.getElementById('f-titulo').value.trim(),nomePais,telefone:document.getElementById('f-tel').value.trim(),nomeCrianca:document.getElementById('f-nomeCrianca').value.trim(),idade:document.getElementById('f-idade').value.trim(),nomeCrianca2:document.getElementById('f-nomeCrianca2').value.trim(),idade2:document.getElementById('f-idade2').value.trim(),dataEvento:document.getElementById('f-data').value,horario:document.getElementById('f-horario').value,horarioFim:document.getElementById('f-horarioFim').value,local:document.getElementById('f-local').value.trim(),tipo:document.getElementById('f-tipo').value,pacoteId:(getSelectedPacIds()[0]||''),pacoteIds:getSelectedPacIds(),pacoteCustom:document.getElementById('f-pacoteCustom').value.trim(),tipoExecucao:document.getElementById('f-execucao').value||'proprio',freelancerId:document.getElementById('f-freelancerId').value||'',parceiroId:(document.getElementById('f-execucao').value==='sou-freela'?document.getElementById('f-op-parceiroId')?.value||'':''),filmmakerNome:(()=>{const s=document.getElementById('f-filmakerId');if(!s)return '';const v=s.value||'';if(v==='__outro__'){return (document.getElementById('f-filmakerCustom')?.value||'').trim();}return v;})(),filmmakerCusto:(()=>{const _fids=getSelectedPacIds();const fNome=document.getElementById('f-filmakerId')?.value||'';const allFmOpts=_fids.flatMap(id=>{const p=packages.find(pk=>pk.id===id);return p?.filmmakerOptions||[];});const opt=allFmOpts.find(f=>f.nome===fNome);return opt?opt.valor:0;})(),valorEmpresa:parseFloat(document.getElementById('f-valorEmpresa')?.value)||0,valorAndre:parseFloat(document.getElementById('f-valorAndre')?.value)||0,valorFreelancer:parseFloat(document.getElementById('f-valorFreelancer')?.value)||0,valorTotal:(parseFloat(document.getElementById('f-valorEmpresa')?.value)||0)+(parseFloat(document.getElementById('f-valorAndre')?.value)||0),valorCoresJob:0,valorReserva:parseFloat(document.getElementById('f-valorReserva').value)||0,dataReserva:document.getElementById('f-dataReserva').value,valorRestante:parseFloat(document.getElementById('f-valorRestante').value)||0,dataRestante:document.getElementById('f-dataRestante').value,statusPag:document.getElementById('f-statusPag').value,gastos:gastosItensTemp.reduce((s,g)=>s+(g.val||0),0),gastosItens:[...gastosItensTemp],formaPag:document.getElementById('f-formaPag').value,avistaDesconto:document.getElementById('f-avistaDesconto')?.checked||false,nParcelas:parseInt(document.getElementById('f-nParcelas').value)||1,parcelasItens:[...parcelasItensTemp],galeria:document.getElementById('f-galeria').value.trim(),galeriaClienteId:document.getElementById('f-galeriaClienteId')?.value.trim()||'',obs:oldCard?.obs||'',motivo:document.getElementById('f-motivo').value,detalhe:document.getElementById('f-detalhe').value.trim(),pendObs:document.getElementById('f-pend-obs')?.value.trim()||'',pendencias:[...pendenciasTemp],pagoEmpresa:document.getElementById('f-pagoEmpresa')?.checked||false,pagoAndre:document.getElementById('f-pagoAndre')?.checked||false,followupDate:document.getElementById('f-followup').value||'',albumGuardado:_albumGuardado,contrato:oldCard?.contrato||null,criadoEm:oldCard?.criadoEm||Date.now(),updatedAt:Date.now()};
   // O valor digitado manualmente é o total real cobrado do cliente.
   // Sem preenchimento, mantém o total calculado a partir dos pacotes.
   const _valorPlanoInformado=parseFloat(document.getElementById('f-valorPlano')?.value)||0;
