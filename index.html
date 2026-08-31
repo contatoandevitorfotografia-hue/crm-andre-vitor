@@ -12283,7 +12283,7 @@ function contractPaymentTermsForForma(forma,card){
     const v1=(p1&&p1.valor)||parseFloat((total/2).toFixed(2));
     const v2=(p2&&p2.valor)||parseFloat((total-v1).toFixed(2));
     const prazo2=p2?.data?`até o dia ${fmtDate(p2.data)}`:'na semana da festa';
-    return`Pagamento via Pix, em 2 parcelas, através de link de pagamento online: a 1ª, no valor de ${fmtMoney(v1)}, no ato da reserva da data e assinatura deste contrato; e a 2ª, no valor de ${fmtMoney(v2)}, a ser paga ${prazo2}.`;
+    return`Pagamento em 2 parcelas: a 1ª, no valor de ${fmtMoney(v1)}, via Pix, no mesmo dia da assinatura deste contrato, para reserva da data; e a 2ª, no valor de ${fmtMoney(v2)}, através de link de pagamento, a ser paga ${prazo2}.`;
   }
   if(forma==='cartao'){
     return`Pagamento à vista, no valor total de ${fmtMoney(total)}, realizado no ato da reserva da data e assinatura deste contrato, através de link de pagamento parcelado em até 10x sem juros.`;
