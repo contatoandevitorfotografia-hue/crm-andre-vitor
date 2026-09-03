@@ -4179,8 +4179,32 @@ function prCardHTML(c,cc){
     </div>
     ${c.pendenciaDesc?`<div style="font-size:11px;font-weight:700;color:#d6b16a;margin-top:5px;line-height:1.4">🧩 ${esc(c.pendenciaDesc.slice(0,60))}${c.pendenciaDesc.length>60?'…':''}</div>`:''}
     ${c.obs?`<div style="font-size:11px;color:${planoDeepActive?_pi.deepText:'var(--muted)'};${planoDeepActive?'opacity:.82;':''}margin-top:5px;line-height:1.4">${esc(c.obs.slice(0,60))}${c.obs.length>60?'…':''}</div>`:''}
+    ${_cat==='proj'?`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px" onclick="event.stopPropagation()">
+      <label style="display:flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;cursor:pointer;color:${c.coresDone?'var(--success)':'var(--muted)'};${c.coresDone?'text-decoration:line-through':''}">
+        <input type="checkbox" ${c.coresDone?'checked':''} onchange="togglePrCores('${c.id}',this.checked)" style="width:13px;height:13px;accent-color:var(--success);cursor:pointer">
+        🎨 Cores
+      </label>
+      <label style="display:flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;cursor:pointer;color:${c.ruidoDone?'var(--success)':'var(--muted)'};${c.ruidoDone?'text-decoration:line-through':''}">
+        <input type="checkbox" ${c.ruidoDone?'checked':''} onchange="togglePrRuido('${c.id}',this.checked)" style="width:13px;height:13px;accent-color:var(--success);cursor:pointer">
+        🔇 Ruído
+      </label>
+    </div>`:''}
     ${isFreelaCol?`<button class="freela-btn freela-btn-ok" style="margin-top:8px;width:100%" onclick="event.stopPropagation();marcarFreelaFinalizado('${c.id}')" title="Move este projeto para a coluna Finalizado, junto com os demais">✅ Finalizado</button>`:''}
   </div>`;
+}
+// "Cores" (Aftershoot) e "Ruído" nem sempre são feitos na mesma ordem que
+// as colunas do kanban sugerem — cada festa pode variar qual etapa vem
+// primeiro. Por isso ficam marcáveis direto no card, independente de qual
+// coluna ele está, em vez de depender só da posição no board.
+function togglePrCores(id,val){
+  const card=prCards.find(c=>c.id===id);if(!card)return;
+  card.coresDone=val;card.updatedAt=Date.now();
+  savPr();renderPr();
+}
+function togglePrRuido(id,val){
+  const card=prCards.find(c=>c.id===id);if(!card)return;
+  card.ruidoDone=val;card.updatedAt=Date.now();
+  savPr();renderPr();
 }
 function marcarFreelaFinalizado(id){
   const card=prCards.find(c=>c.id===id);if(!card)return;
