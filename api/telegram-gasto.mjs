@@ -14,7 +14,7 @@ const auth = FB_SECRET ? `?auth=${encodeURIComponent(FB_SECRET)}` : '';
 const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 // Chat ID do Telegram autorizado a lançar gastos (o seu). Sem isso
 // configurado, qualquer pessoa que descobrir o bot poderia lançar gastos.
-const ALLOWED_CHAT_ID = process.env.TELEGRAM_ALLOWED_CHAT_ID || '';
+const ALLOWED_CHAT_ID = process.env.ID_DO_CHAT_PERMITIDO_DO_TELEGRAM || process.env.TELEGRAM_ALLOWED_CHAT_ID || '';
 // Segredo opcional enviado pelo Telegram em todo webhook (configurado via
 // setWebhook), pra confirmar que a requisição realmente veio do Telegram.
 const WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET || '';
