@@ -3,10 +3,11 @@
 // ou Pessoal — deduzindo também do "Valor no Banco" daquele mês, do mesmo
 // jeito que o botão "+ Registrar gasto" do CRM já faz. Assim, ao abrir o
 // CRM, o Resumo já aparece descontado, sem precisar digitar nada lá.
+export const config = { runtime: 'edge' };
+
 const FB_DB = 'https://crm---2026-default-rtdb.firebaseio.com';
-// Mesmo segredo do banco já usado em push-notifs.mjs (Firebase Console →
-// Contas de serviço → Segredos do banco de dados), configurado como
-// variável de ambiente no Netlify.
+// Segredo do banco (Firebase Console → Contas de serviço → Segredos do
+// banco de dados), configurado como variável de ambiente no Vercel.
 const FB_SECRET = process.env.FB_DB_SECRET || '';
 const auth = FB_SECRET ? `?auth=${encodeURIComponent(FB_SECRET)}` : '';
 
@@ -91,7 +92,7 @@ async function lancarGastoPessoal(mes, entry) {
   await Promise.all([putJson(`/pess26/dd/${mes}`, lista), putJson(`/pess26/vg/${mes}`, vg)]);
 }
 
-export default async (req) => {
+export default async function handler(req) {
   if (req.method !== 'POST') return new Response('ok', { status: 200 });
 
   if (WEBHOOK_SECRET) {
@@ -131,4 +132,4 @@ export default async (req) => {
   }
 
   return new Response('ok', { status: 200 });
-};
+}
