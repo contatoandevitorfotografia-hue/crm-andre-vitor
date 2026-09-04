@@ -134,25 +134,6 @@ select{background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;c
 .pag-parcela.pendente{background:#FEF3C7;color:#92400E}
 .pag-parcela.atrasado{background:#F5E8E6;color:#7A3028}
 
-/* FREELANCERS APP */
-.frl-card-mob{background:var(--surf);border-radius:12px;margin:0 12px 10px;border:1px solid var(--brd);box-shadow:0 1px 4px rgba(0,0,0,.05);padding:14px;display:flex;align-items:center;gap:12px}
-.frl-av{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#C0392B,#922B21);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#fff;flex-shrink:0}
-.frl-nome-mob{font-size:14px;font-weight:700;color:var(--txt);margin-bottom:2px}
-/* Freela consultas */
-.frl-section-ttl{font-size:11px;font-weight:800;color:var(--mut);text-transform:uppercase;letter-spacing:.08em;padding:16px 16px 6px}
-.frl-col-strip{display:flex;gap:8px;overflow-x:auto;padding:0 12px 12px;scrollbar-width:none}
-.frl-col-strip::-webkit-scrollbar{display:none}
-.frl-col-box{flex-shrink:0;width:220px;background:var(--surf);border-radius:12px;border:1px solid var(--brd);overflow:hidden}
-.frl-col-hdr{padding:10px 12px;font-size:12px;font-weight:800;color:#fff;display:flex;align-items:center;justify-content:space-between}
-.frl-col-badge{background:rgba(255,255,255,.25);border-radius:8px;padding:1px 7px;font-size:10px}
-.frl-cons-card{padding:10px 12px;border-bottom:1px solid var(--brd)}
-.frl-cons-card:last-child{border-bottom:none}
-.frl-cons-nome{font-size:13px;font-weight:700;color:var(--txt);margin-bottom:2px}
-.frl-cons-info{font-size:11px;color:var(--mut);line-height:1.6}
-.frl-cons-dias{font-size:10px;font-weight:700;color:var(--acc);margin-top:4px}
-.frl-empty-col{padding:12px;font-size:11px;color:var(--mut);text-align:center}
-.frl-info-mob{font-size:12px;color:var(--mut);font-weight:500;line-height:1.5}
-
 /* SEC TITLE */
 .sec-ttl{font-size:10px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.8px;padding:14px 16px 6px}
 
@@ -178,6 +159,13 @@ select{background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;c
 .lst-add-row{display:flex;gap:8px;margin-bottom:10px}
 .lst-add-row input{flex:1;background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;padding:10px 13px;color:var(--txt);font-size:13px;outline:none;min-width:0;font-family:'Montserrat',sans-serif}
 .lst-add-row input:focus{border-color:var(--acc)}
+.lst-add-stack{margin-bottom:10px;display:flex;flex-direction:column;gap:8px}
+.lst-add-main{width:100%;background:var(--surf);border:1.5px solid var(--brd);border-radius:12px;padding:14px 16px;color:var(--txt);font-size:15px;line-height:1.4;outline:none;font-family:'Montserrat',sans-serif;box-sizing:border-box;min-height:50px}
+.lst-add-main:focus{border-color:var(--acc)}
+.lst-add-sub{display:flex;gap:8px}
+.lst-add-sub input[type=date]{flex:1;min-width:0;background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;color:var(--txt);padding:11px 10px;font-size:13px;outline:none;font-family:'Montserrat',sans-serif}
+.lst-add-sub input[type=time]{width:92px;flex-shrink:0;background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;color:var(--txt);padding:11px 8px;font-size:13px;outline:none;font-family:'Montserrat',sans-serif}
+.lst-add-sub .btn-add{padding:0 20px;font-size:15px;border-radius:10px;flex-shrink:0;font-weight:800}
 .lst-item{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:var(--surf);border-radius:12px;margin-bottom:8px;border:1px solid var(--brd);box-shadow:0 1px 4px rgba(0,0,0,.05)}
 .lst-item.done .lst-txt{text-decoration:line-through;color:var(--mut)}
 .lst-txt{flex:1;font-size:13px;font-weight:500;line-height:1.4;padding-top:1px}
@@ -274,13 +262,6 @@ select{background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;c
 
   <div id="mob-content">
 
-    <!-- FREELANCERS -->
-    <section id="sec-frl" class="mob-sec">
-      <div style="height:10px"></div>
-      <div class="sec-ttl">🤝 Fotógrafos Freelancers</div>
-      <div id="frl-list"></div>
-    </section>
-
     <!-- AGENDA -->
     <section id="sec-ag" class="mob-sec">
       <div class="ag-nav">
@@ -332,22 +313,26 @@ select{background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;c
 
       <!-- PENDÊNCIAS DE CLIENTES -->
       <div class="lst-sec" id="lst-sec-pen">
-        <div class="lst-add-row">
-          <input type="text" id="lst-pen-inp" placeholder="Nova pendência com cliente..." onkeydown="if(event.key==='Enter')addLstPen()">
-          <input type="date" id="lst-pen-prazo" style="background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;color:var(--txt);padding:8px 10px;font-size:12px;outline:none;font-family:'Montserrat',sans-serif;flex-shrink:0">
-          <input type="time" id="lst-pen-hora" style="width:74px;background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;color:var(--txt);padding:8px 6px;font-size:12px;outline:none;font-family:'Montserrat',sans-serif;flex-shrink:0">
-          <button class="btn-add" onclick="addLstPen()">+</button>
+        <div class="lst-add-stack">
+          <input type="text" id="lst-pen-inp" class="lst-add-main" placeholder="Nova pendência com cliente..." onkeydown="if(event.key==='Enter')addLstPen()">
+          <div class="lst-add-sub">
+            <input type="date" id="lst-pen-prazo">
+            <input type="time" id="lst-pen-hora">
+            <button class="btn-add" onclick="addLstPen()">+ Adicionar</button>
+          </div>
         </div>
         <div id="lst-pen-list"></div>
       </div>
 
       <!-- PENDÊNCIAS GERAIS -->
       <div class="lst-sec" id="lst-sec-pgr">
-        <div class="lst-add-row">
-          <input type="text" id="lst-pgr-inp" placeholder="O que precisa fazer?" onkeydown="if(event.key==='Enter')addLstPgr()">
-          <input type="date" id="lst-pgr-prazo" style="background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;color:var(--txt);padding:8px 10px;font-size:12px;outline:none;font-family:'Montserrat',sans-serif;flex-shrink:0">
-          <input type="time" id="lst-pgr-hora" style="width:74px;background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;color:var(--txt);padding:8px 6px;font-size:12px;outline:none;font-family:'Montserrat',sans-serif;flex-shrink:0">
-          <button class="btn-add" onclick="addLstPgr()">+</button>
+        <div class="lst-add-stack">
+          <input type="text" id="lst-pgr-inp" class="lst-add-main" placeholder="O que precisa fazer?" onkeydown="if(event.key==='Enter')addLstPgr()">
+          <div class="lst-add-sub">
+            <input type="date" id="lst-pgr-prazo">
+            <input type="time" id="lst-pgr-hora">
+            <button class="btn-add" onclick="addLstPgr()">+ Adicionar</button>
+          </div>
         </div>
         <div id="lst-pgr-list"></div>
       </div>
@@ -365,35 +350,19 @@ select{background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;c
       </div>
     </section>
 
-    <!-- FINANCEIRO (só contas da casa — sem financeiro de festas) -->
+    <!-- FINANCEIRO (só o resumo — Valor no Banco / Pode Gastar) -->
     <section id="sec-fin" class="mob-sec">
       <div class="sec-ttl">🏢 Empresa</div>
       <div class="fin-stats">
         <div class="fin-stat"><div class="fin-stat-lbl">🏦 Valor no Banco</div><div class="fin-stat-val" id="fin-emp-vg">—</div></div>
         <div class="fin-stat"><div class="fin-stat-lbl">💸 Pode Gastar</div><div class="fin-stat-val" id="fin-emp-disp">—</div></div>
       </div>
-      <div id="fin-emp-contas"></div>
-      <div class="lst-add-row" style="margin-top:10px">
-        <input type="date" id="fin-emp-gd" style="max-width:126px;flex:0 0 auto">
-        <input type="number" id="fin-emp-gv" placeholder="Valor R$" step="0.01" min="0" style="max-width:92px;flex:0 0 auto">
-        <input type="text" id="fin-emp-gl" placeholder="Despesa (ex: material de escritório)...">
-        <button class="btn-add" onclick="addGastoAvulsoApp('fin')">+</button>
-      </div>
-      <div id="fin-emp-gastos"></div>
 
       <div class="sec-ttl" style="margin-top:10px">🏠 Pessoal</div>
       <div class="fin-stats">
         <div class="fin-stat"><div class="fin-stat-lbl">🏦 Valor no Banco</div><div class="fin-stat-val" id="fin-pess-vg">—</div></div>
         <div class="fin-stat"><div class="fin-stat-lbl">💸 Pode Gastar</div><div class="fin-stat-val" id="fin-pess-disp">—</div></div>
       </div>
-      <div id="fin-pess-contas"></div>
-      <div class="lst-add-row" style="margin-top:10px">
-        <input type="date" id="fin-pess-gd" style="max-width:126px;flex:0 0 auto">
-        <input type="number" id="fin-pess-gv" placeholder="Valor R$" step="0.01" min="0" style="max-width:92px;flex:0 0 auto">
-        <input type="text" id="fin-pess-gl" placeholder="Despesa (ex: farmácia)...">
-        <button class="btn-add" onclick="addGastoAvulsoApp('pess')">+</button>
-      </div>
-      <div id="fin-pess-gastos"></div>
     </section>
 
     <!-- PESSOAIS -->
@@ -544,9 +513,6 @@ select{background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;c
     <button class="nav-btn active" onclick="showSec('lst',this)">
       <span class="ni">📝</span><span>Listas</span>
     </button>
-    <button class="nav-btn" onclick="showSec('frl',this)">
-      <span class="ni">🤝</span><span>Freelas</span>
-    </button>
     <button class="nav-btn" onclick="showSec('ag',this)">
       <span class="ni">📅</span><span>Agenda</span>
     </button>
@@ -619,7 +585,6 @@ function showSec(k,btn){
   btn.classList.add('active');
   if(k==='lst')renderListas();
   else if(k==='ag'){renderAgenda();}
-  else if(k==='frl'){renderFreelas();}
   else if(k==='gst'){renderGstFestas();}
   else if(k==='fin'){renderFinanceiro();}
   else if(k==='pes'){renderPessoais();}
@@ -745,19 +710,6 @@ function _calcPessMes(mes){
   const sobrou=aReceber-pendG-pendD+vg;
   return{pendG,pendD,vg,aReceber,sobrou,contasPendentes:contasMes.filter(c=>_contaValorPendente(c,mes)>0)};
 }
-function _finContaRowHTML(c,mes){
-  const val=_contaValorPendente(c,mes);
-  const dia=(c.itens&&c.itens.length)?(c.itens.find(x=>_itemAtivoNoMes(x,mes)&&!_itemPagoMes(x,mes))?.dia||c.dia):c.dia;
-  const hoje=new Date().getDate();
-  const atrasada=mes===_finCurMes()&&dia&&dia<hoje;
-  return`<div class="lst-item">
-    <div style="flex:1;min-width:0">
-      <div class="lst-txt">${esc(c.nome)}</div>
-      <div class="lst-meta" style="${atrasada?'color:var(--err);font-weight:700':''}">${dia?`📅 Dia ${dia}`:''}${atrasada?' · atrasada':''}</div>
-    </div>
-    <div style="font-size:14px;font-weight:800;color:${atrasada?'var(--err)':'var(--txt)'};flex-shrink:0">${fmtM(val)}</div>
-  </div>`;
-}
 function renderFinanceiro(){
   const mes=_finCurMes();
   const emp=_calcFinMes(mes);
@@ -767,89 +719,6 @@ function renderFinanceiro(){
   setStat('fin-emp-disp',emp.sobrou);
   setStat('fin-pess-vg',pess.vg);
   setStat('fin-pess-disp',pess.sobrou);
-  const empEl=document.getElementById('fin-emp-contas');
-  empEl.innerHTML=emp.contasPendentes.length
-    ?emp.contasPendentes.map(c=>_finContaRowHTML(c,mes)).join('')
-    :'<div class="empty">Nenhuma conta da empresa pendente este mês 🎉</div>';
-  const pessEl=document.getElementById('fin-pess-contas');
-  pessEl.innerHTML=pess.contasPendentes.length
-    ?pess.contasPendentes.map(c=>_finContaRowHTML(c,mes)).join('')
-    :'<div class="empty">Nenhuma conta pessoal pendente este mês 🎉</div>';
-
-  // ── Outras despesas do mês (gastos avulsos, não de festa) ──
-  const _empG=(finDD[mes]||[]).slice().sort((a,b)=>(b.dt||'').localeCompare(a.dt||''));
-  const empGEl=document.getElementById('fin-emp-gastos');
-  if(empGEl)empGEl.innerHTML=_empG.length?_empG.map((d,i)=>_gastoAvulsoRowHTML('fin',mes,finDD[mes].indexOf(d),d)).join(''):'';
-  const _pessG=(pessDD[mes]||[]).slice().sort((a,b)=>(b.dt||'').localeCompare(a.dt||''));
-  const pessGEl=document.getElementById('fin-pess-gastos');
-  if(pessGEl)pessGEl.innerHTML=_pessG.length?_pessG.map((d,i)=>_gastoAvulsoRowHTML('pess',mes,pessDD[mes].indexOf(d),d)).join(''):'';
-}
-
-// ── Outras despesas (gastos avulsos, não de festa) ───────────
-// Mesma estrutura do "Diários" do CRM principal (finDD/pessDD): um gasto
-// pontual que já sai do banco na hora (marcado como pago), sem estar
-// ligado a nenhuma festa nem conta fixa.
-function _initFinVG(mes){
-  if(finVG[mes]===undefined){
-    const festas=_getFinFestas(mes);
-    finVG[mes]=festas.reduce((s,f)=>s+(f.reserva||0),0);
-  }
-}
-function _initPessVG(mes){
-  if(pessVG[mes]===undefined){
-    const F=pessFD[mes]||[];
-    pessVG[mes]=F.reduce((s,f)=>s+(f.pago||0),0);
-  }
-}
-function saveFinDataApp(){if(_finDb)_finDb.ref('crm26').update(JSON.parse(JSON.stringify({vg:finVG,dd:finDD})));}
-function savePessDataApp(){if(_finDb)_finDb.ref('pess26').update(JSON.parse(JSON.stringify({vg:pessVG,dd:pessDD})));}
-function _gastoAvulsoRowHTML(tipo,mes,i,d){
-  return`<div class="lst-item">
-    <div style="flex:1;min-width:0">
-      <div class="lst-txt">${esc(d.l||'Gasto')}</div>
-      <div class="lst-meta">${d.dt?d.dt.split('-').reverse().join('/'):''}</div>
-    </div>
-    <div style="font-size:14px;font-weight:800;color:var(--err);flex-shrink:0">${fmtM(d.v)}</div>
-    <button class="btn-del" onclick="delGastoAvulsoApp('${tipo}','${mes}',${i})">✕</button>
-  </div>`;
-}
-function addGastoAvulsoApp(tipo){
-  const pre=tipo==='fin'?'fin-emp':'fin-pess';
-  const dtEl=document.getElementById(pre+'-gd'), vEl=document.getElementById(pre+'-gv'), lEl=document.getElementById(pre+'-gl');
-  const v=parseFloat(vEl?.value)||0;
-  if(!v){toast('Preencha o valor!');return;}
-  const l=(lEl?.value||'').trim();
-  const dtVal=dtEl?.value||new Date().toISOString().slice(0,10);
-  const mes=_finCurMes();
-  if(tipo==='fin'){
-    if(!finDD[mes])finDD[mes]=[];
-    _initFinVG(mes);finVG[mes]-=v;
-    finDD[mes].push({dt:dtVal,v,l,p:true});
-    finDD[mes].sort((a,b)=>a.dt.localeCompare(b.dt));
-    saveFinDataApp();
-  }else{
-    if(!pessDD[mes])pessDD[mes]=[];
-    _initPessVG(mes);pessVG[mes]-=v;
-    pessDD[mes].push({dt:dtVal,v,l,p:true});
-    pessDD[mes].sort((a,b)=>a.dt.localeCompare(b.dt));
-    savePessDataApp();
-  }
-  if(dtEl)dtEl.value='';if(vEl)vEl.value='';if(lEl)lEl.value='';
-  renderFinanceiro();
-  toast('✅ Gasto registrado!');
-}
-function delGastoAvulsoApp(tipo,mes,i){
-  if(!confirm('Excluir este gasto?'))return;
-  if(tipo==='fin'){
-    const d=finDD[mes]?.[i];if(!d)return;
-    if(d.p){_initFinVG(mes);finVG[mes]+=d.v;}
-    finDD[mes].splice(i,1);saveFinDataApp();
-  }else{
-    const d=pessDD[mes]?.[i];if(!d)return;
-    if(d.p){_initPessVG(mes);pessVG[mes]+=d.v;}
-    pessDD[mes].splice(i,1);savePessDataApp();
-  }
-  renderFinanceiro();
 }
 
 // ── GASTOS (sincroniza com CRM via gastosItens) ──────────────
@@ -1731,15 +1600,15 @@ function renderLstPendencias(){
     const venc=p.prazo&&p.prazo<hoje&&!done;
     if(_editingPen===p.id){
       return`<div class="lst-item">
-        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
-          <input type="text" id="epen-txt-${p.id}" value="${esc(p.texto)}" style="background:var(--surf);border:1.5px solid var(--acc);border-radius:8px;padding:8px 10px;color:var(--txt);font-size:13px;outline:none;font-family:'Montserrat',sans-serif">
-          <div style="display:flex;gap:6px">
-            <input type="date" id="epen-data-${p.id}" value="${p.prazo||''}" style="flex:1;min-width:0;background:var(--surf);border:1.5px solid var(--brd);border-radius:8px;padding:6px 8px;color:var(--txt);font-size:12px;outline:none;font-family:'Montserrat',sans-serif">
-            <input type="time" id="epen-hora-${p.id}" value="${p.hora||''}" style="width:78px;flex-shrink:0;background:var(--surf);border:1.5px solid var(--brd);border-radius:8px;padding:6px 8px;color:var(--txt);font-size:12px;outline:none;font-family:'Montserrat',sans-serif">
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:8px">
+          <input type="text" id="epen-txt-${p.id}" class="lst-add-main" value="${esc(p.texto)}" style="border-color:var(--acc);padding:12px 14px;font-size:14px;min-height:auto">
+          <div class="lst-add-sub">
+            <input type="date" id="epen-data-${p.id}" value="${p.prazo||''}">
+            <input type="time" id="epen-hora-${p.id}" value="${p.hora||''}">
           </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:4px">
-          <button class="btn-add" style="padding:6px 10px" onclick="saveLstPenEdit('${p.id}')">✓</button>
+          <button class="btn-add" style="padding:8px 12px" onclick="saveLstPenEdit('${p.id}')">✓</button>
           <button class="btn-del" onclick="cancelLstPenEdit()">✕</button>
         </div>
       </div>`;
@@ -1805,15 +1674,15 @@ function renderLstPgr(){
     const venc=p.prazo&&p.prazo<hoje&&!done;
     if(_editingPgr===p.id){
       return`<div class="lst-item">
-        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
-          <input type="text" id="epgr-txt-${p.id}" value="${esc(p.texto)}" style="background:var(--surf);border:1.5px solid var(--acc);border-radius:8px;padding:8px 10px;color:var(--txt);font-size:13px;outline:none;font-family:'Montserrat',sans-serif">
-          <div style="display:flex;gap:6px">
-            <input type="date" id="epgr-data-${p.id}" value="${p.prazo||''}" style="flex:1;min-width:0;background:var(--surf);border:1.5px solid var(--brd);border-radius:8px;padding:6px 8px;color:var(--txt);font-size:12px;outline:none;font-family:'Montserrat',sans-serif">
-            <input type="time" id="epgr-hora-${p.id}" value="${p.hora||''}" style="width:78px;flex-shrink:0;background:var(--surf);border:1.5px solid var(--brd);border-radius:8px;padding:6px 8px;color:var(--txt);font-size:12px;outline:none;font-family:'Montserrat',sans-serif">
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:8px">
+          <input type="text" id="epgr-txt-${p.id}" class="lst-add-main" value="${esc(p.texto)}" style="border-color:var(--acc);padding:12px 14px;font-size:14px;min-height:auto">
+          <div class="lst-add-sub">
+            <input type="date" id="epgr-data-${p.id}" value="${p.prazo||''}">
+            <input type="time" id="epgr-hora-${p.id}" value="${p.hora||''}">
           </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:4px">
-          <button class="btn-add" style="padding:6px 10px" onclick="saveLstPgrEdit('${p.id}')">✓</button>
+          <button class="btn-add" style="padding:8px 12px" onclick="saveLstPgrEdit('${p.id}')">✓</button>
           <button class="btn-del" onclick="cancelLstPgrEdit()">✕</button>
         </div>
       </div>`;
@@ -1899,77 +1768,6 @@ function renderPessoaisLista(lista){
   el.innerHTML=html;
 }
 
-function renderFreelas(){
-  const el=document.getElementById('frl-list');if(!el)return;
-  const today=new Date().toISOString().split('T')[0];
-
-  // ── Seção 1: Consultas ativas (kanban horizontal) ──────────────────
-  const totalConsultas=freelaCards.length;
-  let consultasHtml='';
-  if(totalConsultas>0){
-    const cols=FRL_COLS.map(col=>{
-      const cards=freelaCards.filter(c=>c.status===col.id);
-      const cardsHtml=cards.length
-        ? cards.map(c=>{
-            let diasTxt='';
-            if(c.dataConsulta){
-              const diff=Math.floor((new Date()-new Date(c.dataConsulta))/(86400000));
-              diasTxt=diff===0?'Consultado hoje':`Há ${diff} dia${diff!==1?'s':''}`;
-            }
-            return`<div class="frl-cons-card">
-              <div class="frl-cons-nome">${esc(c.nomeCliente||'Sem nome')}</div>
-              <div class="frl-cons-info">
-                ${c.nomeFreela?`📸 ${esc(c.nomeFreela)}`:''}
-                ${c.dataEvento?`<br>📅 ${_fmtDate(c.dataEvento)}`:''}
-              </div>
-              ${diasTxt?`<div class="frl-cons-dias">🕐 ${diasTxt}</div>`:''}
-            </div>`;
-          }).join('')
-        : `<div class="frl-empty-col">Nenhuma</div>`;
-      return`<div class="frl-col-box">
-        <div class="frl-col-hdr" style="background:${col.color}">${col.label}<span class="frl-col-badge">${cards.length}</span></div>
-        ${cardsHtml}
-      </div>`;
-    }).join('');
-    consultasHtml=`
-      <div class="frl-section-ttl">📋 Consultas — ${totalConsultas} total</div>
-      <div class="frl-col-strip">${cols}</div>`;
-  }
-
-  // ── Seção 2: Cadastro de freelancers ──────────────────────────────
-  let perfilHtml='';
-  if(!freelancers.length){
-    perfilHtml='<div class="empty" style="margin-top:8px">Nenhum freelancer cadastrado no CRM</div>';
-  } else {
-    perfilHtml=`<div class="frl-section-ttl">👥 Cadastros</div>`+freelancers.map(f=>{
-      const initials=f.nome.split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase();
-      const evsDone=opCards.filter(c=>c.freelancerId===f.id).length;
-      const consultas=freelaCards.filter(c=>(c.nomeFreela||'').toLowerCase()===f.nome.toLowerCase());
-      const cache=f.valorFreela?`💵 ${fmtM(f.valorFreela)}`:'';
-      const tel=f.tel?`📱 ${f.tel}`:'';
-      const whatsLink=f.tel
-        ?`<a href="https://wa.me/55${f.tel.replace(/\D/g,'')}" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#128C7E;text-decoration:none;background:#d1fae5;padding:4px 10px;border-radius:8px;margin-top:8px">💬 WhatsApp</a>`:'';
-      const ultimaConsulta=consultas.sort((a,b)=>(b.dataConsulta||'').localeCompare(a.dataConsulta||''))[0];
-      const statusAtual=ultimaConsulta
-        ? FRL_COLS.find(c=>c.id===ultimaConsulta.status)||null : null;
-      const statusBadge=statusAtual
-        ?`<span style="display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:${statusAtual.color}22;color:${statusAtual.color};border:1px solid ${statusAtual.color}44;margin-top:4px">${statusAtual.label}</span>`:'';
-      return`<div class="frl-card-mob">
-        <div class="frl-av">${initials||'🤝'}</div>
-        <div style="flex:1;min-width:0">
-          <div class="frl-nome-mob">${esc(f.nome)}</div>
-          <div class="frl-info-mob">${[cache,tel].filter(Boolean).join(' · ')||'Sem dados'}</div>
-          <div style="font-size:11px;color:var(--mut);margin-top:2px">${evsDone} evento(s) · ${consultas.length} consulta(s)</div>
-          ${statusBadge}
-          ${f.obs?`<div style="font-size:11px;color:var(--mut);margin-top:3px;font-style:italic">${esc(f.obs)}</div>`:''}
-          ${whatsLink}
-        </div>
-      </div>`;
-    }).join('');
-  }
-
-  el.innerHTML=consultasHtml+perfilHtml;
-}
 
 // ── ENTER KEY ─────────────────────────────────
 document.addEventListener('keydown',e=>{
