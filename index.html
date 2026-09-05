@@ -6887,7 +6887,7 @@ function _getFinFestas(mes){
     return{id:c.id,n:c.nomePais||c.titulo||'Cliente',t:c.tipo||'festa',
       d:c.dataEvento?parseInt(c.dataEvento.split('-')[2]):0,
       v:empShare,liq:empLiq,vFull:t,p:localSt==='pago',
-      custo:gastosEmp,custoAlbum:gastosAlbum,reserva:vPago,
+      custo:gastosEmp,custoAlbum:gastosAlbum,reserva:vPago,reservaAndre:c.valorReservaAndre||0,
       rest:empFalta,
       statusPag:localSt
     };
@@ -7227,7 +7227,7 @@ function renderFinFestas(){
     const vRes=card?.valorReserva||0;
     const brutoCell=`<span style="color:var(--muted);font-weight:700">${fmtMoney(f.v)}</span>`;
     const valorCell=`<span id="fin-v-${f.id}" style="color:var(--success);font-weight:700;cursor:pointer;text-decoration:underline dotted" title="Clique para editar o valor total do plano" onclick="event.stopPropagation();inlineEditValor('${f.id}',this)">${fmtMoney(f.liq)}</span>`;
-    const reservaCell=`<span id="fin-r-${f.id}" style="color:#7D95AE;font-weight:700;cursor:pointer;text-decoration:underline dotted" title="Clique para editar o valor pago" onclick="event.stopPropagation();inlineEditReserva('${f.id}')">${f.reserva>0?fmtMoney(f.reserva):''}</span>`;
+    const reservaCell=`<span id="fin-r-${f.id}" style="color:#7D95AE;font-weight:700;cursor:pointer;text-decoration:underline dotted" title="Clique para editar o valor pago" onclick="event.stopPropagation();inlineEditReserva('${f.id}')">${f.reserva>0?fmtMoney(f.reserva):(f.reservaAndre>0?'':'')}</span>${f.reservaAndre>0?`<div style="font-size:10px;color:#60a5fa;font-weight:700;margin-top:2px" title="Pago direto para o André, não conta no líquido da empresa">🔵 ${fmtMoney(f.reservaAndre)}</div>`:''}`;
     const restCell=f.rest<=0
       ?`<span style="color:var(--muted);font-size:12px">quitado</span>`
       :f.rest>0
@@ -7236,8 +7236,8 @@ function renderFinFestas(){
             onclick="event.stopPropagation();inlineEditFalta('${f.id}',this)">${fmtMoney(f.rest)}</span>`
         :`<span style="color:#6b7280;cursor:pointer;font-size:12px"
             onclick="event.stopPropagation();inlineEditFalta('${f.id}',this)">— editar</span>`;
-    const custoCell=f.custo>0?`<span style="color:var(--danger);cursor:pointer;text-decoration:underline dotted" title="Clique para editar" onclick="event.stopPropagation();inlineEditCusto('${f.id}',this)">${fmtMoney(f.custo)}</span>`:'—';
-    const custoAlbumCell=f.custoAlbum>0?`<span style="color:#22c55e;cursor:pointer;text-decoration:underline dotted" title="Clique para editar custos do álbum" onclick="event.stopPropagation();inlineEditCustoAlbum('${f.id}',this)">${fmtMoney(f.custoAlbum)}</span>`:'—';
+    const custoCell=f.custo>0?`<span style="color:var(--danger);cursor:pointer;text-decoration:underline dotted" title="Clique para editar" onclick="event.stopPropagation();inlineEditCusto('${f.id}',this)">${fmtMoney(f.custo)}</span>`:`<span style="color:#6b7280;cursor:pointer;font-size:12px" onclick="event.stopPropagation();inlineEditCusto('${f.id}',this)">— editar</span>`;
+    const custoAlbumCell=f.custoAlbum>0?`<span style="color:#22c55e;cursor:pointer;text-decoration:underline dotted" title="Clique para editar custos do álbum" onclick="event.stopPropagation();inlineEditCustoAlbum('${f.id}',this)">${fmtMoney(f.custoAlbum)}</span>`:`<span style="color:#6b7280;cursor:pointer;font-size:12px" onclick="event.stopPropagation();inlineEditCustoAlbum('${f.id}',this)">— editar</span>`;
     return`<tr onclick="openOpModal('${f.id}',null,event)" style="cursor:pointer">
       <td style="font-weight:600">${f.d>0?'Dia '+f.d:''}</td>
       <td><div style="font-weight:600">${esc(f.n)}</div><div style="font-size:11px;color:var(--muted)">${esc(f.t)}</div></td>
@@ -7348,25 +7348,43 @@ function quickChangeStatus(cardId){
   const labels={pago:'✅ Pago',sinal:'💰 Reserva',pendente:'⏳ Pendente'};
   toast(labels[card.statusPag]+' salvo!','green');
 }
+// empLiq/andLiq — quanto cabe de líquido a cada lado, pra saber se um
+// pagamento já "quita" aquele lado especificamente.
+function _empLiqDaFesta(card){
+  const es=calcEmpresaShare(card);
+  const ge=(card.gastosItens||[]).filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
+  return Math.max(0,es-ge);
+}
+function _andreLiqDaFesta(card){
+  const as=calcAndreShare(card);
+  const gp=(card.gastosItens||[]).filter(g=>g.tipo==='pessoal').reduce((s,g)=>s+(g.val||0),0);
+  return Math.max(0,as-gp);
+}
+let _qepDestino='empresa';
 function quickEditPag(cardId){
   const card=opCards.find(c=>c.id===cardId);if(!card)return;
   const existing=document.getElementById('qep-overlay');if(existing)existing.remove();
-  const _esQE=calcEmpresaShare(card);
-  const _geQE=(card.gastosItens||[]).filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
-  const total=Math.max(0,_esQE-_geQE);  // empLiq — valor líquido real
-  const pago=card.valorReserva||0;
+  const totalEmp=_empLiqDaFesta(card);
+  const totalAnd=_andreLiqDaFesta(card);
+  _qepDestino=(card.valorReserva||0)>0?'empresa':(card.valorReservaAndre||0)>0?'andre':'empresa';
+  const pagoInicial=_qepDestino==='empresa'?(card.valorReserva||0):(card.valorReservaAndre||0);
   const div=document.createElement('div');
   div.id='qep-overlay';
   div.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0.35)';
   div.innerHTML=`<div style="background:var(--surface);border-radius:18px 18px 0 0;padding:22px 20px 28px;width:100%;max-width:420px;box-shadow:0 -6px 28px rgba(0,0,0,0.18)" onclick="event.stopPropagation()">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-      <span style="font-weight:700;font-size:16px">💰 Valor Pago</span>
+      <span style="font-weight:700;font-size:16px">💰 Registrar Pagamento</span>
       <button onclick="document.getElementById('qep-overlay').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#999;line-height:1">×</button>
     </div>
-    <div style="font-size:12px;color:#6b7280;margin-bottom:14px">${esc(card.titulo||card.nomePais||'Cliente')}${total?' — Total: '+fmtMoney(total):''}</div>
-    <input type="number" id="qep-input" value="${pago||''}" min="0" step="0.01" placeholder="0,00"
+    <div style="font-size:12px;color:#6b7280;margin-bottom:14px">${esc(card.titulo||card.nomePais||'Cliente')}</div>
+    <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">Pra quem vai esse pagamento?</div>
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <button type="button" id="qep-dest-empresa" onclick="qepSetDestino('${cardId}','empresa')" style="flex:1;padding:9px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer">🏢 Empresa</button>
+      <button type="button" id="qep-dest-andre" onclick="qepSetDestino('${cardId}','andre')" style="flex:1;padding:9px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer">🔵 André</button>
+    </div>
+    <input type="number" id="qep-input" value="${pagoInicial||''}" min="0" step="0.01" placeholder="0,00"
       style="width:100%;padding:12px 14px;font-size:22px;font-weight:700;text-align:center;border:2px solid #e5e7eb;border-radius:10px;margin-bottom:10px;box-sizing:border-box;outline:none"
-      oninput="qepUpdateBadge(${total})" onkeydown="if(event.key==='Enter')saveQuickPag('${cardId}')">
+      oninput="qepUpdateBadge()" onkeydown="if(event.key==='Enter')saveQuickPag('${cardId}')">
     <div id="qep-badge" style="text-align:center;font-size:13px;font-weight:600;margin-bottom:14px;min-height:20px"></div>
     <div style="display:flex;gap:10px">
       <button onclick="document.getElementById('qep-overlay').remove()" style="flex:1;padding:11px;border:1.5px solid #e5e7eb;background:#f9fafb;border-radius:9px;font-size:14px;cursor:pointer;font-weight:500">Cancelar</button>
@@ -7375,14 +7393,32 @@ function quickEditPag(cardId){
   </div>`;
   document.body.appendChild(div);
   div.addEventListener('click',()=>div.remove());
+  window._qepTotals={empresa:totalEmp,andre:totalAnd};
+  qepRenderDestino();
   const inp=document.getElementById('qep-input');
-  qepUpdateBadge(total);
+  qepUpdateBadge();
   inp.focus();inp.select();
 }
-function qepUpdateBadge(total){
+function qepRenderDestino(){
+  const bE=document.getElementById('qep-dest-empresa'),bA=document.getElementById('qep-dest-andre');
+  if(!bE||!bA)return;
+  const on='border:1.5px solid #7D95AE;background:#7D95AE;color:#fff',onA='border:1.5px solid #2563eb;background:#2563eb;color:#fff',off='border:1.5px solid #e5e7eb;background:#f9fafb;color:#374151';
+  bE.style.cssText=(bE.style.cssText.split(';').filter(s=>!/border|background|color/.test(s)).join(';'))+';'+(_qepDestino==='empresa'?on:off);
+  bA.style.cssText=(bA.style.cssText.split(';').filter(s=>!/border|background|color/.test(s)).join(';'))+';'+(_qepDestino==='andre'?onA:off);
+}
+function qepSetDestino(cardId,destino){
+  _qepDestino=destino;
+  const card=opCards.find(c=>c.id===cardId);
+  const inp=document.getElementById('qep-input');
+  if(inp&&card)inp.value=(destino==='empresa'?(card.valorReserva||0):(card.valorReservaAndre||0))||'';
+  qepRenderDestino();
+  qepUpdateBadge();
+}
+function qepUpdateBadge(){
   const inp=document.getElementById('qep-input');
   const badge=document.getElementById('qep-badge');
   if(!inp||!badge)return;
+  const total=(window._qepTotals||{})[_qepDestino]||0;
   const v=parseFloat(inp.value)||0;
   if(!total||total<=0){badge.textContent='';return;}
   if(v>=total)badge.innerHTML='<span style="color:#7D95AE">✅ Quitado</span>';
@@ -7393,24 +7429,30 @@ function saveQuickPag(cardId){
   const card=opCards.find(c=>c.id===cardId);if(!card)return;
   const inp=document.getElementById('qep-input');
   const pago=parseFloat(inp?.value)||0;
-  const total=(card.valorEmpresa||0)+(card.valorAndre||0)||card.valorTotal||0;
-  const _esChkQP=calcEmpresaShare(card);
-  const _geChkQP=(card.gastosItens||[]).filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
-  const _liqChkQP=Math.max(0,_esChkQP-_geChkQP);
-  if(_liqChkQP>0&&pago>_liqChkQP*1.3){
-    openCfm('Confirma esse valor?',`O líquido desta festa é ${fmtMoney(_liqChkQP)}, mas você digitou ${fmtMoney(pago)}. Tem certeza que é esse o valor pago?`,()=>_commitQuickPag(cardId,pago));
+  const liq=_qepDestino==='empresa'?_empLiqDaFesta(card):_andreLiqDaFesta(card);
+  if(liq>0&&pago>liq*1.3){
+    const lado=_qepDestino==='empresa'?'da empresa':'do André';
+    openCfm('Confirma esse valor?',`O líquido ${lado} nesta festa é ${fmtMoney(liq)}, mas você digitou ${fmtMoney(pago)}. Tem certeza que é esse o valor pago?`,()=>_commitQuickPag(cardId,_qepDestino,pago));
     return;
   }
-  _commitQuickPag(cardId,pago);
+  _commitQuickPag(cardId,_qepDestino,pago);
 }
-function _commitQuickPag(cardId,pago){
+function _commitQuickPag(cardId,destino,pago){
   const card=opCards.find(c=>c.id===cardId);if(!card)return;
+  if(destino==='andre'){
+    const _valorAntesAn=card.valorReservaAndre||0;
+    _ajustaPessVGSimples(card,pago);savePessData();
+    card.valorReservaAndre=pago;
+    card.updatedAt=Date.now();
+    savOp();toast('✅ Valor pago (André) salvo!','green');
+    renderOp();renderFinFestas();renderFinResumo();renderPessAll();
+    const ov=document.getElementById('qep-overlay');if(ov)ov.remove();
+    return;
+  }
   const _valorAntesQP=card.valorReserva||0,_statusAntesQP=card.statusPag;
   _ajustaVGReservaSimples(card,pago);saveFinData();
   card.valorReserva=pago;
-  const _esQP=calcEmpresaShare(card);
-  const _geQP=(card.gastosItens||[]).filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
-  const _liqQP=Math.max(0,_esQP-_geQP);
+  const _liqQP=_empLiqDaFesta(card);
   const _faltaQP=Math.max(0,_liqQP-pago);
   if(_faltaQP<=0&&_liqQP>0){card.statusPag='pago';card.valorRestante=0;}
   else if(pago>0){card.statusPag='sinal';card.valorRestante=_faltaQP;}
@@ -7456,57 +7498,11 @@ function saveInlineVT(cardId){
   }
   renderFinFestas();renderFinResumo();renderPessAll();
 }
+// Abre o mesmo popup de "Registrar Pagamento" usado no card do kanban —
+// pergunta pra quem vai o valor (Empresa ou André) antes de salvar, pra
+// não presumir automaticamente que todo pagamento é da empresa.
 function inlineEditReserva(cardId){
-  const cell=document.getElementById('fin-rcell-'+cardId);if(!cell)return;
-  const card=opCards.find(c=>c.id===cardId);if(!card)return;
-  const cur=card.valorReserva||0;
-  cell.innerHTML=`<div style="display:flex;gap:4px;align-items:center" onclick="event.stopPropagation()">
-    <input id="ievr-${cardId}" type="number" step="0.01" min="0" value="${cur||''}" placeholder="Sinal R$"
-      style="width:110px;border:2px solid #7D95AE;border-radius:7px;padding:4px 7px;font-size:13px;font-weight:700;color:#7D95AE"
-      onkeydown="if(event.key==='Enter'){event.preventDefault();saveInlineVR('${cardId}')}if(event.key==='Escape')renderFinFestas()"
-      onblur="setTimeout(()=>saveInlineVR('${cardId}'),150)">
-    <button onclick="event.stopPropagation();saveInlineVR('${cardId}')" style="background:#7D95AE;color:#fff;border:none;border-radius:6px;padding:4px 7px;font-size:12px;cursor:pointer;font-weight:700">✓</button>
-  </div>`;
-  setTimeout(()=>{const i=document.getElementById('ievr-'+cardId);if(i)i.focus();},20);
-}
-function saveInlineVR(cardId){
-  const inp=document.getElementById('ievr-'+cardId);if(!inp)return;
-  const val=parseFloat(inp.value)||0;
-  const card=opCards.find(c=>c.id===cardId);if(!card)return;
-  const _esChk=calcEmpresaShare(card);
-  const _geChk=(card.gastosItens||[]).filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
-  const _liqChk=Math.max(0,_esChk-_geChk);
-  // Valor digitado bem acima do líquido da festa costuma ser engano de digitação
-  // (ex: digitar o valor total da festa em vez do valor pago) — confirma antes.
-  if(_liqChk>0&&val>_liqChk*1.3){
-    openCfm('Confirma esse valor?',`O líquido desta festa é ${fmtMoney(_liqChk)}, mas você digitou ${fmtMoney(val)}. Tem certeza que é esse o valor pago?`,()=>_commitInlineVR(cardId,val));
-    return;
-  }
-  _commitInlineVR(cardId,val);
-}
-function _commitInlineVR(cardId,val){
-  const card=opCards.find(c=>c.id===cardId);if(!card)return;
-  const _valorAntesVR=card.valorReserva||0,_statusAntesVR=card.statusPag;
-  _ajustaVGReservaSimples(card,val);saveFinData();
-  card.valorReserva=val;
-  // Usa empLiq (líquido empresa) para determinar status — igual ao _getFinFestas
-  const _esVR=calcEmpresaShare(card);
-  const _geVR=(card.gastosItens||[]).filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
-  const _liqVR=Math.max(0,_esVR-_geVR);
-  const _faltaVR=Math.max(0,_liqVR-val);
-  if(_faltaVR<=0&&_liqVR>0){card.statusPag='pago';card.valorRestante=0;}
-  else if(val>0){card.statusPag='sinal';card.valorRestante=_faltaVR;}
-  else{card.statusPag='pendente';card.valorRestante=_liqVR||0;}
-  _stamparDatasPagamento(card,_valorAntesVR,_statusAntesVR);
-  savOp();syncFreelancerToAndre(card);toast('✅ Valor pago salvo!','green');
-  renderFinFestas();renderFinResumo();renderPessAll();
-  // Se o modal desse card estiver aberto, sincroniza os campos
-  if(editingOpId===cardId){
-    const _fvr=document.getElementById('f-valorReserva');if(_fvr)_fvr.value=card.valorReserva||'';
-    const _fvrs=document.getElementById('f-valorRestante');if(_fvrs)_fvrs.value=card.valorRestante||'';
-    const _fsp=document.getElementById('f-statusPag');if(_fsp)_fsp.value=card.statusPag||'pendente';
-    calcDistribuicao();
-  }
+  quickEditPag(cardId);
 }
 
 function inlineEditReservaPess(cardId){
@@ -9306,6 +9302,14 @@ function _ajustaVGReservaSimples(card,novoValor){
   const mes=_getMesFin(card.dataEvento);if(!mes)return;
   _initFinVG(mes);
   finVG[mes]=(finVG[mes]||0)+(novoValor-(card.valorReserva||0));
+}
+// Mesma ideia do _ajustaVGReservaSimples, só que para o lado Pessoal do
+// André — usado quando um pagamento é registrado como "vai pro André"
+// direto na festa (valorReservaAndre), em vez de para a empresa.
+function _ajustaPessVGSimples(card,novoValor){
+  const mes=_getMesFin(card.dataEvento);if(!mes)return;
+  _initPessVG(mes);
+  pessVG[mes]=(pessVG[mes]||0)+(novoValor-(card.valorReservaAndre||0));
 }
 // Uso: quando o card inteiro pode mudar (modal completo) — cobre também
 // troca de data/coluna/execução, removendo a contribuição antiga do mês
