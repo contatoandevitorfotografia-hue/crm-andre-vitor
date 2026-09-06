@@ -6887,7 +6887,7 @@ function _getFinFestas(mes){
     return{id:c.id,n:c.nomePais||c.titulo||'Cliente',t:c.tipo||'festa',
       d:c.dataEvento?parseInt(c.dataEvento.split('-')[2]):0,
       v:empShare,liq:empLiq,vFull:t,p:localSt==='pago',
-      custo:gastosEmp,custoAlbum:gastosAlbum,reserva:vPago,reservaAndre:c.valorReservaAndre||0,
+      custo:gastosEmp,custoAlbum:gastosAlbum,reserva:vPago,
       rest:empFalta,
       statusPag:localSt
     };
@@ -7227,7 +7227,7 @@ function renderFinFestas(){
     const vRes=card?.valorReserva||0;
     const brutoCell=`<span style="color:var(--muted);font-weight:700">${fmtMoney(f.v)}</span>`;
     const valorCell=`<span id="fin-v-${f.id}" style="color:var(--success);font-weight:700;cursor:pointer;text-decoration:underline dotted" title="Clique para editar o valor total do plano" onclick="event.stopPropagation();inlineEditValor('${f.id}',this)">${fmtMoney(f.liq)}</span>`;
-    const reservaCell=`<span id="fin-r-${f.id}" style="color:#7D95AE;font-weight:700;cursor:pointer;text-decoration:underline dotted" title="Clique para editar o valor pago" onclick="event.stopPropagation();inlineEditReserva('${f.id}')">${f.reserva>0?fmtMoney(f.reserva):(f.reservaAndre>0?'':'')}</span>${f.reservaAndre>0?`<div style="font-size:10px;color:#60a5fa;font-weight:700;margin-top:2px" title="Pago direto para o André, não conta no líquido da empresa">🔵 ${fmtMoney(f.reservaAndre)}</div>`:''}`;
+    const reservaCell=`<span id="fin-r-${f.id}" style="color:#7D95AE;font-weight:700;cursor:pointer;text-decoration:underline dotted" title="Clique para editar o valor pago" onclick="event.stopPropagation();inlineEditReserva('${f.id}')">${f.reserva>0?fmtMoney(f.reserva):''}</span>`;
     const restCell=f.rest<=0
       ?`<span style="color:var(--muted);font-size:12px">quitado</span>`
       :f.rest>0
@@ -7355,19 +7355,11 @@ function _empLiqDaFesta(card){
   const ge=(card.gastosItens||[]).filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
   return Math.max(0,es-ge);
 }
-function _andreLiqDaFesta(card){
-  const as=calcAndreShare(card);
-  const gp=(card.gastosItens||[]).filter(g=>g.tipo==='pessoal').reduce((s,g)=>s+(g.val||0),0);
-  return Math.max(0,as-gp);
-}
-let _qepDestino='empresa';
 function quickEditPag(cardId){
   const card=opCards.find(c=>c.id===cardId);if(!card)return;
   const existing=document.getElementById('qep-overlay');if(existing)existing.remove();
-  const totalEmp=_empLiqDaFesta(card);
-  const totalAnd=_andreLiqDaFesta(card);
-  _qepDestino=(card.valorReserva||0)>0?'empresa':(card.valorReservaAndre||0)>0?'andre':'empresa';
-  const pagoInicial=_qepDestino==='empresa'?(card.valorReserva||0):(card.valorReservaAndre||0);
+  const total=_empLiqDaFesta(card);
+  const pagoInicial=card.valorReserva||0;
   const div=document.createElement('div');
   div.id='qep-overlay';
   div.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0.35)';
@@ -7377,11 +7369,6 @@ function quickEditPag(cardId){
       <button onclick="document.getElementById('qep-overlay').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#999;line-height:1">×</button>
     </div>
     <div style="font-size:12px;color:#6b7280;margin-bottom:14px">${esc(card.titulo||card.nomePais||'Cliente')}</div>
-    <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">Pra quem vai esse pagamento?</div>
-    <div style="display:flex;gap:8px;margin-bottom:14px">
-      <button type="button" id="qep-dest-empresa" onclick="qepSetDestino('${cardId}','empresa')" style="flex:1;padding:9px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer">🏢 Empresa</button>
-      <button type="button" id="qep-dest-andre" onclick="qepSetDestino('${cardId}','andre')" style="flex:1;padding:9px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer">🔵 André</button>
-    </div>
     <input type="number" id="qep-input" value="${pagoInicial||''}" min="0" step="0.01" placeholder="0,00"
       style="width:100%;padding:12px 14px;font-size:22px;font-weight:700;text-align:center;border:2px solid #e5e7eb;border-radius:10px;margin-bottom:10px;box-sizing:border-box;outline:none"
       oninput="qepUpdateBadge()" onkeydown="if(event.key==='Enter')saveQuickPag('${cardId}')">
@@ -7393,32 +7380,16 @@ function quickEditPag(cardId){
   </div>`;
   document.body.appendChild(div);
   div.addEventListener('click',()=>div.remove());
-  window._qepTotals={empresa:totalEmp,andre:totalAnd};
-  qepRenderDestino();
+  window._qepTotal=total;
   const inp=document.getElementById('qep-input');
   qepUpdateBadge();
   inp.focus();inp.select();
-}
-function qepRenderDestino(){
-  const bE=document.getElementById('qep-dest-empresa'),bA=document.getElementById('qep-dest-andre');
-  if(!bE||!bA)return;
-  const on='border:1.5px solid #7D95AE;background:#7D95AE;color:#fff',onA='border:1.5px solid #2563eb;background:#2563eb;color:#fff',off='border:1.5px solid #e5e7eb;background:#f9fafb;color:#374151';
-  bE.style.cssText=(bE.style.cssText.split(';').filter(s=>!/border|background|color/.test(s)).join(';'))+';'+(_qepDestino==='empresa'?on:off);
-  bA.style.cssText=(bA.style.cssText.split(';').filter(s=>!/border|background|color/.test(s)).join(';'))+';'+(_qepDestino==='andre'?onA:off);
-}
-function qepSetDestino(cardId,destino){
-  _qepDestino=destino;
-  const card=opCards.find(c=>c.id===cardId);
-  const inp=document.getElementById('qep-input');
-  if(inp&&card)inp.value=(destino==='empresa'?(card.valorReserva||0):(card.valorReservaAndre||0))||'';
-  qepRenderDestino();
-  qepUpdateBadge();
 }
 function qepUpdateBadge(){
   const inp=document.getElementById('qep-input');
   const badge=document.getElementById('qep-badge');
   if(!inp||!badge)return;
-  const total=(window._qepTotals||{})[_qepDestino]||0;
+  const total=window._qepTotal||0;
   const v=parseFloat(inp.value)||0;
   if(!total||total<=0){badge.textContent='';return;}
   if(v>=total)badge.innerHTML='<span style="color:#7D95AE">✅ Quitado</span>';
@@ -7429,26 +7400,15 @@ function saveQuickPag(cardId){
   const card=opCards.find(c=>c.id===cardId);if(!card)return;
   const inp=document.getElementById('qep-input');
   const pago=parseFloat(inp?.value)||0;
-  const liq=_qepDestino==='empresa'?_empLiqDaFesta(card):_andreLiqDaFesta(card);
+  const liq=_empLiqDaFesta(card);
   if(liq>0&&pago>liq*1.3){
-    const lado=_qepDestino==='empresa'?'da empresa':'do André';
-    openCfm('Confirma esse valor?',`O líquido ${lado} nesta festa é ${fmtMoney(liq)}, mas você digitou ${fmtMoney(pago)}. Tem certeza que é esse o valor pago?`,()=>_commitQuickPag(cardId,_qepDestino,pago));
+    openCfm('Confirma esse valor?',`O líquido da empresa nesta festa é ${fmtMoney(liq)}, mas você digitou ${fmtMoney(pago)}. Tem certeza que é esse o valor pago?`,()=>_commitQuickPag(cardId,pago));
     return;
   }
-  _commitQuickPag(cardId,_qepDestino,pago);
+  _commitQuickPag(cardId,pago);
 }
-function _commitQuickPag(cardId,destino,pago){
+function _commitQuickPag(cardId,pago){
   const card=opCards.find(c=>c.id===cardId);if(!card)return;
-  if(destino==='andre'){
-    const _valorAntesAn=card.valorReservaAndre||0;
-    _ajustaPessVGSimples(card,pago);savePessData();
-    card.valorReservaAndre=pago;
-    card.updatedAt=Date.now();
-    savOp();toast('✅ Valor pago (André) salvo!','green');
-    renderOp();renderFinFestas();renderFinResumo();renderPessAll();
-    const ov=document.getElementById('qep-overlay');if(ov)ov.remove();
-    return;
-  }
   const _valorAntesQP=card.valorReserva||0,_statusAntesQP=card.statusPag;
   _ajustaVGReservaSimples(card,pago);saveFinData();
   card.valorReserva=pago;
@@ -9302,14 +9262,6 @@ function _ajustaVGReservaSimples(card,novoValor){
   const mes=_getMesFin(card.dataEvento);if(!mes)return;
   _initFinVG(mes);
   finVG[mes]=(finVG[mes]||0)+(novoValor-(card.valorReserva||0));
-}
-// Mesma ideia do _ajustaVGReservaSimples, só que para o lado Pessoal do
-// André — usado quando um pagamento é registrado como "vai pro André"
-// direto na festa (valorReservaAndre), em vez de para a empresa.
-function _ajustaPessVGSimples(card,novoValor){
-  const mes=_getMesFin(card.dataEvento);if(!mes)return;
-  _initPessVG(mes);
-  pessVG[mes]=(pessVG[mes]||0)+(novoValor-(card.valorReservaAndre||0));
 }
 // Uso: quando o card inteiro pode mudar (modal completo) — cobre também
 // troca de data/coluna/execução, removendo a contribuição antiga do mês
