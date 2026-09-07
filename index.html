@@ -6981,7 +6981,10 @@ function _contasDoMes(contas,mes){
 // pagas — item sem dia próprio cai no dia da conta-mãe, mesma regra usada
 // no Fluxo de Caixa Diário. Itens da MESMA conta no mesmo dia são somados
 // num só resultado (só o nome da conta e o total, sem descrição de cada
-// item). Usada tanto no popup "Contas que vencem hoje" quanto no push.
+// item) — EXCETO "Contas da casa", que reúne contas bem diferentes entre
+// si (Vivo, SAAE, EDP, Lourdes...) sob um mesmo nome-guarda-chuva, então
+// ali cada sub-item aparece separado, com o próprio nome. Usada tanto no
+// popup "Contas que vencem hoje" quanto no push.
 function _contasNoDia(contas,mes,dia){
   const brutos=[];
   (contas||[]).forEach(c=>{
@@ -6990,7 +6993,7 @@ function _contasNoDia(contas,mes,dia){
         const d=x.dia||c.dia;
         if(d!==dia)return;
         const val=_itemValorMes(x,mes);
-        if(val>0)brutos.push({nome:c.nome,valor:val,contaId:c.id});
+        if(val>0)brutos.push({nome:c.nome,itemNome:x.nome,itemId:x.id,valor:val,contaId:c.id});
       });
       return;
     }
@@ -7001,7 +7004,15 @@ function _contasNoDia(contas,mes,dia){
   });
   const porConta={};
   brutos.forEach(o=>{(porConta[o.contaId]=porConta[o.contaId]||[]).push(o);});
-  return Object.values(porConta).map(grp=>({nome:grp[0].nome,valor:grp.reduce((s,o)=>s+o.valor,0),contaId:grp[0].contaId}));
+  const out=[];
+  Object.values(porConta).forEach(grp=>{
+    if(grp[0].nome==='Contas da casa'&&grp[0].itemNome){
+      grp.forEach(o=>out.push({nome:o.itemNome,valor:o.valor,contaId:o.contaId+'_'+(o.itemId||o.itemNome)}));
+    } else {
+      out.push({nome:grp[0].nome,valor:grp.reduce((s,o)=>s+o.valor,0),contaId:grp[0].contaId});
+    }
+  });
+  return out;
 }
 function _rotuloMesContas(m){
   return m.includes('/')?m:m+'/26';
