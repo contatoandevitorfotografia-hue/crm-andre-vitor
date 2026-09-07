@@ -2196,6 +2196,7 @@ input[type="date"]{cursor:pointer}
             <span style="font-size:11px;font-weight:700;color:#e0a483">Marcar</span>
           </label>
         </div>
+        <button type="button" onclick="addClienteFromOp()" style="margin-top:8px;width:100%;background:none;border:1.5px dashed var(--border);border-radius:8px;padding:8px 12px;font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer">➕ Cadastrar como novo cliente</button>
       </div>
       <div class="fs">
         <div class="fs-title">✨ Título do Evento</div>
@@ -4622,6 +4623,23 @@ function _zerarEmpresaFreela(){
   const total=emp+and;
   empEl.value='';
   if(total>0)andEl.value=total;
+}
+let _addClienteRetornoOp=false;
+function addClienteFromOp(){
+  const nome=(document.getElementById('f-nomePais').value||'').trim();
+  const tel=(document.getElementById('f-tel').value||'').trim();
+  if(!nome){toast('⚠️ Preencha o nome dos pais antes','orange');return;}
+  const telDigits=tel.replace(/\D/g,'');
+  const existente=telDigits?clients.find(c=>(c.telefone||'').replace(/\D/g,'')===telDigits):null;
+  if(existente){
+    selectClient(existente.id);
+    toast('👤 Esse cliente já estava cadastrado — vinculado!','green');
+    return;
+  }
+  _addClienteRetornoOp=true;
+  openClientModal(null);
+  document.getElementById('cl-nome').value=nome;
+  document.getElementById('cl-tel').value=tel;
 }
 function clearClientSelection(){
   document.getElementById('cl-selected-badge').style.display='none';
@@ -10667,6 +10685,11 @@ function saveClient(){
   const data={id:editingClId||uid(),tipo,nome,telefone:document.getElementById('cl-tel').value.trim(),email:document.getElementById('cl-email').value.trim(),cpf:tipo==='parceiro'?'':document.getElementById('cl-cpf').value.trim(),cidade:document.getElementById('cl-cidade').value.trim(),endereco:document.getElementById('cl-endereco').value.trim(),galeria:document.getElementById('cl-galeria').value.trim(),origem:_origVal,origemClienteId:_origVal==='indicacao'?document.getElementById('cl-origem-ref-id').value:'',tags:document.getElementById('cl-tags').value.trim(),obs:document.getElementById('cl-obs').value.trim(),notes:old?.notes||[],criadoEm:old?.criadoEm||Date.now(),updatedAt:Date.now()};
   if(editingClId){const i=clients.findIndex(c=>c.id===editingClId);if(i!==-1)clients[i]=data;else clients.push(data)}else clients.push(data);
   savCl();closeMo('mo-cl');try{renderClientes();}catch(err){console.error(err);}toast(tipo==='parceiro'?'🤝 Parceiro salvo!':'👤 Cliente salvo!','green');
+  if(_addClienteRetornoOp){
+    _addClienteRetornoOp=false;
+    const badge=document.getElementById('cl-selected-badge');
+    if(badge){document.getElementById('cl-selected-name').textContent='👤 '+data.nome;badge.style.display='flex';}
+  }
 }
 function renderMensagens(){
   const grid=document.getElementById('tpl-grid');if(!grid)return;
