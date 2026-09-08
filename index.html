@@ -7563,6 +7563,60 @@ function savePessPago(mes,idx){
   }
 }
 
+// Mesmo popup "💰 Registrar Pagamento" usado no Financeiro Empresa >
+// Festas, adaptado pras entradas do Financeiro Pessoal (pessFD).
+function quickEditPagPess(mes,idx){
+  const entrada=pessFD[mes]?.[idx];if(!entrada)return;
+  const existing=document.getElementById('qep-overlay');if(existing)existing.remove();
+  const gastosPes=_pessGastosDaFesta(entrada);
+  const total=Math.max(0,(entrada.v||0)-gastosPes);
+  const pagoInicial=entrada.pago||0;
+  const div=document.createElement('div');
+  div.id='qep-overlay';
+  div.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0.35)';
+  div.innerHTML=`<div style="background:var(--surface);border-radius:18px 18px 0 0;padding:22px 20px 28px;width:100%;max-width:420px;box-shadow:0 -6px 28px rgba(0,0,0,0.18)" onclick="event.stopPropagation()">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <span style="font-weight:700;font-size:16px">💰 Registrar Pagamento</span>
+      <button onclick="document.getElementById('qep-overlay').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#999;line-height:1">×</button>
+    </div>
+    <div style="font-size:12px;color:#6b7280;margin-bottom:14px">${esc(entrada.n||entrada.t||'Cliente')}</div>
+    <input type="number" id="qep-input" value="${pagoInicial||''}" min="0" step="0.01" placeholder="0,00"
+      style="width:100%;padding:12px 14px;font-size:22px;font-weight:700;text-align:center;border:2px solid #e5e7eb;border-radius:10px;margin-bottom:10px;box-sizing:border-box;outline:none"
+      oninput="qepUpdateBadge()" onkeydown="if(event.key==='Enter')saveQuickPagPess('${mes}',${idx})">
+    <div id="qep-badge" style="text-align:center;font-size:13px;font-weight:600;margin-bottom:14px;min-height:20px"></div>
+    <div style="display:flex;gap:10px">
+      <button onclick="document.getElementById('qep-overlay').remove()" style="flex:1;padding:11px;border:1.5px solid #e5e7eb;background:#f9fafb;border-radius:9px;font-size:14px;cursor:pointer;font-weight:500">Cancelar</button>
+      <button onclick="saveQuickPagPess('${mes}',${idx})" style="flex:2;padding:11px;background:#7D95AE;color:#fff;border:none;border-radius:9px;font-size:15px;font-weight:700;cursor:pointer">Salvar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(div);
+  div.addEventListener('click',()=>div.remove());
+  window._qepTotal=total;
+  const inp=document.getElementById('qep-input');
+  qepUpdateBadge();
+  inp.focus();inp.select();
+}
+function saveQuickPagPess(mes,idx){
+  const entrada=pessFD[mes]?.[idx];if(!entrada)return;
+  const inp=document.getElementById('qep-input');
+  const pago=parseFloat(inp?.value)||0;
+  const gastosPes=_pessGastosDaFesta(entrada);
+  const liq=Math.max(0,(entrada.v||0)-gastosPes);
+  if(liq>0&&pago>liq*1.3){
+    openCfm('Confirma esse valor?',`O líquido nesta festa é ${fmtMoney(liq)}, mas você digitou ${fmtMoney(pago)}. Tem certeza que é esse o valor pago?`,()=>_commitQuickPagPess(mes,idx,pago));
+    return;
+  }
+  _commitQuickPagPess(mes,idx,pago);
+}
+function _commitQuickPagPess(mes,idx,pago){
+  const entrada=pessFD[mes]?.[idx];if(!entrada)return;
+  _initPessVG(mes);
+  pessVG[mes]=(pessVG[mes]||0)+(pago-(entrada.pago||0));
+  entrada.pago=pago;
+  savePessData();toast('✅ Valor pago salvo!','green');
+  renderPessEntradas();renderPessResumo();
+  const ov=document.getElementById('qep-overlay');if(ov)ov.remove();
+}
 function editPessRest(mes,idx,el){
   const entrada=pessFD[mes]?.[idx];if(!entrada)return;
   const val=(entrada.rest||0);
@@ -8562,7 +8616,7 @@ function renderPessEntradas(){
     const valorCell = `<span style="color:var(--success);font-weight:700">${fmtMoney(Math.max(0,f.v-gastosPes))}</span>`;
     const pagoBtnHtml = op 
       ? `<span style="color:#7D95AE;font-weight:700;cursor:pointer;text-decoration:underline dotted" title="Clique para editar" onclick="event.stopPropagation();inlineEditReservaPess('${op.id}')">${_vPagoPess>0?fmtMoney(_vPagoPess):'— editar'}</span>`
-      : `<span style="color:#7D95AE;font-weight:700;cursor:pointer;text-decoration:underline dotted" title="Clique para editar" onclick="event.stopPropagation();editPessPago('${pessCurF}',${realIdx},this)">${f.pago>0?fmtMoney(f.pago):'— editar'}</span>`;
+      : `<span style="color:#7D95AE;font-weight:700;cursor:pointer;text-decoration:underline dotted" title="Clique para editar" onclick="event.stopPropagation();quickEditPagPess('${pessCurF}',${realIdx})">${f.pago>0?fmtMoney(f.pago):'— editar'}</span>`;
     const restCell2 = rest<=0
       ?`<span style="color:var(--muted);font-size:12px">quitado</span>`
       :`<span style="color:#E06B5A;font-weight:700;cursor:pointer;text-decoration:underline dotted" title="Clique para editar" onclick="event.stopPropagation();editPessRest('${pessCurF}',${realIdx},this)">${fmtMoney(rest)}</span>`;
