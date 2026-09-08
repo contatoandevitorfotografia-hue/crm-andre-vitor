@@ -3356,6 +3356,7 @@ function load(){
     localStorage.setItem('crm_migr_raiane_dup_v1','1');
   }
   try{prCards=JSON.parse(localStorage.getItem('crm_pr_v4')||'[]')}catch{prCards=[]}
+  _backfillCoresRuidoFinalizados();
   try{packages=JSON.parse(localStorage.getItem('crm_pac_v4')||'[]')}catch{packages=[]}
   try{clients=JSON.parse(localStorage.getItem('crm_cl_v4')||'[]')}catch{clients=[]}
   try{const old=localStorage.getItem('crm_avf_v3');if(old&&opCards.length===0){const oc=JSON.parse(old);opCards=oc.filter(c=>c.coluna!=='pos-evento'&&c.coluna!=='concluido').map(c=>({...c,valorReserva:c.valorSinal||0,statusPag:c.statusPag||c.statusPagamento||'pendente'}));savOp()}}catch{}
@@ -4208,9 +4209,23 @@ function togglePrRuido(id,val){
   card.ruidoDone=val;card.updatedAt=Date.now();
   savPr();renderPr();
 }
+// Autocorreção: qualquer projeto que já esteja parado em Finalizado deve
+// estar com Cores e Ruído ticados (se chegou lá, já está tudo pronto).
+// Roda toda vez que prCards é (re)carregado — local ou do Firebase — e não
+// faz nada se já estiver tudo certo, então é seguro chamar sempre.
+function _backfillCoresRuidoFinalizados(){
+  let changed=false;
+  prCards.forEach(c=>{
+    if(c.coluna==='finalizado'&&(!c.coresDone||!c.ruidoDone)){
+      c.coresDone=true;c.ruidoDone=true;changed=true;
+    }
+  });
+  if(changed)savPr();
+  return changed;
+}
 function marcarFreelaFinalizado(id){
   const card=prCards.find(c=>c.id===id);if(!card)return;
-  card.coluna='finalizado';card.updatedAt=Date.now();
+  card.coluna='finalizado';card.coresDone=true;card.ruidoDone=true;card.updatedAt=Date.now();
   savPr();renderPr();
   toast('🎉 Projeto movido para Finalizados!','green');
 }
@@ -4547,7 +4562,11 @@ function onDrop(e,board,targetCol){
     toast(`${col.emoji} Movido para ${col.name}${!wasConf&&isConf?' · 🎬 Adicionado em Projetos!':''}`, 'green');
   }else if(board==='pr'){
     const card=prCards.find(c=>c.id===id);if(!card||card.coluna===targetCol)return;
-    card.coluna=targetCol;card.updatedAt=Date.now();savPr();renderPr();
+    card.coluna=targetCol;card.updatedAt=Date.now();
+    // Chegar em Finalizado já significa que Cores e Ruído estão prontos —
+    // não faz sentido arrastar pra cá e ainda ter que ticar na mão.
+    if(targetCol==='finalizado'){card.coresDone=true;card.ruidoDone=true;}
+    savPr();renderPr();
     const col=PR_COLS.find(c=>c.id===targetCol);toast(`${col.emoji} Movido para ${col.name}`,'green');
   }else if(board==='alb'){
     const card=albCards.find(c=>c.id===id);if(!card||card.coluna===targetCol)return;
@@ -5687,7 +5706,12 @@ function savePrCard(){
   if(isStandalone&&!nomePais){toast('⚠️ Informe o nome do projeto!','orange');document.getElementById('f-pr-nome').focus();return}
   const freela=isStandalone?(document.querySelector('input[name="pr-freela"]:checked')?.value||''):(oldCard?.freela||'');
   const parceiroId=isStandalone&&freela==='sou-freela'?(document.getElementById('f-pr-parceiroId')?.value||''):(oldCard?.parceiroId||'');
-  const data={id:editingPrId||uid(),coluna:newCol,sourceId:oldCard?.sourceId||null,nomePais,nomeCrianca:src2?.nomeCrianca||oldCard?.nomeCrianca||'',idade:src2?.idade||oldCard?.idade||'',nomeCrianca2:src2?.nomeCrianca2||oldCard?.nomeCrianca2||'',idade2:src2?.idade2||oldCard?.idade2||'',dataEvento,freela,parceiroId,obs:document.getElementById('f-pr-obs').value.trim(),pendenciaDesc:document.getElementById('f-pr-pendencia').value.trim(),criadoEm:oldCard?.criadoEm||Date.now(),updatedAt:Date.now()};
+  // Chegar em Finalizado já significa que Cores e Ruído estão prontos — não
+  // precisa ticar na mão. Nas demais fases, preserva o que já estava marcado
+  // (senão qualquer edição no card apagaria os tiques sem querer).
+  const coresDone=newCol==='finalizado'?true:(oldCard?.coresDone||false);
+  const ruidoDone=newCol==='finalizado'?true:(oldCard?.ruidoDone||false);
+  const data={id:editingPrId||uid(),coluna:newCol,sourceId:oldCard?.sourceId||null,nomePais,nomeCrianca:src2?.nomeCrianca||oldCard?.nomeCrianca||'',idade:src2?.idade||oldCard?.idade||'',nomeCrianca2:src2?.nomeCrianca2||oldCard?.nomeCrianca2||'',idade2:src2?.idade2||oldCard?.idade2||'',dataEvento,freela,parceiroId,obs:document.getElementById('f-pr-obs').value.trim(),pendenciaDesc:document.getElementById('f-pr-pendencia').value.trim(),coresDone,ruidoDone,criadoEm:oldCard?.criadoEm||Date.now(),updatedAt:Date.now()};
   if(editingPrId){const i=prCards.findIndex(c=>c.id===editingPrId);if(i!==-1)prCards[i]=data;else prCards.push(data)}else prCards.push(data);
   savPr();closeMo('mo-pr');try{renderPr();renderAgenda();}catch(err){console.error(err);}toast('✅ Projeto salvo!','green');
 }
@@ -8365,7 +8389,7 @@ function initFinFirebase(){
       const _fresh=Date.now()-_dadosSaveTs>2000;
       if(!_fresh)return; // dados que acabamos de salvar — ignora
       if(data.op&&Array.isArray(data.op)){opCards=data.op;localStorage.setItem('crm_op_v4',JSON.stringify(opCards));}
-      if(data.pr&&Array.isArray(data.pr)){prCards=data.pr;localStorage.setItem('crm_pr_v4',JSON.stringify(prCards));}
+      if(data.pr&&Array.isArray(data.pr)){prCards=data.pr;_backfillCoresRuidoFinalizados();localStorage.setItem('crm_pr_v4',JSON.stringify(prCards));}
       if(data.pac&&Array.isArray(data.pac)){packages=data.pac;localStorage.setItem('crm_pac_v4',JSON.stringify(packages));}
       if(data.cl&&Array.isArray(data.cl)){clients=data.cl;localStorage.setItem('crm_cl_v4',JSON.stringify(clients));}
       if(data.alb&&Array.isArray(data.alb)){albCards=data.alb;localStorage.setItem('crm_alb_v1',JSON.stringify(albCards));}
