@@ -1732,15 +1732,18 @@ function delPes(id){
   pessoais=pessoais.filter(x=>x.id!==id);
   saveD();renderPessoaisLista(lista);
 }
-function editPes(id){
+let _editingPes=null;
+function editPes(id){_editingPes=id;const p=pessoais.find(x=>x.id===id);if(p)renderPessoaisLista(p.lista);}
+function cancelPesEdit(lista){_editingPes=null;renderPessoaisLista(lista);}
+function savePesEdit(id){
   const p=pessoais.find(x=>x.id===id);if(!p)return;
-  const novoTxt=prompt('Editar item:',p.texto);
-  if(novoTxt===null)return;
-  const t=novoTxt.trim();if(!t)return;
-  p.texto=t;
-  const novaData=prompt('Data (YYYY-MM-DD, deixe vazio para nenhuma):',p.data||'');
-  if(novaData!==null) p.data=novaData.trim();
+  const txt=(document.getElementById('epes-txt-'+id)?.value||'').trim();
+  if(!txt){toast('⚠️ Digite o texto do item');return;}
+  p.texto=txt;
+  p.data=document.getElementById('epes-data-'+id)?.value||'';
+  _editingPes=null;
   saveD();renderPessoaisLista(p.lista);
+  toast('✅ Item atualizado');
 }
 function renderPessoais(){
   ['fazer','compras','outros'].forEach(renderPessoaisLista);
@@ -1754,13 +1757,27 @@ function renderPessoaisLista(lista){
   const hoje=new Date().toISOString().slice(0,10);
   const row=p=>{
     const venc=p.data&&p.data<hoje&&!p.done;
+    if(_editingPes===p.id){
+      return`<div class="lst-item">
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:8px">
+          <input type="text" id="epes-txt-${p.id}" class="lst-add-main" value="${esc(p.texto)}" style="border-color:var(--acc);padding:12px 14px;font-size:14px;min-height:auto">
+          <div class="lst-add-sub">
+            <input type="date" id="epes-data-${p.id}" value="${p.data||''}">
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <button class="btn-add" style="padding:8px 12px" onclick="savePesEdit('${p.id}')">✓</button>
+          <button class="btn-del" onclick="cancelPesEdit('${lista}')">✕</button>
+        </div>
+      </div>`;
+    }
     return`<div class="lst-item${p.done?' done':''}">
       <div class="chk${p.done?' on':''}" onclick="togglePes('${p.id}')"></div>
       <div style="flex:1;min-width:0" onclick="editPes('${p.id}')">
         <div class="lst-txt">${esc(p.texto)}</div>
         ${p.data?`<div class="lst-meta" style="color:${venc?'var(--err)':'var(--mut)'}">📅 ${p.data.split('-').reverse().join('/')}</div>`:''}
       </div>
-      <button class="btn-del" onclick="delPes('${p.id}')">✕</button>
+      <button class="btn-del" onclick="event.stopPropagation();delPes('${p.id}')">✕</button>
     </div>`;
   };
   let html=abertos.length?abertos.map(row).join(''):'<div class="empty" style="padding:12px">Nada por aqui ✨</div>';
