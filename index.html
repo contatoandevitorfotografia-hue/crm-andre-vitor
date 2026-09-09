@@ -2407,7 +2407,7 @@ input[type="date"]{cursor:pointer}
                 <!-- Álbum: Gasto da Empresa -->
                 <div style="background:#2E1A18;padding:7px;border-radius:5px;border-left:3px solid #E06B5A">
                   <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-                    <div style="color:#E06B5A;font-weight:600">💸 Custo de Álbum (Gasto Empresa)</div>
+                    <div style="color:#E06B5A;font-weight:600">💸 Custo de Álbum (separado do total, não é gasto da empresa)</div>
                     <button type="button" id="btn-album-guardado" onclick="toggleAlbumGuardado()" style="flex-shrink:0;font-size:11px;font-weight:700;border-radius:20px;padding:3px 10px;cursor:pointer;border:1.5px solid #5c2a26;background:#2e1a18;color:#e06b5a;transition:all .2s">🔒 Reservar</button>
                   </div>
                   <div style="font-weight:800;color:#E06B5A;font-size:13px;margin-top:3px" id="dist-bd-album">—</div>
@@ -3322,6 +3322,7 @@ let gastosItensTemp=[];
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
 function load(){
   try{opCards=JSON.parse(localStorage.getItem('crm_op_v4')||'[]')}catch{opCards=[]}
+  _backfillGastoAlbumTipoErrado();
   try{opCardsPess=JSON.parse(localStorage.getItem('crm_op_pess_v4')||'[]')}catch{opCardsPess=[]}
   // Migração única: remove pendências padrão pré-carregadas automaticamente
   if(!localStorage.getItem('crm_pend_migr_v1')){
@@ -7409,6 +7410,32 @@ function _empLiqDaFesta(card){
   const ge=(card.gastosItens||[]).filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
   return Math.max(0,es-ge);
 }
+// Autocorreção: custos de álbum cadastrados manualmente (antes de existir o
+// campo dedicado "Álbum" no Financeiro) ficaram salvos com tipo "empresa"
+// por padrão, e isso vinha descontando errado do líquido da empresa. Custo
+// de álbum é separado do valor total do cliente — não é gasto da empresa.
+function _backfillGastoAlbumTipoErrado(){
+  let changed=false;
+  opCards.forEach(c=>{
+    if(!Array.isArray(c.gastosItens)||!c.gastosItens.length)return;
+    let cardChanged=false;
+    c.gastosItens.forEach(g=>{
+      if(g.tipo==='album')return;
+      const descNorm=(g.desc||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+      if(descNorm.includes('album')){g.tipo='album';cardChanged=true;changed=true;}
+    });
+    if(cardChanged){
+      const _liq=_empLiqDaFesta(c);
+      const _pago=c.valorReserva||0;
+      const _falta=Math.max(0,_liq-_pago);
+      if(_falta<=0&&_liq>0){c.statusPag='pago';c.valorRestante=0;}
+      else if(_pago>0){c.statusPag='sinal';c.valorRestante=_falta;}
+      else{c.statusPag='pendente';c.valorRestante=_liq||0;}
+    }
+  });
+  if(changed)savOp();
+  return changed;
+}
 function quickEditPag(cardId){
   const card=opCards.find(c=>c.id===cardId);if(!card)return;
   const existing=document.getElementById('qep-overlay');if(existing)existing.remove();
@@ -8388,7 +8415,7 @@ function initFinFirebase(){
       }
       const _fresh=Date.now()-_dadosSaveTs>2000;
       if(!_fresh)return; // dados que acabamos de salvar — ignora
-      if(data.op&&Array.isArray(data.op)){opCards=data.op;localStorage.setItem('crm_op_v4',JSON.stringify(opCards));}
+      if(data.op&&Array.isArray(data.op)){opCards=data.op;_backfillGastoAlbumTipoErrado();localStorage.setItem('crm_op_v4',JSON.stringify(opCards));}
       if(data.pr&&Array.isArray(data.pr)){prCards=data.pr;_backfillCoresRuidoFinalizados();localStorage.setItem('crm_pr_v4',JSON.stringify(prCards));}
       if(data.pac&&Array.isArray(data.pac)){packages=data.pac;localStorage.setItem('crm_pac_v4',JSON.stringify(packages));}
       if(data.cl&&Array.isArray(data.cl)){clients=data.cl;localStorage.setItem('crm_cl_v4',JSON.stringify(clients));}
