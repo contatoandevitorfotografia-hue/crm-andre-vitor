@@ -6767,14 +6767,22 @@ function copyOpToAlbum(){
 }
 
 function autoFillHorarioFim(){
-  const ini=document.getElementById('f-horario').value;
-  const fimEl=document.getElementById('f-horarioFim');
-  if(!ini||!fimEl||fimEl.value)return; // só preenche se término estiver vazio
-  const [h,m]=ini.split(':').map(Number);
-  const total=h*60+m+240; // +4 horas
-  const hFim=Math.floor(total/60)%24;
-  const mFim=total%60;
-  fimEl.value=`${String(hFim).padStart(2,'0')}:${String(mFim).padStart(2,'0')}`;
+  // Espera o próximo tick: em alguns navegadores, o valor do <input type="time">
+  // ainda não terminou de "commitar" no exato momento do evento change — lendo
+  // direto às vezes pega o horário com o minuto pela metade (ex: "12:3" em vez
+  // de "12:30"), o que gerava um término errado (16:03 em vez de 16:30).
+  setTimeout(()=>{
+    const ini=document.getElementById('f-horario').value;
+    const fimEl=document.getElementById('f-horarioFim');
+    if(!ini||!fimEl||fimEl.value)return; // só preenche se término estiver vazio
+    const m=ini.match(/^(\d{1,2}):(\d{2})$/);
+    if(!m)return; // horário incompleto — aguarda o próximo evento com o valor completo
+    const h=parseInt(m[1],10),min=parseInt(m[2],10);
+    const total=h*60+min+240; // +4 horas
+    const hFim=Math.floor(total/60)%24;
+    const mFim=total%60;
+    fimEl.value=`${String(hFim).padStart(2,'0')}:${String(mFim).padStart(2,'0')}`;
+  },0);
 }
 function initAgenda(){const n=new Date();agYear=n.getFullYear();agMonth=n.getMonth()}
 function agPrev(){agMonth--;if(agMonth<0){agMonth=11;agYear--}renderAgenda()}
