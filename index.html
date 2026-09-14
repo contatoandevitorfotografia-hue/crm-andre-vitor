@@ -2778,7 +2778,14 @@ input[type="date"]{cursor:pointer}
           <button type="button" id="btn-abrir-galeria-cl" onclick="abrirGaleriaCliente()" style="display:none;padding:9px 14px;background:var(--primary-light);color:var(--primary-dark);border:1.5px solid var(--primary);border-radius:8px;font:600 12px 'Montserrat',sans-serif;cursor:pointer;white-space:nowrap;margin-top:20px">🔗 Abrir</button>
         </div>
         <div class="fg"><label>📍 Como nos encontrou?</label><select id="cl-origem" onchange="onOrigemChange()"><option value="">Não informado</option><option value="instagram">📸 Instagram</option><option value="google">🔍 Google</option><option value="trafego-pago">💰 Tráfego Pago</option><option value="indicacao">🤝 Indicação</option><option value="site">🌐 Site</option><option value="whatsapp">💬 WhatsApp</option><option value="outro">Outro</option></select></div>
-        <div class="fg" id="cl-ref-wrap" style="display:none"><label>👤 Indicado por</label><select id="cl-origem-ref-id"><option value="">Selecione o cliente...</option></select></div>
+        <div class="fg" id="cl-ref-wrap" style="display:none;position:relative">
+          <label>👤 Indicado por</label>
+          <input type="hidden" id="cl-origem-ref-id">
+          <input type="text" id="cl-origem-ref-search" placeholder="🔍 Buscar cliente pelo nome ou telefone..." autocomplete="off"
+            oninput="filterOrigemRefDropdown()" onfocus="filterOrigemRefDropdown()" onblur="setTimeout(hideOrigemRefDropdown,200)"
+            style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font:13px 'Inter',sans-serif;outline:none">
+          <div id="cl-origem-ref-dropdown" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;box-shadow:var(--sh-lg);z-index:50;max-height:220px;overflow-y:auto"></div>
+        </div>
         <div class="fg full"><label>🏷️ Tags / Locais</label><input type="text" id="cl-tags" placeholder="Ex: #buffetengenho #salaofesta #aniversario (separadas por espaço)"></div>
         <div class="fg full"><label>Observações</label><textarea id="cl-obs" placeholder="Informações adicionais sobre o cliente..."></textarea></div>
       </div></div>
@@ -10774,7 +10781,9 @@ function openClientModal(clientId){
   onClGaleriaInput();
   document.getElementById('cl-origem').value=cl?.origem||'';
   onOrigemChange();
-  if(cl?.origemClienteId)document.getElementById('cl-origem-ref-id').value=cl.origemClienteId;
+  const _refCl=cl?.origemClienteId?clients.find(x=>x.id===cl.origemClienteId):null;
+  document.getElementById('cl-origem-ref-id').value=cl?.origemClienteId||'';
+  document.getElementById('cl-origem-ref-search').value=_refCl?_refCl.nome+(_refCl.telefone?' ('+_refCl.telefone+')':''):'';
   document.getElementById('mo-cl').classList.remove('hidden');document.getElementById('cl-nome').focus();
 }
 function onClGaleriaInput(){
@@ -11048,12 +11057,23 @@ function onOrigemChange(){
   const v=document.getElementById('cl-origem').value;
   const wrap=document.getElementById('cl-ref-wrap');
   wrap.style.display=v==='indicacao'?'block':'none';
-  if(v==='indicacao'){
-    const sel=document.getElementById('cl-origem-ref-id');
-    const cur=sel.value;
-    sel.innerHTML='<option value="">Selecione o cliente que indicou...</option>'+clients.filter(c=>c.id!==editingClId).map(c=>`<option value="${c.id}">${esc(c.nome)}${c.telefone?' ('+c.telefone+')':''}</option>`).join('');
-    if(cur)sel.value=cur;
-  }
+}
+function filterOrigemRefDropdown(){
+  const q=_norm(document.getElementById('cl-origem-ref-search').value||'');
+  const drop=document.getElementById('cl-origem-ref-dropdown');
+  const list=clients.filter(c=>c.id!==editingClId&&(!q||_norm(c.nome).includes(q)||(c.telefone||'').includes(q))).slice(0,20);
+  if(!list.length){drop.innerHTML=`<div style="padding:14px 16px;font-size:13px;color:var(--muted);text-align:center">Nenhum cliente encontrado</div>`;drop.style.display='block';return}
+  drop.innerHTML=list.map(c=>`<div onclick="selectOrigemRef('${c.id}')" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid #f1f5f9" onmouseover="this.style.background='#f5f3ff'" onmouseout="this.style.background=''">
+    <div style="font-size:13px;font-weight:600;color:var(--text)">${esc(c.nome)}</div>${c.telefone?`<div style="font-size:11px;color:var(--muted)">📱 ${esc(c.telefone)}</div>`:''}
+  </div>`).join('');
+  drop.style.display='block';
+}
+function hideOrigemRefDropdown(){const d=document.getElementById('cl-origem-ref-dropdown');if(d)d.style.display='none';}
+function selectOrigemRef(id){
+  const c=clients.find(x=>x.id===id);if(!c)return;
+  document.getElementById('cl-origem-ref-id').value=id;
+  document.getElementById('cl-origem-ref-search').value=c.nome+(c.telefone?' ('+c.telefone+')':'');
+  hideOrigemRefDropdown();
 }
 function fmtCpf(input){let v=input.value.replace(/\D/g,'').slice(0,11);if(v.length>9)v=v.replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/,'$1.$2.$3-$4');else if(v.length>6)v=v.replace(/(\d{3})(\d{3})(\d{0,3})/,'$1.$2.$3');else if(v.length>3)v=v.replace(/(\d{3})(\d{0,3})/,'$1.$2');input.value=v}
 function showAgendaModal(card){
