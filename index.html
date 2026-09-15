@@ -4231,11 +4231,52 @@ function _backfillCoresRuidoFinalizados(){
   if(changed)savPr();
   return changed;
 }
+// Popup lembrando de colocar o link da galeria assim que um projeto chega
+// em Finalizado — só aparece se o card está ligado a um cliente (opCard)
+// e esse cliente ainda não tem link de galeria cadastrado.
+function _lembreteGaleriaFinalizado(prCardId){
+  const pr=prCards.find(c=>c.id===prCardId);if(!pr||!pr.sourceId)return;
+  const op=opCards.find(c=>c.id===pr.sourceId);if(!op||op.galeria)return;
+  const existing=document.getElementById('gal-lembrete-overlay');if(existing)existing.remove();
+  const div=document.createElement('div');
+  div.id='gal-lembrete-overlay';
+  div.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0.35)';
+  div.innerHTML=`<div style="background:var(--surface);border-radius:18px 18px 0 0;padding:22px 20px 28px;width:100%;max-width:420px;box-shadow:0 -6px 28px rgba(0,0,0,0.18)" onclick="event.stopPropagation()">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <span style="font-weight:700;font-size:16px">🖼️ Link da Galeria</span>
+      <button onclick="document.getElementById('gal-lembrete-overlay').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#999;line-height:1">×</button>
+    </div>
+    <div style="font-size:12px;color:#6b7280;margin-bottom:14px">🎉 Projeto finalizado! Já aproveita e coloca o link da galeria de <strong>${esc(op.nomePais||op.titulo||'Cliente')}</strong>?</div>
+    <input type="url" id="gal-lembrete-input" placeholder="https://link-da-galeria.com"
+      style="width:100%;padding:12px 14px;font-size:15px;font-weight:600;border:2px solid #e5e7eb;border-radius:10px;margin-bottom:14px;box-sizing:border-box;outline:none"
+      onkeydown="if(event.key==='Enter')_salvarLembreteGaleria('${op.id}')">
+    <div style="display:flex;gap:10px">
+      <button onclick="document.getElementById('gal-lembrete-overlay').remove()" style="flex:1;padding:11px;border:1.5px solid #e5e7eb;background:#f9fafb;border-radius:9px;font-size:14px;cursor:pointer;font-weight:500">Depois</button>
+      <button onclick="_salvarLembreteGaleria('${op.id}')" style="flex:2;padding:11px;background:#22c55e;color:#fff;border:none;border-radius:9px;font-size:15px;font-weight:700;cursor:pointer">Salvar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(div);
+  div.addEventListener('click',()=>div.remove());
+  setTimeout(()=>document.getElementById('gal-lembrete-input')?.focus(),50);
+}
+function _salvarLembreteGaleria(opId){
+  const inp=document.getElementById('gal-lembrete-input');
+  const link=(inp?.value||'').trim();
+  if(!link){toast('⚠️ Cole o link da galeria','orange');return;}
+  const card=opCards.find(c=>c.id===opId);if(!card)return;
+  if(!card.galeria)card.galeriaEnviadaEm=Date.now();
+  card.galeria=link;card.updatedAt=Date.now();
+  savOp();
+  if(editingOpId===opId){const galEl=document.getElementById('f-galeria');if(galEl)galEl.value=link;}
+  toast('✅ Link da galeria salvo!','green');
+  const ov=document.getElementById('gal-lembrete-overlay');if(ov)ov.remove();
+}
 function marcarFreelaFinalizado(id){
   const card=prCards.find(c=>c.id===id);if(!card)return;
   card.coluna='finalizado';card.coresDone=true;card.ruidoDone=true;card.updatedAt=Date.now();
   savPr();renderPr();
   toast('🎉 Projeto movido para Finalizados!','green');
+  _lembreteGaleriaFinalizado(card.id);
 }
 function onDS(e,id,board){dragId=id;dragBoard=board;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',id);setTimeout(()=>{const el=document.querySelector(`[data-id="${id}"]`);if(el)el.classList.add('dragging')},0)}
 function onDE2(){document.querySelectorAll('.dragging').forEach(el=>el.classList.remove('dragging'));document.querySelectorAll('.drag-over').forEach(el=>el.classList.remove('drag-over'))}
@@ -4576,6 +4617,7 @@ function onDrop(e,board,targetCol){
     if(targetCol==='finalizado'){card.coresDone=true;card.ruidoDone=true;}
     savPr();renderPr();
     const col=PR_COLS.find(c=>c.id===targetCol);toast(`${col.emoji} Movido para ${col.name}`,'green');
+    if(targetCol==='finalizado')_lembreteGaleriaFinalizado(card.id);
   }else if(board==='alb'){
     const card=albCards.find(c=>c.id===id);if(!card||card.coluna===targetCol)return;
     card.coluna=targetCol;card.updatedAt=Date.now();savAlb();renderAlb();
@@ -5720,8 +5762,10 @@ function savePrCard(){
   const coresDone=newCol==='finalizado'?true:(oldCard?.coresDone||false);
   const ruidoDone=newCol==='finalizado'?true:(oldCard?.ruidoDone||false);
   const data={id:editingPrId||uid(),coluna:newCol,sourceId:oldCard?.sourceId||null,nomePais,nomeCrianca:src2?.nomeCrianca||oldCard?.nomeCrianca||'',idade:src2?.idade||oldCard?.idade||'',nomeCrianca2:src2?.nomeCrianca2||oldCard?.nomeCrianca2||'',idade2:src2?.idade2||oldCard?.idade2||'',dataEvento,freela,parceiroId,obs:document.getElementById('f-pr-obs').value.trim(),pendenciaDesc:document.getElementById('f-pr-pendencia').value.trim(),coresDone,ruidoDone,criadoEm:oldCard?.criadoEm||Date.now(),updatedAt:Date.now()};
+  const _viroouFinalizado=newCol==='finalizado'&&oldCard?.coluna!=='finalizado';
   if(editingPrId){const i=prCards.findIndex(c=>c.id===editingPrId);if(i!==-1)prCards[i]=data;else prCards.push(data)}else prCards.push(data);
   savPr();closeMo('mo-pr');try{renderPr();renderAgenda();}catch(err){console.error(err);}toast('✅ Projeto salvo!','green');
+  if(_viroouFinalizado)_lembreteGaleriaFinalizado(data.id);
 }
 function renderPac(){
   function custosBadge(p){
