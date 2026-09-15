@@ -7046,6 +7046,7 @@ function _contasDoMes(contas,mes){
 function _contasNoDia(contas,mes,dia){
   const brutos=[];
   (contas||[]).forEach(c=>{
+    if(c.semAlerta)return; // conta sem data de vencimento fixa — não avisa
     if(c.itens&&c.itens.length){
       c.itens.filter(x=>_itemAtivoNoMes(x,mes)&&!_itemPagoMes(x,mes)).forEach(x=>{
         const d=x.dia||c.dia;
@@ -9273,6 +9274,7 @@ function renderFinContas(){
         <span class="conta-card-nome" style="${pag?'text-decoration:line-through':''}">${esc(c.nome)}${variavel?' <span style="font-size:9px;font-weight:700;color:#66798D;background:#1a2e2e;border-radius:4px;padding:1px 5px">💵 variável</span>':''}</span>
         <span class="conta-card-valor" style="color:${pag?'var(--success,#6E879F)':'var(--accent)'}${!temItens?';cursor:pointer;text-decoration:underline dotted':''}" title="${!temItens?'Clique para editar o valor':'Falta pagar neste mês'}" onclick="event.stopPropagation();${!temItens?`editContaValor('fin',${i},this)`:''}">${fmtMoney(pend)}${!temItens?` <span style="font-size:10px;opacity:.4">✏️</span>`:''}</span>${pend!==val?`<span style="font-size:10.5px;color:var(--muted);white-space:nowrap;margin-left:6px">de ${fmtMoney(val)}</span>`:''}
         <span class="conta-card-dia" style="cursor:pointer" title="Clique para ${c.dia?'editar':'definir'} o dia do vencimento" onclick="event.stopPropagation();editContaDia('fin',${i},this)">${c.dia?`Dia ${c.dia}`:'+ Dia'} <span style="font-size:10px;opacity:.4">✏️</span></span>
+        <button type="button" onclick="event.stopPropagation();toggleContaAlerta('fin',${i})" title="${c.semAlerta?'Sem data fixa — notificação de vencimento desativada. Clique para ativar':'Avisa quando vencer. Clique se essa conta não tem data fixa (ex: gasto do mês)'}" style="background:none;border:none;cursor:pointer;font-size:13px;opacity:${c.semAlerta?'.4':'1'};padding:0 2px">${c.semAlerta?'🔕':'🔔'}</button>
         ${_periodoLabel(c)?`<span style="font-size:10px;font-weight:700;color:#e0a14e;background:#2a2113;border-radius:5px;padding:2px 7px">${_periodoLabel(c)}</span>`:''}
         ${variavel?'':`<button class="conta-card-pag ${pag?'sim':'nao'}" onclick="event.stopPropagation();pagarFinConta(${i})">${pag?'✓ Pago':'Pagar'}</button>`}
         <button class="fin-del" onclick="event.stopPropagation();delFinConta(${i})">×</button>
@@ -9728,6 +9730,13 @@ function saveContaValor(tipo,i){
   if(tipo==='fin'){saveFinData();renderFinContas();renderFinResumo();}
   else{savePessData();renderPessContas();renderPessResumo();}
 }
+function toggleContaAlerta(tipo,i){
+  const arr=tipo==='fin'?finContas:pessContas;
+  const c=arr[i];if(!c)return;
+  c.semAlerta=!c.semAlerta;
+  if(tipo==='fin'){saveFinData();renderFinContas();}else{savePessData();renderPessContas();}
+  toast(c.semAlerta?'🔕 Notificação de vencimento desativada':'🔔 Notificação de vencimento ativada','green');
+}
 function editContaDia(tipo,i,el){
   if(el.querySelector('input'))return;
   var arr=tipo==='fin'?finContas:pessContas;
@@ -9964,6 +9973,7 @@ function renderPessContas(){
         <span class="conta-card-nome" style="${pag?'text-decoration:line-through':''}">${esc(c.nome)}${variavel?' <span style="font-size:9px;font-weight:700;color:#66798D;background:#1a2e2e;border-radius:4px;padding:1px 5px">💵 variável</span>':''}</span>
         <span class="conta-card-valor" style="color:${pag?'var(--success,#6E879F)':'var(--accent)'}${!temItens?';cursor:pointer;text-decoration:underline dotted':''}" title="${!temItens?'Clique para editar o valor':'Falta pagar neste mês'}" onclick="event.stopPropagation();${!temItens?`editContaValor('pess',${i},this)`:''}">${fmtMoney(pend)}${!temItens?` <span style="font-size:10px;opacity:.4">✏️</span>`:''}</span>${pend!==val?`<span style="font-size:10.5px;color:var(--muted);white-space:nowrap;margin-left:6px">de ${fmtMoney(val)}</span>`:''}
         <span class="conta-card-dia" style="cursor:pointer" title="Clique para ${c.dia?'editar':'definir'} o dia do vencimento" onclick="event.stopPropagation();editContaDia('pess',${i},this)">${c.dia?`Dia ${c.dia}`:'+ Dia'} <span style="font-size:10px;opacity:.4">✏️</span></span>
+        <button type="button" onclick="event.stopPropagation();toggleContaAlerta('pess',${i})" title="${c.semAlerta?'Sem data fixa — notificação de vencimento desativada. Clique para ativar':'Avisa quando vencer. Clique se essa conta não tem data fixa (ex: gasto do mês)'}" style="background:none;border:none;cursor:pointer;font-size:13px;opacity:${c.semAlerta?'.4':'1'};padding:0 2px">${c.semAlerta?'🔕':'🔔'}</button>
         ${_periodoLabel(c)?`<span style="font-size:10px;font-weight:700;color:#e0a14e;background:#2a2113;border-radius:5px;padding:2px 7px">${_periodoLabel(c)}</span>`:''}
         ${variavel?'':`<button class="conta-card-pag ${pag?'sim':'nao'}" onclick="event.stopPropagation();pagarPessConta(${i})">${pag?'✓ Pago':'Pagar'}</button>`}
         <button class="fin-del" onclick="event.stopPropagation();delPessConta(${i})">×</button>
