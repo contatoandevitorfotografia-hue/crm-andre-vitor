@@ -9646,8 +9646,8 @@ function addLancamento(tipo,i){
   c.lancamentos[mes].push({id:uid(),dia,valor});
   c.lancamentos[mes].sort((a,b)=>(a.dia||0)-(b.dia||0));
   if(dEl)dEl.value='';if(vEl)vEl.value='';
-  if(tipo==='fin'){saveFinData();renderFinContas();}
-  else{savePessData();renderPessContas();}
+  if(tipo==='fin'){_initFinVG(mes);finVG[mes]=(finVG[mes]||0)-valor;saveFinData();renderFinContas();renderFinResumo();}
+  else{_initPessVG(mes);pessVG[mes]=(pessVG[mes]||0)-valor;savePessData();renderPessContas();renderPessResumo();}
   setTimeout(()=>{
     const el=document.getElementById(tipo+'-citens-'+i);
     const tog=document.getElementById(tipo+'-ctog-'+i);
@@ -9660,9 +9660,11 @@ function delLancamento(tipo,i,j){
   const c=arr[i];if(!c)return;
   const mes=_contasMesAtivo();
   if(!c.lancamentos||!c.lancamentos[mes])return;
+  const removido=c.lancamentos[mes][j];
   c.lancamentos[mes].splice(j,1);
-  if(tipo==='fin'){saveFinData();renderFinContas();}
-  else{savePessData();renderPessContas();}
+  const valorRemovido=removido?.valor||0;
+  if(tipo==='fin'){_initFinVG(mes);finVG[mes]=(finVG[mes]||0)+valorRemovido;saveFinData();renderFinContas();renderFinResumo();}
+  else{_initPessVG(mes);pessVG[mes]=(pessVG[mes]||0)+valorRemovido;savePessData();renderPessContas();renderPessResumo();}
   setTimeout(()=>{
     const el=document.getElementById(tipo+'-citens-'+i);
     const tog=document.getElementById(tipo+'-ctog-'+i);
