@@ -9288,9 +9288,9 @@ function _contaAccordionHTML(tipo,i,c,mes,itens,itensAtivos,temItens,pend,val){
     </div>`}).join('')}
     <div class="conta-item-add" id="${tipo}-ciadd-${i}" style="display:none;flex-direction:column;gap:6px">
       <div style="display:flex;gap:6px;align-items:center">
-        <input type="text" id="${tipo}-ci-n-${i}" placeholder="Ex: Cartão Inter, Spotify...">
+        <input type="text" id="${tipo}-ci-n-${i}" placeholder="Ex: Cartão Inter, Spotify..." style="max-width:220px">
         <input type="number" id="${tipo}-ci-v-${i}" placeholder="R$" step="0.01" min="0" style="max-width:90px">
-        <input type="number" id="${tipo}-ci-d-${i}" placeholder="Dia" min="1" max="31" style="max-width:60px">
+        <input type="text" id="${tipo}-ci-d-${i}" placeholder="Dia" readonly style="max-width:60px;text-align:center;cursor:pointer" onclick="_openDiaGrid(this,this.value,(d)=>{this.value=d||''})">
         <button class="conta-item-btn-add" onclick="addContaItem('${tipo}',${i})">+</button>
         <button class="conta-item-btn-cancel" onclick="document.getElementById('${tipo}-ciadd-${i}').style.display='none'">✕</button>
       </div>
@@ -9797,13 +9797,11 @@ function editContaDia(tipo,i,el){
   var arr=tipo==='fin'?finContas:pessContas;
   var cur=arr[i]?arr[i].dia||'':'';
   var uid='cd-'+tipo+'-'+i;
-  el.outerHTML=`<input type="number" id="${uid}" value="${cur}" min="1" max="31" placeholder="Dia"
-    style="width:56px;border:2px solid var(--accent);border-radius:6px;padding:3px 7px;font:700 12px 'Montserrat',sans-serif;color:var(--accent);background:var(--surface)"
-    onclick="event.stopPropagation()"
-    onkeydown="if(event.key==='Enter')saveContaDia('${tipo}',${i});if(event.key==='Escape')${tipo==='fin'?'renderFinContas':'renderPessContas'}()"
-    onblur="saveContaDia('${tipo}',${i})">`;
+  el.outerHTML=`<input type="text" id="${uid}" value="${cur}" readonly placeholder="Dia"
+    style="width:56px;text-align:center;border:2px solid var(--accent);border-radius:6px;padding:3px 7px;font:700 12px 'Montserrat',sans-serif;color:var(--accent);background:var(--surface);cursor:pointer"
+    onclick="event.stopPropagation();_openDiaGrid(this,this.value,(d)=>{this.value=d||'';saveContaDia('${tipo}',${i})})">`;
   var inp=document.getElementById(uid);
-  if(inp){inp.focus();inp.select();}
+  if(inp)inp.focus();
 }
 function saveContaDia(tipo,i){
   var uid='cd-'+tipo+'-'+i;
@@ -9818,19 +9816,51 @@ function saveContaDia(tipo,i){
   else{savePessData();renderPessContas();}
   toast(v?'📅 Dia de vencimento definido!':'Dia de vencimento removido.','green');
 }
+// ── Calendário simples pra escolher o dia do mês (1-31) ──
+let _diaGridEl=null;
+function _closeDiaGrid(){if(_diaGridEl){_diaGridEl.remove();_diaGridEl=null;document.removeEventListener('click',_diaGridOutsideClick,true);document.removeEventListener('keydown',_diaGridEscClick,true);}}
+function _diaGridOutsideClick(e){if(_diaGridEl&&!_diaGridEl.contains(e.target))_closeDiaGrid();}
+function _diaGridEscClick(e){if(e.key==='Escape')_closeDiaGrid();}
+function _openDiaGrid(anchor,curVal,onPick){
+  _closeDiaGrid();
+  const cur=parseInt(curVal)||null;
+  const grid=document.createElement('div');
+  grid.style.cssText='position:fixed;z-index:10001;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;box-shadow:var(--sh-lg);padding:10px';
+  const days=document.createElement('div');
+  days.style.cssText='display:grid;grid-template-columns:repeat(7,26px);gap:4px';
+  for(let d=1;d<=31;d++){
+    const btn=document.createElement('button');
+    btn.type='button';btn.textContent=d;
+    const on=d===cur;
+    btn.style.cssText=`width:26px;height:26px;border-radius:6px;border:none;font:600 11px 'Montserrat',sans-serif;cursor:pointer;background:${on?'var(--accent)':'var(--n50)'};color:${on?'#fff':'var(--n700)'}`;
+    btn.onclick=(e)=>{e.stopPropagation();_closeDiaGrid();onPick(d);};
+    days.appendChild(btn);
+  }
+  grid.appendChild(days);
+  const clearBtn=document.createElement('button');
+  clearBtn.type='button';clearBtn.textContent='Sem dia fixo';
+  clearBtn.style.cssText="width:100%;margin-top:8px;padding:6px;border:none;border-radius:7px;background:var(--n100);color:var(--n700);font:600 11px 'Montserrat',sans-serif;cursor:pointer";
+  clearBtn.onclick=(e)=>{e.stopPropagation();_closeDiaGrid();onPick(null);};
+  grid.appendChild(clearBtn);
+  document.body.appendChild(grid);
+  const r=anchor.getBoundingClientRect();
+  const gw=7*30;
+  grid.style.left=Math.max(8,Math.min(r.left,window.innerWidth-gw-16))+'px';
+  grid.style.top=Math.min(r.bottom+6,window.innerHeight-260)+'px';
+  _diaGridEl=grid;
+  setTimeout(()=>{document.addEventListener('click',_diaGridOutsideClick,true);document.addEventListener('keydown',_diaGridEscClick,true);},10);
+}
 function editContaItemDia(tipo,ci,ii,el){
   if(el.querySelector('input'))return;
   var arr=tipo==='fin'?finContas:pessContas;
   var item=arr[ci]?.itens?.[ii];if(!item)return;
   var cur=item.dia||'';
   var uid='cid-'+tipo+'-'+ci+'-'+ii;
-  el.outerHTML=`<input type="number" id="${uid}" value="${cur}" min="1" max="31" placeholder="Dia"
-    style="width:56px;border:2px solid var(--accent);border-radius:6px;padding:3px 7px;font:700 12px 'Montserrat',sans-serif;color:var(--accent);background:var(--surface)"
-    onclick="event.stopPropagation()"
-    onkeydown="if(event.key==='Enter')saveContaItemDia('${tipo}',${ci},${ii});if(event.key==='Escape')${tipo==='fin'?'renderFinContas':'renderPessContas'}()"
-    onblur="saveContaItemDia('${tipo}',${ci},${ii})">`;
+  el.outerHTML=`<input type="text" id="${uid}" value="${cur}" readonly placeholder="Dia"
+    style="width:56px;text-align:center;border:2px solid var(--accent);border-radius:6px;padding:3px 7px;font:700 12px 'Montserrat',sans-serif;color:var(--accent);background:var(--surface);cursor:pointer"
+    onclick="event.stopPropagation();_openDiaGrid(this,this.value,(d)=>{this.value=d||'';saveContaItemDia('${tipo}',${ci},${ii})})">`;
   var inp=document.getElementById(uid);
-  if(inp){inp.focus();inp.select();}
+  if(inp)inp.focus();
 }
 function saveContaItemDia(tipo,ci,ii){
   var uid='cid-'+tipo+'-'+ci+'-'+ii;
