@@ -3084,24 +3084,6 @@ input[type="date"]{cursor:pointer}
   </div>
 </div>
 
-<!-- POPUP LEMBRETE DE PAGAMENTO -->
-<div id="mo-pag-lembrete" style="display:none;position:fixed;inset:0;background:rgba(30,41,59,.6);backdrop-filter:blur(5px);z-index:9998;align-items:center;justify-content:center">
-  <div style="background:var(--surface);border-radius:20px;padding:0;max-width:440px;width:92%;box-shadow:var(--sh-lg);animation:heroIn .35s cubic-bezier(.34,1.2,.64,1) both;overflow:hidden">
-    <div style="background:linear-gradient(135deg,var(--primary) 0%,var(--primary-dark) 100%);padding:22px 24px 18px;display:flex;align-items:flex-start;gap:14px">
-      <div style="font-size:2.2rem;line-height:1;flex-shrink:0">💰</div>
-      <div>
-        <div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:3px">Pagamento vence hoje!</div>
-        <div style="font-size:12px;color:rgba(255,255,255,.8);font-weight:500">Verifique as parcelas a receber</div>
-      </div>
-    </div>
-    <div id="pag-lembrete-lista" style="padding:16px 20px;display:flex;flex-direction:column;gap:10px;max-height:280px;overflow-y:auto"></div>
-    <div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">
-      <button onclick="fecharPagLembrete()" style="padding:9px 20px;background:var(--n100);color:var(--n700);border:none;border-radius:10px;font:700 13px 'Montserrat',sans-serif;cursor:pointer">Ver depois</button>
-      <button onclick="fecharPagLembrete()" style="padding:9px 20px;background:var(--primary);color:#fff;border:none;border-radius:10px;font:700 13px 'Montserrat',sans-serif;cursor:pointer">OK, entendido!</button>
-    </div>
-  </div>
-</div>
-
 <!-- POPUP LEMBRETE DE BACKUP -->
 <div id="mo-backup-reminder" style="display:none;position:fixed;inset:0;background:rgba(30,41,59,.55);backdrop-filter:blur(4px);z-index:9999;align-items:center;justify-content:center">
   <div style="background:var(--surface);border-radius:20px;padding:36px 32px;max-width:380px;width:90%;box-shadow:var(--sh-lg);text-align:center;animation:heroIn .4s cubic-bezier(.34,1.2,.64,1) both">
@@ -11597,51 +11579,6 @@ function _limparAbril2026(){
   // Marca como feito para não rodar de novo
   localStorage.setItem('_abril2026_limpo','1');
 }
-// ── Lembrete de Parcelas Vencendo Hoje ──────────────────────────
-function checkPagamentosHoje(){
-  const todayStr=new Date().toISOString().split('T')[0];
-  const snoozeKey='crm_pag_lembrete_'+todayStr;
-  // Só mostra uma vez por dia
-  if(localStorage.getItem(snoozeKey))return;
-
-  const vencendoHoje=[];
-  opCards.forEach(card=>{
-    if(!card.parcelasItens||!card.parcelasItens.length)return;
-    card.parcelasItens.forEach((p,idx)=>{
-      if(!p.recebido&&p.data===todayStr){
-        vencendoHoje.push({card,parcela:p,idx});
-      }
-    });
-  });
-  if(!vencendoHoje.length)return;
-
-  const lista=document.getElementById('pag-lembrete-lista');
-  if(!lista)return;
-  lista.innerHTML=vencendoHoje.map(({card,parcela})=>{
-    const nome=card.nomePais||card.titulo||'Cliente';
-    const crianca=_nomesCriancas(card)?` (${_nomesCriancas(card)})`:'';
-    const val=parcela.valor?'R$ '+parcela.valor.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.'):'';
-    return`<div style="background:var(--primary-light);border:1.5px solid #4E9A9A;border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer" onclick="fecharPagLembrete();openOpModal('${card.id}',null,event)">
-      <div style="font-size:1.5rem;flex-shrink:0">💳</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:14px;font-weight:700;color:var(--n900);margin-bottom:2px">${esc(nome+crianca)}</div>
-        <div style="font-size:12px;color:var(--muted)">${esc(parcela.label||'Parcela')}${val?' · <strong style="color:var(--primary-dark)">'+val+'</strong>':''}</div>
-      </div>
-      <div style="font-size:11px;font-weight:700;color:#fff;background:var(--primary);padding:3px 9px;border-radius:99px;white-space:nowrap;flex-shrink:0">Ver →</div>
-    </div>`;
-  }).join('');
-
-  const overlay=document.getElementById('mo-pag-lembrete');
-  if(overlay)overlay.style.display='flex';
-}
-function fecharPagLembrete(){
-  const overlay=document.getElementById('mo-pag-lembrete');
-  if(overlay)overlay.style.display='none';
-  const todayStr=new Date().toISOString().split('T')[0];
-  localStorage.setItem('crm_pag_lembrete_'+todayStr,'1');
-}
-setTimeout(checkPagamentosHoje,1500);
-
 setTimeout(checkBackupReminder, 2000);
 
 function checkBackupReminder(){
