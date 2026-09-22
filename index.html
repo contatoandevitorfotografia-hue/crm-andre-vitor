@@ -1431,7 +1431,13 @@ input[type="date"]{cursor:pointer}
         <div class="dash-sec-body" id="dash-pen-list"></div>
       </div>
     </div>
-    <div class="stats-grid" id="dash-conversao-stats" style="grid-template-columns:repeat(auto-fit,minmax(200px,240px));margin-bottom:16px"></div>
+    <div class="dash-section" style="margin-bottom:16px">
+      <div class="dash-sec-hdr"><h3>🎯 Conversão por Mês</h3><span id="dash-conv-ano-wrap"></span></div>
+      <div style="padding:16px 18px">
+        <div class="fin-mes-tabs" id="dash-conv-mtabs" style="margin-bottom:14px"></div>
+        <div class="stats-grid" id="dash-conversao-stats" style="grid-template-columns:repeat(auto-fit,minmax(200px,240px))"></div>
+      </div>
+    </div>
     <div class="dash-analytics">
       <div class="dash-sec-hdr"><h3>📊 Analytics</h3></div>
       <div class="dash-analytics-body" id="dash-analytics-body"></div>
@@ -3926,23 +3932,8 @@ function renderDashboard(){
     });
     evEl.innerHTML=_rows.join('');
   }
-  // Conversão do mês (festas marcadas PARA este mês x quantas dessas fecharam)
-  const curMonth=now.getMonth(),curYear=now.getFullYear();
-  const leadsMes=opCards.filter(c=>{
-    if(!c.dataEvento)return false;
-    const d=new Date(c.dataEvento+'T12:00:00');
-    return d.getMonth()===curMonth&&d.getFullYear()===curYear;
-  });
-  const apareceramMes=leadsMes.length;
-  const fechadasMes=leadsMes.filter(c=>c.coluna==='confirmado'||c.coluna==='confirmado-pendencias').length;
-  const taxaConversao=apareceramMes>0?Math.round(fechadasMes/apareceramMes*100):0;
-  const statsConvEl=document.getElementById('dash-conversao-stats');
-  if(statsConvEl){
-    statsConvEl.innerHTML=`
-      <div class="stat-card sc-total"><div class="stat-icon">🎉</div><div class="stat-label">Festas Marcadas — ${months[curMonth]}</div><div class="stat-value">${apareceramMes}</div><div class="stat-sub">Pedidos com festa neste mês</div></div>
-      <div class="stat-card sc-reservas"><div class="stat-icon">✅</div><div class="stat-label">Festas Fechadas — ${months[curMonth]}</div><div class="stat-value">${fechadasMes}</div><div class="stat-sub">${apareceramMes>0?`${taxaConversao}% de conversão`:'Sem festas marcadas ainda'}</div></div>
-    `;
-  }
+  // Conversão do mês (festas marcadas PARA um mês x quantas dessas fecharam)
+  renderDashConversao();
   // Listas
   renderDashListas();
   // Analytics
@@ -11111,6 +11102,36 @@ function toggleBrindeMes(refId){
   }
   savIndic();renderIndicacoes();
 }
+let _dashConvMes=null,_dashConvAno=null;
+function renderDashConversao(){
+  const MESES_DASH=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  const hoje=new Date();
+  if(_dashConvMes==null)_dashConvMes=hoje.getMonth();
+  if(_dashConvAno==null)_dashConvAno=hoje.getFullYear();
+  const anosComDados=opCards.filter(c=>c.dataEvento).map(c=>new Date(c.dataEvento+'T12:00:00').getFullYear());
+  const allYears=[...new Set([hoje.getFullYear(),hoje.getFullYear()+1,...anosComDados])].sort((a,b)=>a-b);
+  const anoWrap=document.getElementById('dash-conv-ano-wrap');
+  if(anoWrap)anoWrap.innerHTML=`<select onchange="onDashConvAnoChange(this.value)" style="font:600 13px 'Montserrat',sans-serif;border:1.5px solid var(--border);border-radius:7px;padding:4px 10px;background:var(--surface);color:var(--text);cursor:pointer;outline:none">${allYears.map(y=>`<option value="${y}"${y===_dashConvAno?' selected':''}>${y}</option>`).join('')}</select>`;
+  const mtabs=document.getElementById('dash-conv-mtabs');
+  if(mtabs)mtabs.innerHTML=MESES_DASH.map((m,i)=>`<button class="fin-mtab${i===_dashConvMes?' active':''}" onclick="onDashConvMesChange(${i})">${m.slice(0,3)}</button>`).join('');
+  const leadsMes=opCards.filter(c=>{
+    if(!c.dataEvento)return false;
+    const d=new Date(c.dataEvento+'T12:00:00');
+    return d.getMonth()===_dashConvMes&&d.getFullYear()===_dashConvAno;
+  });
+  const apareceramMes=leadsMes.length;
+  const fechadasMes=leadsMes.filter(c=>c.coluna==='confirmado'||c.coluna==='confirmado-pendencias').length;
+  const taxaConversao=apareceramMes>0?Math.round(fechadasMes/apareceramMes*100):0;
+  const statsConvEl=document.getElementById('dash-conversao-stats');
+  if(statsConvEl){
+    statsConvEl.innerHTML=`
+      <div class="stat-card sc-total"><div class="stat-icon">🎉</div><div class="stat-label">Festas Marcadas — ${MESES_DASH[_dashConvMes]}</div><div class="stat-value">${apareceramMes}</div><div class="stat-sub">Pedidos com festa neste mês</div></div>
+      <div class="stat-card sc-reservas"><div class="stat-icon">✅</div><div class="stat-label">Festas Fechadas — ${MESES_DASH[_dashConvMes]}</div><div class="stat-value">${fechadasMes}</div><div class="stat-sub">${apareceramMes>0?`${taxaConversao}% de conversão`:'Sem festas marcadas ainda'}</div></div>
+    `;
+  }
+}
+function onDashConvMesChange(i){_dashConvMes=i;renderDashConversao();}
+function onDashConvAnoChange(y){_dashConvAno=parseInt(y);renderDashConversao();}
 function renderDashAnalytics(year){
   const mNames=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
   const confirmed=opCards.filter(c=>(c.coluna==='confirmado'||c.coluna==='confirmado-pendencias')&&c.dataEvento);
