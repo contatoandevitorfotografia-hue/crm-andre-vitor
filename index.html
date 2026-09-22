@@ -3926,11 +3926,11 @@ function renderDashboard(){
     });
     evEl.innerHTML=_rows.join('');
   }
-  // Conversão do mês (festas que apareceram x festas fechadas)
+  // Conversão do mês (festas marcadas PARA este mês x quantas dessas fecharam)
   const curMonth=now.getMonth(),curYear=now.getFullYear();
   const leadsMes=opCards.filter(c=>{
-    if(!c.criadoEm)return false;
-    const d=new Date(c.criadoEm);
+    if(!c.dataEvento)return false;
+    const d=new Date(c.dataEvento+'T12:00:00');
     return d.getMonth()===curMonth&&d.getFullYear()===curYear;
   });
   const apareceramMes=leadsMes.length;
@@ -3939,8 +3939,8 @@ function renderDashboard(){
   const statsConvEl=document.getElementById('dash-conversao-stats');
   if(statsConvEl){
     statsConvEl.innerHTML=`
-      <div class="stat-card sc-total"><div class="stat-icon">🎉</div><div class="stat-label">Festas que Apareceram — ${months[curMonth]}</div><div class="stat-value">${apareceramMes}</div><div class="stat-sub">Novos contatos este mês</div></div>
-      <div class="stat-card sc-reservas"><div class="stat-icon">✅</div><div class="stat-label">Festas Fechadas — ${months[curMonth]}</div><div class="stat-value">${fechadasMes}</div><div class="stat-sub">${apareceramMes>0?`${taxaConversao}% de conversão`:'Sem contatos ainda'}</div></div>
+      <div class="stat-card sc-total"><div class="stat-icon">🎉</div><div class="stat-label">Festas Marcadas — ${months[curMonth]}</div><div class="stat-value">${apareceramMes}</div><div class="stat-sub">Pedidos com festa neste mês</div></div>
+      <div class="stat-card sc-reservas"><div class="stat-icon">✅</div><div class="stat-label">Festas Fechadas — ${months[curMonth]}</div><div class="stat-value">${fechadasMes}</div><div class="stat-sub">${apareceramMes>0?`${taxaConversao}% de conversão`:'Sem festas marcadas ainda'}</div></div>
     `;
   }
   // Listas
