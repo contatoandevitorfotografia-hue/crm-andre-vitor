@@ -575,21 +575,28 @@ const CNT_TIPO_LBL={reels:'🎬 Reels',carrossel:'🖼️ Carrossel',stories:'�
 // ── STATE ────────────────────────────────────
 let _cFilter='todos';
 
-let opCards=[],packages=[],conteudos=[],freelancers=[],freelaCards=[];
-let pendencias=[],pendenciasGerais=[],pessoais=[],cefaleias=[];
-let _pesTab='fazer';
-
-let _finDb=null;
-let _dadosTs=0;
-let _dadosTmr=null;
-let _rDados=false;
-
 // ── UTILS ────────────────────────────────────
 const fmtM=v=>(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const uid=()=>Math.random().toString(36).slice(2)+Date.now().toString(36);
 const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 // Firebase pode converter arrays em objetos quando há lacunas nos índices
 const toArr=v=>!v?[]:Array.isArray(v)?v:Object.values(v);
+
+// Carrega o último estado conhecido do localStorage ANTES de qualquer
+// conexão com o Firebase — assim, se o celular abrir offline (ou o
+// Firebase demorar/falhar), a pessoa vê os dados de verdade e não uma
+// tela vazia, e qualquer edição feita nesse meio tempo não fica perdida
+// só na memória da página.
+let _dadosCache={};
+try{_dadosCache=JSON.parse(localStorage.getItem('mob_dados_v1')||'{}')||{};}catch(e){_dadosCache={};}
+let opCards=toArr(_dadosCache.op),packages=toArr(_dadosCache.pac),conteudos=toArr(_dadosCache.cnt),freelancers=[],freelaCards=[];
+let pendencias=toArr(_dadosCache.pendencias),pendenciasGerais=toArr(_dadosCache.pgr),pessoais=toArr(_dadosCache.pessoais),cefaleias=toArr(_dadosCache.cefaleias);
+let _pesTab='fazer';
+
+let _finDb=null;
+let _dadosTs=0;
+let _dadosTmr=null;
+let _rDados=false;
 
 function toast(msg,dur=2200){
   const el=document.getElementById('mob-toast');
@@ -769,16 +776,43 @@ function cycleCnt(id){
 function delCnt(id){conteudos=conteudos.filter(x=>x.id!==id);saveD();renderCnt();}
 
 // ── FIREBASE SAVE ─────────────────────────────
-function saveD(){
-  if(!_finDb)return;_dadosTs=Date.now();
-  clearTimeout(_dadosTmr);_dadosTmr=setTimeout(()=>{
-    // O Firebase recusa o update() inteiro se algum campo, em qualquer
-    // profundidade, for undefined — passar por JSON evita que um registro
-    // antigo corrompido derrube a sincronização inteira, silenciosamente.
-    const payload=JSON.parse(JSON.stringify({cnt:conteudos,op:opCards,pac:packages,lem:lembretes,pendencias,pgr:pendenciasGerais,pessoais,cefaleias}));
-    _finDb.ref('dados26').update(payload);
-  },1500);
+// Guarda local IMEDIATO (síncrono) + envio pro Firebase com pequeno atraso
+// (pra não disparar uma escrita a cada letra digitada). O guarda local e a
+// flag "pending" garantem que, se o app for fechado/minimizado antes do
+// envio completar, o dado não se perde — ele fica salvo no aparelho e
+// tenta de novo assim que possível (inclusive ao reabrir o app depois).
+function _dadosPayload(){
+  // O Firebase recusa o update() inteiro se algum campo, em qualquer
+  // profundidade, for undefined — passar por JSON evita que um registro
+  // antigo corrompido derrube a sincronização inteira, silenciosamente.
+  return JSON.parse(JSON.stringify({cnt:conteudos,op:opCards,pac:packages,lem:lembretes,pendencias,pgr:pendenciasGerais,pessoais,cefaleias}));
 }
+function saveD(){
+  _dadosTs=Date.now();
+  try{
+    localStorage.setItem('mob_dados_v1',JSON.stringify(_dadosPayload()));
+    localStorage.setItem('mob_dados_pending','1');
+    localStorage.setItem('mob_dados_pending_ts',_dadosTs.toString());
+  }catch(e){}
+  clearTimeout(_dadosTmr);
+  _dadosTmr=setTimeout(_flushDados,1500);
+}
+function _flushDados(){
+  clearTimeout(_dadosTmr);_dadosTmr=null;
+  if(!_finDb)return; // sem conexão ainda — a flag "pending" garante nova tentativa depois
+  const payload=_dadosPayload();
+  try{
+    _finDb.ref('dados26').update(payload).then(()=>{
+      localStorage.removeItem('mob_dados_pending');
+      localStorage.removeItem('mob_dados_pending_ts');
+    }).catch(()=>{clearTimeout(_dadosTmr);_dadosTmr=setTimeout(_flushDados,3000);});
+  }catch(e){clearTimeout(_dadosTmr);_dadosTmr=setTimeout(_flushDados,3000);}
+}
+// Força o envio na hora de sair/minimizar — o setTimeout de 1.5s pode nunca
+// rodar se o navegador suspender a aba em segundo plano antes disso.
+window.addEventListener('pagehide',_flushDados);
+window.addEventListener('beforeunload',_flushDados);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')_flushDados();});
 
 // ── READY CHECK ───────────────────────────────
 function checkReady(){
@@ -824,9 +858,26 @@ function initMobSync(){
   if(_mobSync)return;_mobSync=true;
   try{
     _finDb=firebase.database(mobApp());
+    // Se ficou uma edição pendente de uma sessão anterior (ex.: o app foi
+    // fechado antes do envio completar), tenta reenviar assim que conectar.
+    if(localStorage.getItem('mob_dados_pending')==='1')_flushDados();
+    // Sem internet, o snapshot do Firebase pode nunca chegar — depois de um
+    // tempo, mostra o app com o que já está salvo no aparelho em vez de
+    // deixar a tela de carregamento girando pra sempre.
+    setTimeout(()=>{if(!_rDados){_rDados=true;checkReady();}},5000);
 
     _finDb.ref('dados26').on('value',snap=>{
       const d=snap.val();
+      // Existe edição local ainda não confirmada no Firebase? Não deixa um
+      // snapshot desatualizado sobrescrever o que a pessoa acabou de digitar
+      // — em vez disso, reenvia o dado local. Só respeita a flag se for
+      // recente (poucos minutos); se ficou "travada" de uma sessão antiga
+      // que nunca confirmou o envio, descarta e aceita o snapshot normal.
+      if(localStorage.getItem('mob_dados_pending')==='1'){
+        const pendTs=parseInt(localStorage.getItem('mob_dados_pending_ts'))||0;
+        if(Date.now()-pendTs<120000){_flushDados();if(!_rDados){_rDados=true;checkReady();}return;}
+        localStorage.removeItem('mob_dados_pending');localStorage.removeItem('mob_dados_pending_ts');
+      }
       const has=d&&(d.op||d.cnt);
       if(has&&Date.now()-_dadosTs>2000){
         if(d.op){opCards=toArr(d.op);if(typeof Notification!=='undefined'&&Notification.permission==='granted')scheduleFestaAusenciaNotifs();}
@@ -838,6 +889,7 @@ function initMobSync(){
         if(d.pgr)pendenciasGerais=toArr(d.pgr);
         if(d.pessoais)pessoais=toArr(d.pessoais);
         if(d.cefaleias)cefaleias=toArr(d.cefaleias);
+        try{localStorage.setItem('mob_dados_v1',JSON.stringify(_dadosPayload()));}catch(e){}
       }
       // lembretes sempre carrega (pode existir mesmo sem op/tar/cnt)
       if(d&&d.lem&&Date.now()-_dadosTs>2000){lembretes=toArr(d.lem);}
@@ -872,7 +924,7 @@ function initMobSync(){
 
 // ── AGENDA ────────────────────────────────────
 let _agMes=new Date().getMonth(), _agAno=new Date().getFullYear(), _agSelDay=null;
-let lembretes=[];
+let lembretes=toArr(_dadosCache.lem);
 const AG_COLS=['confirmado','confirmado-pendencias','negociacao','contrato-assinado'];
 const MESES_FULL=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const TIPOS_FMT={festa:'Festa',aniversario:'Aniversário',casamento:'Casamento',debutante:'Debutante',corporativo:'Corporativo',ensaio:'Ensaio'};
@@ -1070,12 +1122,7 @@ function agChangeMonth(dir){
 }
 
 // ── LEMBRETES — CRUD ──────────────────────────
-function saveLembretes(){
-  if(!_finDb)return;
-  _dadosTs=Date.now();
-  clearTimeout(_dadosTmr);
-  _dadosTmr=setTimeout(()=>{_finDb.ref('dados26').update({lem:lembretes});},1500);
-}
+function saveLembretes(){saveD();}
 
 function delLembrete(id){
   lembretes=lembretes.filter(l=>l.id!==id);
