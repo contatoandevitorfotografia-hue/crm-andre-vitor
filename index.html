@@ -6097,12 +6097,13 @@ function _cntRow(c){
   }
   return`<div style="border-radius:10px;overflow:hidden;margin-bottom:5px">
     <div class="pend-item${isDone?' done':''}" style="${atrasado?'border-color:var(--danger);background:#2E1A18':ehHoje?'border-color:var(--warning);background:var(--warning-light)':''};flex-wrap:wrap;border-radius:${(notaAberta||linkAberto||fotoAberta)?'10px 10px 0 0':'10px'};margin-bottom:0">
-      ${temFoto?`<img src="${c.foto}" onclick="event.stopPropagation();_abrirFotoLightbox('${c.foto}')" style="width:34px;height:34px;object-fit:cover;border-radius:6px;cursor:zoom-in;flex-shrink:0" title="Ver foto">`:`<span style="font-size:16px;flex-shrink:0">${icon}</span>`}
+      <span style="font-size:16px;flex-shrink:0">${icon}</span>
       <div style="flex:1;min-width:0">
         <div class="lista-item-text" style="${isDone?'text-decoration:line-through;color:var(--muted)':''}">${esc(c.texto)}<span style="margin-left:6px;font-size:11px;color:var(--muted)">${c.tipo}</span></div>
         ${c.clienteNome?`<div style="font-size:11px;color:var(--muted);margin-top:2px">👤 ${esc(c.clienteNome)}</div>`:''}
         ${temNota&&!notaAberta?`<div style="font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">📝 ${esc(c.notas)}</div>`:''}
         ${temLink&&!linkAberto?`<div style="font-size:11px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><a href="${esc(linkHref)}" target="_blank" rel="noopener noreferrer" style="color:var(--primary)">🔗 ${esc(c.link)}</a></div>`:''}
+        ${temFoto&&!fotoAberta?`<div style="font-size:11px;margin-top:2px"><a href="#" onclick="event.preventDefault();event.stopPropagation();_abrirFotoLightbox('${c.foto}')" style="color:var(--primary)">🖼️ Ver imagem</a></div>`:''}
       </div>
       <input type="date" value="${c.dataPub||''}" onclick="event.stopPropagation()" onchange="setDataPubConteudo('${c.id}',this.value)" title="Data de publicação"
         style="font:500 11px 'Montserrat',sans-serif;color:${c.dataPub?'var(--primary)':'var(--muted)'};border:1px solid var(--border);border-radius:6px;padding:3px 6px;background:var(--n50);outline:none;cursor:pointer;max-width:118px">
