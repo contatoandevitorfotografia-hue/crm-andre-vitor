@@ -8451,6 +8451,7 @@ function initFinFirebase(){
         if(data.pendencias&&Array.isArray(data.pendencias)){pendencias=data.pendencias;renderPendencias();renderDashListas();}
       }
       _limparFinJulAgoSet2026();
+      _limparLancContasJulAgoSet2026();
       _finReady=true;
       setSyncFinStatus('saved');
       if(currentTab==='financeiro')renderFin();
@@ -8512,6 +8513,7 @@ function initFinFirebase(){
     console.warn('Firebase financeiro não conectado:',e.message);
     loadFinLocal();
     _limparFinJulAgoSet2026();
+    _limparLancContasJulAgoSet2026();
     _finReady=true;
     _tryVerificarContasHoje();
   }
@@ -11661,6 +11663,30 @@ function _limparPessJulAgoSet2026(){
     if(m in pessDD){delete pessDD[m];mudou=true;}
   });
   if(mudou)savePessData();
+}
+// Limpeza pedida pela André: apagar só os LANÇAMENTOS (pago, valor
+// customizado do mês, gastos avulsos) de jul/ago/set nas contas Vivo, MEI,
+// Nubank e Mercado Pago (Financeiro Empresa) — sem apagar as contas em si,
+// pra elas continuarem aparecendo normalmente nos próximos meses.
+function _limparLancContasJulAgoSet2026(){
+  if(localStorage.getItem('_limpJAS2026_contas'))return;
+  localStorage.setItem('_limpJAS2026_contas','1');
+  const alvo=new Set(['vivo','mei','nubank','mercado pago']);
+  const meses=['julho','agosto','setembro'];
+  let mudou=false;
+  const limparObj=o=>{
+    meses.forEach(m=>{
+      if(o.pagoMes&&m in o.pagoMes){delete o.pagoMes[m];mudou=true;}
+      if(o.valorMes&&m in o.valorMes){delete o.valorMes[m];mudou=true;}
+      if(o.lancamentos&&m in o.lancamentos){delete o.lancamentos[m];mudou=true;}
+    });
+  };
+  (finContas||[]).forEach(c=>{
+    if(!alvo.has((c.nome||'').trim().toLowerCase()))return;
+    limparObj(c);
+    (c.itens||[]).forEach(limparObj);
+  });
+  if(mudou)saveFinData();
 }
 setTimeout(checkBackupReminder, 2000);
 
