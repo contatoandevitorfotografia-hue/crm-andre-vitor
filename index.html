@@ -3988,6 +3988,16 @@ function opCardHTML(c,cc){
   let tagCls='tag-pendente',tagTxt='⏳ Pendente';
   if(c.statusPag==='pago'){tagCls='tag-pago';tagTxt='✅ Quitado'}
   if(c.statusPag==='sinal'){tagCls='tag-sinal';const _vp=c.valorReserva?fmtMoney(c.valorReserva):'R$ 0';tagTxt='💰 Pago: '+_vp}
+  // Festa que também teve pagamento registrado no Financeiro Pessoal (ex.:
+  // corte do André, ou cachê de freela) — soma com o que já está registrado
+  // no Financeiro Empresa pra mostrar o total combinado na ficha.
+  const _pessPago=_pessoalPagoDaFesta(c);
+  if(_pessPago>0){
+    const _devidoComb=_empLiqDaFesta(c)+calcAndreShare(c);
+    const _recebidoComb=(c.valorReserva||0)+_pessPago;
+    if(_devidoComb>0&&_recebidoComb>=_devidoComb){tagCls='tag-pago';tagTxt='✅ Quitado';}
+    else if(_recebidoComb>0){tagCls='tag-sinal';tagTxt='💰 Pago: '+fmtMoney(_recebidoComb);}
+  }
   const lost=c.coluna==='perdido'&&c.motivo?`<div class="c-lost">❌ ${esc(c.motivo)}</div>`:'';
   const pendNote=c.coluna==='pendencia-lead'&&c.pendObs?`<div class="c-lost" style="background:#2A2113;color:#D6A34E">🧩 ${esc(c.pendObs.slice(0,80))}${c.pendObs.length>80?'…':''}</div>`:'';
   const dt=c.titulo||c.nomePais||'Sem título';
@@ -5454,10 +5464,13 @@ function syncFreelancerToAndre(card){
   const mes=_getMesFin(card.dataEvento);
   if(!mes)return;
   
-  // Remove entrada antiga (se existia)
+  // Remove entrada antiga (se existia), mas guarda o valor já pago nela —
+  // senão, todo save do card (até edições sem relação com pagamento) reseta
+  // o "pago" que já tinha sido registrado no Financeiro Pessoal pra essa festa.
   if(!pessFD[mes])pessFD[mes]=[];
+  const _pagoAntigo=pessFD[mes].find(e=>e._opFrlId===card.id)?.pago||0;
   pessFD[mes]=pessFD[mes].filter(e=>e._opFrlId!==card.id);
-  
+
   // Calcula o que André recebe
   let vAndre=0;
   if(tipoExec==='freelancer'){
@@ -5479,6 +5492,7 @@ function syncFreelancerToAndre(card){
       d:dia,
       t:tipoLabel+(card.titulo||'Trabalho'),
       p:card.statusPag==='pago',
+      pago:_pagoAntigo,
       _opFrlId:card.id,
       vCache:tipoExec==='freelancer'?card.valorFreelancer||0:0
     });
@@ -7509,6 +7523,16 @@ function _empLiqDaFesta(card){
   const ge=(card.gastosItens||[]).filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
   return Math.max(0,es-ge);
 }
+// Quanto já foi registrado como "pago" no Financeiro Pessoal (Festas) pra
+// essa mesma festa — usado só pra mostrar o total combinado (Empresa +
+// Pessoal) na etiqueta de pagamento da ficha, sem mexer nos cálculos do
+// Financeiro Empresa (Resumo, Fluxo de Caixa etc.), que continuam usando
+// só valorReserva/statusPag, exatamente como sempre.
+function _pessoalPagoDaFesta(card){
+  const mes=_getMesFin(card.dataEvento);if(!mes)return 0;
+  const entrada=(pessFD[mes]||[]).find(e=>e._opFrlId===card.id||e._opId===card.id);
+  return entrada?.pago||0;
+}
 // Autocorreção: custos de álbum cadastrados manualmente (antes de existir o
 // campo dedicado "Álbum" no Financeiro) ficaram salvos com tipo "empresa"
 // por padrão, e isso vinha descontando errado do líquido da empresa. Custo
@@ -7765,6 +7789,11 @@ function _commitQuickPagPess(mes,idx,pago){
   entrada.pago=pago;
   savePessData();toast('✅ Valor pago salvo!','green');
   renderPessEntradas();renderPessResumo();
+  // Se essa entrada é o corte do André numa festa real (não um lançamento
+  // manual avulso), reflete na ficha do cliente também — a etiqueta de
+  // pagamento passa a somar o que já foi registrado no Financeiro Empresa
+  // com o que acabou de ser registrado aqui.
+  if((entrada._opFrlId||entrada._opId)&&currentTab==='oportunidades')renderOp();
   const ov=document.getElementById('qep-overlay');if(ov)ov.remove();
 }
 function editPessRest(mes,idx,el){
