@@ -9298,6 +9298,7 @@ function _contaAccordionHTML(tipo,i,c,mes,itens,itensAtivos,temItens,pend,val){
   if(c.gastoVariavel&&!temItens){
     const lancs=(c.lancamentos&&c.lancamentos[mes])||[];
     const soma=lancs.reduce((s,l)=>s+(l.valor||0),0);
+    const restante=parseFloat((val-soma).toFixed(2));
     return`${lancs.length?lancs.map((l,j)=>`<div class="conta-item">
         <span class="conta-item-nome">${l.dia?`Dia ${l.dia}`:'Sem dia'}</span>
         <span class="conta-item-val">${fmtMoney(l.valor)}</span>
@@ -9308,6 +9309,7 @@ function _contaAccordionHTML(tipo,i,c,mes,itens,itensAtivos,temItens,pend,val){
         <input type="number" id="${tipo}-lanc-v-${i}" placeholder="R$ gasto" step="0.01" min="0" style="max-width:100px">
         <button class="conta-item-btn-add" onclick="addLancamento('${tipo}',${i})">+ Lançar</button>
         <span style="font-size:11px;color:var(--muted);margin-left:auto">Lançado ${fmtMoney(soma)} de ${fmtMoney(val)}</span>
+        <span style="font-size:11px;font-weight:700;color:${restante<0?'var(--danger)':'var(--success,#22c55e)'}">${restante<0?`⚠️ Estourou ${fmtMoney(Math.abs(restante))}`:`Ainda pode gastar ${fmtMoney(restante)}`}</span>
       </div>`;
   }
   return`${itens.map((x,j)=>{if(!_itemAtivoNoMes(x,mes))return '';const xPago=_itemPagoMes(x,mes);const xVal=_itemValorMes(x,mes);return`<div class="conta-item${xPago?' pago':''}" draggable="true"
