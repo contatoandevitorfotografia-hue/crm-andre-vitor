@@ -6940,10 +6940,10 @@ function renderAgenda(){
 // ══════════════════════════════════════════════
 const MESES_FIN=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 const MESES_FIN_SHOW=MESES_FIN.slice(4); // oculta janeiro, fevereiro, março e abril
-// Meses disponíveis na aba Contas: julho/2026 até dezembro/2027.
+// Meses disponíveis na aba Contas: outubro/2026 até dezembro/2027.
 // Os meses de 2026 mantêm o nome puro para preservar os dados já cadastrados.
 const MESES_CONTAS_SHOW=[
-  ...MESES_FIN.slice(6),
+  ...MESES_FIN.slice(9),
   ...MESES_FIN.map(m=>m+'/27')
 ];
 // Custo de transporte por evento, usado nos indicadores de quanto depositar
