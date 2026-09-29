@@ -4263,6 +4263,33 @@ function _salvarLembreteGaleria(opId){
   toast('✅ Link da galeria salvo!','green');
   const ov=document.getElementById('gal-lembrete-overlay');if(ov)ov.remove();
 }
+function _lembreteTransporteConfirmado(opId){
+  const op=opCards.find(c=>c.id===opId);if(!op)return;
+  if((op.tipoExecucao||'proprio')!=='proprio')return; // freela não gera custo de transporte pra ela
+  const existing=document.getElementById('transp-lembrete-overlay');if(existing)existing.remove();
+  const div=document.createElement('div');
+  div.id='transp-lembrete-overlay';
+  div.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0.35)';
+  div.innerHTML=`<div style="background:var(--surface);border-radius:18px 18px 0 0;padding:22px 20px 28px;width:100%;max-width:420px;box-shadow:0 -6px 28px rgba(0,0,0,0.18)" onclick="event.stopPropagation()">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <span style="font-weight:700;font-size:16px">🚌 Separar o Transporte</span>
+      <button onclick="document.getElementById('transp-lembrete-overlay').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#999;line-height:1">×</button>
+    </div>
+    <div style="font-size:12px;color:#6b7280;margin-bottom:14px">🎉 Festa de <strong>${esc(op.nomePais||op.titulo||'Cliente')}</strong> confirmada! Não esquece de separar ${fmtMoney(TRANSP_IDA)} do transporte dessa festa.</div>
+    <div style="display:flex;gap:10px">
+      <button onclick="document.getElementById('transp-lembrete-overlay').remove()" style="flex:1;padding:11px;border:1.5px solid #e5e7eb;background:#f9fafb;border-radius:9px;font-size:14px;cursor:pointer;font-weight:500">Depois</button>
+      <button onclick="_separarTransporteLembrete()" style="flex:2;padding:11px;background:#22c55e;color:#fff;border:none;border-radius:9px;font-size:15px;font-weight:700;cursor:pointer">✅ Já separei</button>
+    </div>
+  </div>`;
+  document.body.appendChild(div);
+  div.addEventListener('click',()=>div.remove());
+}
+function _separarTransporteLembrete(){
+  contaSpEmp=parseFloat((contaSpEmp+TRANSP_IDA).toFixed(2));
+  saveFinData();renderFinResumo();
+  toast('🚌 Transporte separado!','green');
+  const ov=document.getElementById('transp-lembrete-overlay');if(ov)ov.remove();
+}
 function marcarFreelaFinalizado(id){
   const card=prCards.find(c=>c.id===id);if(!card)return;
   card.coluna='finalizado';card.coresDone=true;card.ruidoDone=true;card.updatedAt=Date.now();
@@ -4601,6 +4628,7 @@ function onDrop(e,board,targetCol){
     else{savOp();syncFreelancerToAndre(card);renderOp();if(wasConf&&!isConf){renderFin();}renderDashboard();}
     const col=OP_COLS.find(c=>c.id===targetCol);
     toast(`${col.emoji} Movido para ${col.name}${!wasConf&&isConf?' · 🎬 Adicionado em Projetos!':''}`, 'green');
+    if(!wasConf&&isConf)_lembreteTransporteConfirmado(card.id);
   }else if(board==='pr'){
     const card=prCards.find(c=>c.id===id);if(!card||card.coluna===targetCol)return;
     card.coluna=targetCol;card.updatedAt=Date.now();
@@ -5706,6 +5734,7 @@ function saveOpCard(){
   const isConf2=newCol==='confirmado'||newCol==='confirmado-pendencias';
   if(!wasConf2&&isConf2){autoSyncToProjects(data);toast('✅ Salvo · 🎬 Adicionado automaticamente em Projetos!','green')}else toast('✅ Cliente salvo!','green');
   savOp();closeMo('mo-op');try{syncFreelancerToAndre(data);renderOp();renderPr();renderFin();renderAgenda();renderPendencias();}catch(err){console.error(err);}if(window._pendingFreelaRemove){deleteFreelaCardById(window._pendingFreelaRemove);window._pendingFreelaRemove=null;}
+  if(!wasConf2&&isConf2)_lembreteTransporteConfirmado(data.id);
 }
 function fillPrColSelect(selected){
   const opt=c=>`<option value="${c.id}"${c.id===selected?' selected':''}>${c.emoji} ${c.name}</option>`;
