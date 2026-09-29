@@ -8450,6 +8450,7 @@ function initFinFirebase(){
         if(data.finContas&&Array.isArray(data.finContas))finContas=data.finContas;
         if(data.pendencias&&Array.isArray(data.pendencias)){pendencias=data.pendencias;renderPendencias();renderDashListas();}
       }
+      _limparFinJulAgoSet2026();
       _finReady=true;
       setSyncFinStatus('saved');
       if(currentTab==='financeiro')renderFin();
@@ -8510,6 +8511,7 @@ function initFinFirebase(){
   }catch(e){
     console.warn('Firebase financeiro não conectado:',e.message);
     loadFinLocal();
+    _limparFinJulAgoSet2026();
     _finReady=true;
     _tryVerificarContasHoje();
   }
@@ -10659,6 +10661,7 @@ function initPessFirebase(){
         if(data.crmTarefas&&Array.isArray(data.crmTarefas))crmTarefas=data.crmTarefas;
         if(data.crmPendencias&&Array.isArray(data.crmPendencias))crmPendencias=data.crmPendencias;
       }
+      _limparPessJulAgoSet2026();
       _pessReady=true;
       syncAllDistrib();
       if(currentTab==='financeiro')renderPessAll();
@@ -10666,7 +10669,7 @@ function initPessFirebase(){
     });
   }catch(e){
     console.warn('Firebase pessoais não conectado:',e.message);
-    loadPessLocal();_pessReady=true;syncAllDistrib();syncAllFreelancersToAndre();_tryVerificarContasHoje();
+    loadPessLocal();_limparPessJulAgoSet2026();_pessReady=true;syncAllDistrib();syncAllFreelancersToAndre();_tryVerificarContasHoje();
   }
 }
 // ── LEADS DA LANDPAGE (Firebase leads26) ──
@@ -11630,6 +11633,34 @@ function _limparAbril2026(){
   });
   // Marca como feito para não rodar de novo
   localStorage.setItem('_abril2026_limpo','1');
+}
+// Limpeza pedida pela André: zerar Valor no Banco, Gastos e Diários de
+// julho/agosto/setembro (Empresa e Pessoal) depois de um problema nos
+// valores — sem mexer em Contas cadastradas, Reserva Guardada ou Festas.
+// Roda nos dados já carregados em memória (chamada depois de loadFinLocal/
+// loadPessLocal) e empurra o resultado pro Firebase, pra valer em todos
+// os aparelhos.
+function _limparFinJulAgoSet2026(){
+  if(localStorage.getItem('_limpJAS2026_fin'))return;
+  localStorage.setItem('_limpJAS2026_fin','1');
+  let mudou=false;
+  ['julho','agosto','setembro'].forEach(m=>{
+    if(m in finVG){delete finVG[m];mudou=true;}
+    if(m in finGD){delete finGD[m];mudou=true;}
+    if(m in finDD){delete finDD[m];mudou=true;}
+  });
+  if(mudou)saveFinData();
+}
+function _limparPessJulAgoSet2026(){
+  if(localStorage.getItem('_limpJAS2026_pess'))return;
+  localStorage.setItem('_limpJAS2026_pess','1');
+  let mudou=false;
+  ['julho','agosto','setembro'].forEach(m=>{
+    if(m in pessVG){delete pessVG[m];mudou=true;}
+    if(m in pessGD){delete pessGD[m];mudou=true;}
+    if(m in pessDD){delete pessDD[m];mudou=true;}
+  });
+  if(mudou)savePessData();
 }
 setTimeout(checkBackupReminder, 2000);
 
