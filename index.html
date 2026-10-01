@@ -3272,7 +3272,9 @@ const PR_CATS={
 const prCatOf=colId=>PR_COLS.find(c=>c.id===colId)?.cat||'proj';
 // Colunas do board Projetos em que chegar ali já significa que Cores e
 // Ruído estão prontos — não faz sentido arrastar pra uma dessas fases e
-// ainda ter que ticar na mão.
+// ainda ter que ticar na mão. Também são as fases em que faz sentido
+// lembrar de colocar o link da galeria na ficha do cliente (só dispara
+// na PRIMEIRA vez que o card entra numa delas, vindo de fora do grupo).
 const PR_COLS_AUTO_CORES_RUIDO=['final-entregar','final-pagar','finalizado'];
 
 const ALB_COLS=[
@@ -4645,13 +4647,14 @@ function onDrop(e,board,targetCol){
     if(!wasConf&&isConf)_lembreteTransporteConfirmado(card.id);
   }else if(board==='pr'){
     const card=prCards.find(c=>c.id===id);if(!card||card.coluna===targetCol)return;
+    const _oldColPr=card.coluna;
     card.coluna=targetCol;card.updatedAt=Date.now();
     // Chegar em Finalizado já significa que Cores e Ruído estão prontos —
     // não faz sentido arrastar pra cá e ainda ter que ticar na mão.
     if(PR_COLS_AUTO_CORES_RUIDO.includes(targetCol)){card.coresDone=true;card.ruidoDone=true;}
     savPr();renderPr();
     const col=PR_COLS.find(c=>c.id===targetCol);toast(`${col.emoji} Movido para ${col.name}`,'green');
-    if(targetCol==='finalizado')_lembreteGaleriaFinalizado(card.id);
+    if(PR_COLS_AUTO_CORES_RUIDO.includes(targetCol)&&!PR_COLS_AUTO_CORES_RUIDO.includes(_oldColPr))_lembreteGaleriaFinalizado(card.id);
   }else if(board==='alb'){
     const card=albCards.find(c=>c.id===id);if(!card||card.coluna===targetCol)return;
     card.coluna=targetCol;card.updatedAt=Date.now();savAlb();renderAlb();
@@ -5801,7 +5804,7 @@ function savePrCard(){
   const coresDone=PR_COLS_AUTO_CORES_RUIDO.includes(newCol)?true:(oldCard?.coresDone||false);
   const ruidoDone=PR_COLS_AUTO_CORES_RUIDO.includes(newCol)?true:(oldCard?.ruidoDone||false);
   const data={id:editingPrId||uid(),coluna:newCol,sourceId:oldCard?.sourceId||null,nomePais,nomeCrianca:src2?.nomeCrianca||oldCard?.nomeCrianca||'',idade:src2?.idade||oldCard?.idade||'',nomeCrianca2:src2?.nomeCrianca2||oldCard?.nomeCrianca2||'',idade2:src2?.idade2||oldCard?.idade2||'',dataEvento,freela,parceiroId,obs:document.getElementById('f-pr-obs').value.trim(),pendenciaDesc:document.getElementById('f-pr-pendencia').value.trim(),coresDone,ruidoDone,criadoEm:oldCard?.criadoEm||Date.now(),updatedAt:Date.now()};
-  const _viroouFinalizado=newCol==='finalizado'&&oldCard?.coluna!=='finalizado';
+  const _viroouFinalizado=PR_COLS_AUTO_CORES_RUIDO.includes(newCol)&&!PR_COLS_AUTO_CORES_RUIDO.includes(oldCard?.coluna);
   if(editingPrId){const i=prCards.findIndex(c=>c.id===editingPrId);if(i!==-1)prCards[i]=data;else prCards.push(data)}else prCards.push(data);
   savPr();closeMo('mo-pr');try{renderPr();renderAgenda();}catch(err){console.error(err);}toast('✅ Projeto salvo!','green');
   if(_viroouFinalizado)_lembreteGaleriaFinalizado(data.id);
