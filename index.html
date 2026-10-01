@@ -7295,7 +7295,16 @@ function renderFinResumo(){
     <div class="stat-card sc-reservas"><div class="stat-icon">✅</div><div class="stat-label">Festas líquido — ${curMesFin}</div><div class="stat-value">${fmtMoney(cCurFin.totalF)}</div><div class="stat-sub">Parte líquida da empresa</div></div>
     <div class="stat-card sc-receber"><div class="stat-icon">⏳</div><div class="stat-label">A Receber — ${curMesFin}</div><div class="stat-value">${fmtMoney(cCurFin.totalAReceber)}</div><div class="stat-sub">Restante das festas do mês</div></div>
     <div class="stat-card" style="background:${dfGrad}"><div class="stat-icon">💸</div><div class="stat-label">Pode gastar — ${curMesFin}</div><div class="stat-value">${fmtMoney(dispFin)}</div><div class="stat-sub" style="opacity:.8">Festas − contas − gastos + ${fmtMoney(cCurFin.vg)} banco</div></div>
-    <div class="stat-card" style="background:linear-gradient(135deg,#312e81,#1e1b4b)"><div class="stat-icon">🏦</div><div class="stat-label">Reserva Guardada</div><div class="stat-value" style="cursor:text" onclick="startFinRGEdit()" title="Clique para editar o valor guardado">${fmtMoney(finRG)}</div><div class="stat-sub" style="opacity:.8;cursor:text;text-decoration:underline dotted" onclick="startFinRGEdit()" title="Clique para editar o valor guardado">Clique para editar</div></div>`;
+    <div class="stat-card" style="background:linear-gradient(135deg,#312e81,#1e1b4b)"><div class="stat-icon">🏦</div><div class="stat-label">Reserva Guardada</div><div class="stat-value" style="cursor:text" onclick="startFinRGEdit()" title="Clique para editar o valor guardado">${fmtMoney(finRG)}</div><div class="stat-sub" style="opacity:.8;cursor:text;text-decoration:underline dotted" onclick="startFinRGEdit()" title="Clique para editar o valor guardado">Clique para editar</div></div>
+    <div class="stat-card" style="background:linear-gradient(135deg,#0f766e,#134e4a)" onclick="event.stopPropagation()"><div class="stat-icon">➕</div><div class="stat-label">Adicionar ao Banco</div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px;position:relative;z-index:1">
+        <input type="text" id="fin-entrada-desc" placeholder="De onde veio? (opcional)" style="width:100%;box-sizing:border-box;padding:6px 8px;border:none;border-radius:6px;font:600 12px 'Montserrat',sans-serif;outline:none">
+        <div style="display:flex;gap:6px">
+          <input type="number" id="fin-entrada-v" placeholder="R$" step="0.01" min="0" style="flex:1;min-width:0;padding:6px 8px;border:none;border-radius:6px;font:700 13px 'Montserrat',sans-serif;outline:none" onkeydown="if(event.key==='Enter')addEntradaFinVG()">
+          <button onclick="addEntradaFinVG()" style="flex-shrink:0;background:rgba(255,255,255,.2);border:none;border-radius:6px;padding:6px 12px;font:700 12px 'Montserrat',sans-serif;color:#fff;cursor:pointer">+ Somar</button>
+        </div>
+      </div>
+    </div>`;
   // Fluxo de caixa
   const tbody=document.getElementById('fin-resumo-body');if(!tbody)return;
   let rows='';
@@ -7343,6 +7352,24 @@ function commitFinVG(){
   const inp=document.getElementById('fin-vg-inp');
   if(inp){const v=parseFloat(inp.value);if(!isNaN(v))finVG[finEditVG]=v;else delete finVG[finEditVG];}
   finEditVG=null;saveFinData();renderFinResumo();renderFinReserva();
+}
+// "Caixinha" de entrada avulsa no Resumo — pra dinheiro que entrou sem vir
+// de uma festa (ex.: alguém pagando uma dívida antiga) e precisa só somar
+// direto no Valor no Banco do mês, sem fazer conta de cabeça.
+function addEntradaFinVG(){
+  const descEl=document.getElementById('fin-entrada-desc');
+  const vEl=document.getElementById('fin-entrada-v');
+  const v=parseFloat(vEl?.value)||0;
+  if(!v){toast('⚠️ Informe o valor!','orange');return;}
+  const desc=(descEl?.value||'').trim();
+  const mes=_finCurMes();
+  _initFinVG(mes);
+  finVG[mes]=parseFloat(((finVG[mes]||0)+v).toFixed(2));
+  saveFinData();
+  if(descEl)descEl.value='';
+  if(vEl)vEl.value='';
+  renderFinResumo();renderFinReserva();
+  toast(`✅ ${fmtMoney(v)}${desc?' ('+desc+')':''} somado ao Valor no Banco!`,'green');
 }
 function _openRGPopup(currentVal,label,onSave){
   const old=document.getElementById('rg-popup');if(old)old.remove();
@@ -8682,7 +8709,16 @@ function renderPessResumo(){
     <div class="stat-card sc-reservas"><div class="stat-icon">✅</div><div class="stat-label">Festas líquido — ${curMes}</div><div class="stat-value">${fmtMoney(pessLiqMes)}</div><div class="stat-sub">Depois dos gastos pessoais</div></div>
     <div class="stat-card sc-receber"><div class="stat-icon">⏳</div><div class="stat-label">A Receber — ${curMes}</div><div class="stat-value">${fmtMoney(aReceberCur)}</div><div class="stat-sub">Restante das festas do mês</div></div>
     <div class="stat-card" style="background:${dGrad}"><div class="stat-icon">💸</div><div class="stat-label">Pode gastar — ${curMes}</div><div class="stat-value">${fmtMoney(disponivel)}</div><div class="stat-sub" style="opacity:.8">Festas − contas − gastos + ${fmtMoney(cCur.vg)} banco</div></div>
-    <div class="stat-card" style="background:linear-gradient(135deg,#312e81,#1e1b4b)"><div class="stat-icon">🏦</div><div class="stat-label">Reserva Guardada</div><div class="stat-value" style="cursor:text" onclick="startPessRGEdit()" title="Clique para editar o valor guardado">${fmtMoney(pessRG)}</div><div class="stat-sub" style="opacity:.8;cursor:text;text-decoration:underline dotted" onclick="startPessRGEdit()" title="Clique para editar o valor guardado">Clique para editar</div></div>`;
+    <div class="stat-card" style="background:linear-gradient(135deg,#312e81,#1e1b4b)"><div class="stat-icon">🏦</div><div class="stat-label">Reserva Guardada</div><div class="stat-value" style="cursor:text" onclick="startPessRGEdit()" title="Clique para editar o valor guardado">${fmtMoney(pessRG)}</div><div class="stat-sub" style="opacity:.8;cursor:text;text-decoration:underline dotted" onclick="startPessRGEdit()" title="Clique para editar o valor guardado">Clique para editar</div></div>
+    <div class="stat-card" style="background:linear-gradient(135deg,#0f766e,#134e4a)" onclick="event.stopPropagation()"><div class="stat-icon">➕</div><div class="stat-label">Adicionar ao Banco</div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px;position:relative;z-index:1">
+        <input type="text" id="pess-entrada-desc" placeholder="De onde veio? (opcional)" style="width:100%;box-sizing:border-box;padding:6px 8px;border:none;border-radius:6px;font:600 12px 'Montserrat',sans-serif;outline:none">
+        <div style="display:flex;gap:6px">
+          <input type="number" id="pess-entrada-v" placeholder="R$" step="0.01" min="0" style="flex:1;min-width:0;padding:6px 8px;border:none;border-radius:6px;font:700 13px 'Montserrat',sans-serif;outline:none" onkeydown="if(event.key==='Enter')addEntradaPessVG()">
+          <button onclick="addEntradaPessVG()" style="flex-shrink:0;background:rgba(255,255,255,.2);border:none;border-radius:6px;padding:6px 12px;font:700 12px 'Montserrat',sans-serif;color:#fff;cursor:pointer">+ Somar</button>
+        </div>
+      </div>
+    </div>`;
 
   // ── Fluxo de caixa ──
   const tbody=document.getElementById('p-resumo-body');if(!tbody)return;
@@ -8754,6 +8790,23 @@ function commitPessVG(){
   const inp=document.getElementById('p-vg-inp');
   if(inp){const v=parseFloat(inp.value);if(!isNaN(v))pessVG[pessEditVG]=v;else delete pessVG[pessEditVG];}
   pessEditVG=null;savePessData();renderPessResumo();renderPessReserva();
+}
+// Mesma "caixinha" de entrada avulsa do Financeiro Empresa, adaptada pro
+// Pessoal — soma direto no Valor no Banco do mês.
+function addEntradaPessVG(){
+  const descEl=document.getElementById('pess-entrada-desc');
+  const vEl=document.getElementById('pess-entrada-v');
+  const v=parseFloat(vEl?.value)||0;
+  if(!v){toast('⚠️ Informe o valor!','orange');return;}
+  const desc=(descEl?.value||'').trim();
+  const mes=_finCurMes();
+  _initPessVG(mes);
+  pessVG[mes]=parseFloat(((pessVG[mes]||0)+v).toFixed(2));
+  savePessData();
+  if(descEl)descEl.value='';
+  if(vEl)vEl.value='';
+  renderPessResumo();renderPessReserva();
+  toast(`✅ ${fmtMoney(v)}${desc?' ('+desc+')':''} somado ao Valor no Banco!`,'green');
 }
 function startPessRGEdit(){
   _openRGPopup(pessRG,'Reserva Guardada — Pessoal',v=>{pessRG=v;savePessData();renderPessResumo();});
