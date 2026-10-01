@@ -3270,6 +3270,10 @@ const PR_CATS={
   frl  :{key:'frl',  label:'Freelas',  emoji:'🤝', defCol:'frl-aguardando-fotos'},
 };
 const prCatOf=colId=>PR_COLS.find(c=>c.id===colId)?.cat||'proj';
+// Colunas do board Projetos em que chegar ali já significa que Cores e
+// Ruído estão prontos — não faz sentido arrastar pra uma dessas fases e
+// ainda ter que ticar na mão.
+const PR_COLS_AUTO_CORES_RUIDO=['final-entregar','final-pagar','finalizado'];
 
 const ALB_COLS=[
   {id:'alb-festa',     name:'Festa para acontecer',            emoji:'🎉', color:'#2C7A7B'},
@@ -4226,7 +4230,7 @@ function togglePrRuido(id,val){
 function _backfillCoresRuidoFinalizados(){
   let changed=false;
   prCards.forEach(c=>{
-    if(c.coluna==='finalizado'&&(!c.coresDone||!c.ruidoDone)){
+    if(PR_COLS_AUTO_CORES_RUIDO.includes(c.coluna)&&(!c.coresDone||!c.ruidoDone)){
       c.coresDone=true;c.ruidoDone=true;changed=true;
     }
   });
@@ -4644,7 +4648,7 @@ function onDrop(e,board,targetCol){
     card.coluna=targetCol;card.updatedAt=Date.now();
     // Chegar em Finalizado já significa que Cores e Ruído estão prontos —
     // não faz sentido arrastar pra cá e ainda ter que ticar na mão.
-    if(targetCol==='finalizado'){card.coresDone=true;card.ruidoDone=true;}
+    if(PR_COLS_AUTO_CORES_RUIDO.includes(targetCol)){card.coresDone=true;card.ruidoDone=true;}
     savPr();renderPr();
     const col=PR_COLS.find(c=>c.id===targetCol);toast(`${col.emoji} Movido para ${col.name}`,'green');
     if(targetCol==='finalizado')_lembreteGaleriaFinalizado(card.id);
@@ -5794,8 +5798,8 @@ function savePrCard(){
   // Chegar em Finalizado já significa que Cores e Ruído estão prontos — não
   // precisa ticar na mão. Nas demais fases, preserva o que já estava marcado
   // (senão qualquer edição no card apagaria os tiques sem querer).
-  const coresDone=newCol==='finalizado'?true:(oldCard?.coresDone||false);
-  const ruidoDone=newCol==='finalizado'?true:(oldCard?.ruidoDone||false);
+  const coresDone=PR_COLS_AUTO_CORES_RUIDO.includes(newCol)?true:(oldCard?.coresDone||false);
+  const ruidoDone=PR_COLS_AUTO_CORES_RUIDO.includes(newCol)?true:(oldCard?.ruidoDone||false);
   const data={id:editingPrId||uid(),coluna:newCol,sourceId:oldCard?.sourceId||null,nomePais,nomeCrianca:src2?.nomeCrianca||oldCard?.nomeCrianca||'',idade:src2?.idade||oldCard?.idade||'',nomeCrianca2:src2?.nomeCrianca2||oldCard?.nomeCrianca2||'',idade2:src2?.idade2||oldCard?.idade2||'',dataEvento,freela,parceiroId,obs:document.getElementById('f-pr-obs').value.trim(),pendenciaDesc:document.getElementById('f-pr-pendencia').value.trim(),coresDone,ruidoDone,criadoEm:oldCard?.criadoEm||Date.now(),updatedAt:Date.now()};
   const _viroouFinalizado=newCol==='finalizado'&&oldCard?.coluna!=='finalizado';
   if(editingPrId){const i=prCards.findIndex(c=>c.id===editingPrId);if(i!==-1)prCards[i]=data;else prCards.push(data)}else prCards.push(data);
