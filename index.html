@@ -8653,6 +8653,7 @@ function initFinFirebase(){
       }
       _limparFinJulAgoSet2026();
       _limparLancContasJulAgoSet2026();
+      _corrigeAline27Set2026();
       _finReady=true;
       setSyncFinStatus('saved');
       if(currentTab==='financeiro')renderFin();
@@ -8715,6 +8716,7 @@ function initFinFirebase(){
     loadFinLocal();
     _limparFinJulAgoSet2026();
     _limparLancContasJulAgoSet2026();
+    _corrigeAline27Set2026();
     _finReady=true;
     _tryVerificarContasHoje();
   }
@@ -11916,6 +11918,26 @@ function _limparLancContasJulAgoSet2026(){
     (c.itens||[]).forEach(limparObj);
   });
   if(mudou)saveFinData();
+}
+// Correção pontual pedida pela André: a festa da Aline (27/09/2026) ficou
+// com o Valor Pago somado várias vezes por engano (ela reentrava o valor
+// total pensando que era pra "corrigir", mas o popup novo soma incremento
+// sobre incremento) — zera e deixa igual ao líquido da empresa, ou seja,
+// festa quitada.
+function _corrigeAline27Set2026(){
+  if(localStorage.getItem('_fixAline27Set2026'))return;
+  localStorage.setItem('_fixAline27Set2026','1');
+  const card=opCards.find(c=>c.dataEvento==='2026-09-27'&&/aline/i.test(c.nomePais||c.titulo||''));
+  if(!card)return;
+  const liq=_empLiqDaFesta(card);
+  const _valorAntes=card.valorReserva||0,_statusAntes=card.statusPag;
+  _ajustaVGReservaSimples(card,liq);saveFinData();
+  card.valorReserva=liq;
+  card.statusPag=liq>0?'pago':'pendente';
+  card.valorRestante=0;
+  _stamparDatasPagamento(card,_valorAntes,_statusAntes);
+  card.updatedAt=Date.now();
+  savOp();syncFreelancerToAndre(card);
 }
 setTimeout(checkBackupReminder, 2000);
 
