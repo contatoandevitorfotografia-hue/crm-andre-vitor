@@ -2210,7 +2210,10 @@ input[type="date"]{cursor:pointer}
           <div class="fg"><label>Horário de Término</label><input type="time" id="f-horarioFim"></div>
         </div>
         <div class="g2">
-          <div class="fg"><label>Local da Festa</label><input type="text" id="f-local" placeholder="Salão, espaço, endereço..."></div>
+          <div class="fg"><label>Local da Festa</label>
+            <input type="text" id="f-local" placeholder="Salão, espaço, endereço..." onblur="calcularTransporteFesta()">
+            <div id="f-local-transp-status" style="font-size:10.5px;color:var(--muted);margin-top:3px;min-height:14px"></div>
+          </div>
           <div class="fg"><label>Tipo de Serviço</label>
             <select id="f-tipo"><option value="">Selecione...</option><option>Aniversário infantil</option><option>Ensaio Newborn</option><option>Ensaio Gestante</option><option>Ensaio Família</option><option>Batizado</option><option>Formatura</option><option>Casamento</option><option>Outro</option></select>
           </div>
@@ -4784,6 +4787,7 @@ function clearOpForm(){
   document.getElementById('f-statusPag').value='pendente';const _fpRst=document.getElementById('f-formaPag');if(_fpRst)_fpRst.value='avista';const _npRst=document.getElementById('f-nParcelas');if(_npRst)_npRst.value='';const _fAvDRst=document.getElementById('f-avistaDesconto');if(_fAvDRst)_fAvDRst.checked=false;onFormaPagChange();document.querySelectorAll('.pac-chip-opt.selected').forEach(el=>el.classList.remove('selected'));renderPacChips();renderGastosItens();
   document.getElementById('f-followup').value='';document.getElementById('f-execucao').value='proprio';document.getElementById('frl-select-wrap').style.display='none';document.getElementById('f-freelancerId').value='';const _fvfRst=document.getElementById('f-valorFreelancer');if(_fvfRst)_fvfRst.value='';const _fvfW=document.getElementById('frl-valor-wrap');if(_fvfW)_fvfW.style.display='none';
   pendenciasTemp=[];renderPendList();
+  _lastTranspLocal=null;const _transpStW=document.getElementById('f-local-transp-status');if(_transpStW)_transpStW.textContent='';
 }
 function initPendencias(card){
   pendenciasTemp=[];
@@ -5368,6 +5372,51 @@ const CUSTOS_PADRAO_EVENTO=[
   {desc:'Volta: Ônibus para Jacareí',val:45,tipo:'pessoal'},
   {desc:'Volta: Metrô',val:5.40,tipo:'pessoal'},
 ];
+// Calcula automaticamente a "última perna" de Uber (da estação de metrô/CPTM
+// mais próxima até o local da festa, e volta) quando o endereço é
+// preenchido, e já soma essa estimativa nos Gastos do evento. O orçamento
+// padrão acima já cobre o trajeto Jacareí↔SP de ônibus + metrô; essa perna
+// extra é só pra quando o local fica longe da estação — ex.: festas em
+// Osasco, Barueri etc. — que antes ficavam de fora da conta.
+let _lastTranspLocal=null,_calcTranspEmAndamento=false;
+async function calcularTransporteFesta(){
+  const inp=document.getElementById('f-local');
+  const statusEl=document.getElementById('f-local-transp-status');
+  if(!inp||!statusEl)return;
+  const local=inp.value.trim();
+  if(!local){
+    // Endereço apagado — remove qualquer estimativa de Uber somada antes
+    const antes=gastosItensTemp.length;
+    gastosItensTemp=gastosItensTemp.filter(g=>!g._autoTransporte);
+    if(gastosItensTemp.length!==antes){renderGastosItens();calcDistribuicao();}
+    statusEl.textContent='';
+    _lastTranspLocal=null;
+    return;
+  }
+  if(local===_lastTranspLocal)return; // já calculado pra esse endereço, não repete à toa
+  if(local.length<6){statusEl.textContent='';return;} // endereço curto demais pra valer a pena tentar
+  if(_calcTranspEmAndamento)return;
+  _calcTranspEmAndamento=true;
+  _lastTranspLocal=local;
+  statusEl.innerHTML='📍 Calculando distância até o metrô mais próximo...';
+  try{
+    const res=await fetch('/api/calcula-transporte',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({endereco:local})});
+    const data=await res.json();
+    if(!data.ok){
+      statusEl.innerHTML='⚠️ Não encontrei esse endereço — ajuste o Uber manualmente nos Gastos, se precisar. <span style="text-decoration:underline dotted;cursor:pointer" onclick="_lastTranspLocal=null;calcularTransporteFesta()">Tentar de novo</span>';
+      return;
+    }
+    gastosItensTemp=gastosItensTemp.filter(g=>!g._autoTransporte);
+    gastosItensTemp.push({id:uid(),desc:`Ida: Uber da estação (${data.estacao}) até o local`,val:data.estimativa,tipo:'empresa',_autoTransporte:true});
+    gastosItensTemp.push({id:uid(),desc:`Volta: Uber do local até a estação (${data.estacao})`,val:data.estimativa,tipo:'pessoal',_autoTransporte:true});
+    renderGastosItens();calcDistribuicao();
+    statusEl.innerHTML=`✅ ${esc(data.estacao)} fica a ${data.distanciaKm}km — Uber estimado ${fmtMoney(data.estimativa)} (ida) + ${fmtMoney(data.estimativa)} (volta) já somado nos Gastos. <span style="text-decoration:underline dotted;cursor:pointer" onclick="_lastTranspLocal=null;calcularTransporteFesta()">Recalcular</span>`;
+  }catch(e){
+    statusEl.innerHTML='⚠️ Não consegui calcular agora. <span style="text-decoration:underline dotted;cursor:pointer" onclick="_lastTranspLocal=null;calcularTransporteFesta()">Tentar de novo</span>';
+  }finally{
+    _calcTranspEmAndamento=false;
+  }
+}
 // syncFreelancerToAndre() (a sincronização real, hoje ativa) marca a festa
 // com _opFrlId apontando pra um card em opCards — NÃO em opCardsPess, que
 // nunca é populado na prática. _opId é de um sincronismo antigo e
