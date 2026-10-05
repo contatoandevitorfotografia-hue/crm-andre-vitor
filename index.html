@@ -1795,7 +1795,6 @@ input[type="date"]{cursor:pointer}
       <button class="fin-stab" onclick="switchFinTab('festas',this)">🎂 Festas</button>
       <button class="fin-stab" onclick="switchFinTab('contas',this)">📅 Contas</button>
       <button class="fin-stab" onclick="switchFinTab('diarios',this)">💳 Diários</button>
-      <button class="fin-stab" onclick="switchFinTab('reserva',this)">🏦 Reserva</button>
     </div>
 
     <div id="fin-tab-resumo" class="fin-subtab-panel on">
@@ -1854,19 +1853,6 @@ input[type="date"]{cursor:pointer}
       </div>
     </div>
 
-    <div id="fin-tab-reserva" class="fin-subtab-panel">
-      <div class="fin-card">
-        <div class="fin-hdr"><h3>🏦 Reserva — Empresa</h3></div>
-        <p style="font-size:11px;color:var(--muted);margin-bottom:12px">💡 Clique em qualquer valor no Resumo para editar o saldo real do banco.</p>
-        <div class="fin-tbl-wrap">
-          <table style="width:100%;border-collapse:collapse">
-            <thead><tr><th style="width:35%">Mês</th><th style="width:35%">Valor no Banco</th><th style="width:30%">Acumulado</th></tr></thead>
-            <tbody id="fin-res-tb"></tbody>
-          </table>
-        </div>
-        <div class="fin-trow"><span style="font-weight:700">Total reservado</span><span id="fin-res-total" style="font-weight:700;font-size:16px;color:var(--success)">—</span></div>
-      </div>
-    </div>
     <div id="fin-tab-contas" class="fin-subtab-panel">
       <div class="fin-hdr" style="padding:0 0 10px"><h3>📅 Contas a Pagar — Empresa</h3></div>
       <div id="fin-contas-mes-sel" class="fin-mes-tabs"></div>
@@ -1901,7 +1887,6 @@ input[type="date"]{cursor:pointer}
       <button class="fin-stab" onclick="switchPessTab('festas',this)">🎂 Festas</button>
       <button class="fin-stab" onclick="switchPessTab('contas',this)">📅 Contas</button>
       <button class="fin-stab" onclick="switchPessTab('diarios',this)">💳 Diários</button>
-      <button class="fin-stab" onclick="switchPessTab('reserva',this)">🏦 Reserva</button>
       <button class="fin-stab" onclick="switchPessTab('ap',this)">🏠 Apartamento</button>
       <button class="fin-stab" onclick="switchPessTab('dividas',this)">💳 Dívidas</button>
     </div>
@@ -1979,20 +1964,6 @@ input[type="date"]{cursor:pointer}
           </table>
         </div>
         <div class="fin-trow"><span style="color:var(--muted)">Total do mês</span><span id="p-dtot" style="font-weight:700;color:var(--danger)"></span></div>
-      </div>
-    </div>
-
-    <!-- P-RESERVA -->
-    <div id="p-tab-reserva" class="fin-subtab-panel">
-      <div class="fin-card">
-        <div class="fin-hdr"><h3>🏦 Reserva — Pessoal</h3></div>
-        <div class="fin-tbl-wrap">
-          <table style="width:100%;border-collapse:collapse">
-            <thead><tr><th style="width:35%">Mês</th><th style="width:35%">Valor no Banco</th><th style="width:30%">Acumulado</th></tr></thead>
-            <tbody id="p-res-tb"></tbody>
-          </table>
-        </div>
-        <div class="fin-trow"><span style="font-weight:700">Total reservado</span><span id="p-res-total" style="font-weight:700;font-size:16px;color:var(--success)">—</span></div>
       </div>
     </div>
 
@@ -7264,7 +7235,6 @@ function switchFinTab(tab,btn){
   if(tab==='resumo')renderFinResumo();
   else if(tab==='festas')renderFinFestas();
   else if(tab==='diarios')renderFinDiarios();
-  else if(tab==='reserva')renderFinReserva();
   else if(tab==='contas')renderFinContas();
 }
 function toggleFinForm(id){const el=document.getElementById(id);el.classList.toggle('on');if(el.classList.contains('on'))setTimeout(()=>el.scrollIntoView({behavior:'smooth',block:'nearest'}),50);}
@@ -8484,7 +8454,6 @@ function renderFin(){
   else if(finCurTab==='festas')renderFinFestas();
   else if(finCurTab==='gastos')renderFinGastos();
   else if(finCurTab==='diarios')renderFinDiarios();
-  else if(finCurTab==='reserva')renderFinReserva();
   else if(finCurTab==='contas')renderFinContas();
   else renderFinResumo();
 }
@@ -8796,7 +8765,6 @@ function switchPessTab(tab,btn){
   if(tab==='resumo')renderPessResumo();
   else if(tab==='festas')renderPessEntradas();
   else if(tab==='diarios')renderPessDiarios();
-  else if(tab==='reserva')renderPessReserva();
   else if(tab==='ap')renderPessAp();
   else if(tab==='dividas')renderPessDividas();
   else if(tab==='contas')renderPessContas();
