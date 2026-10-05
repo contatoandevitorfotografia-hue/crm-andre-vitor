@@ -144,7 +144,12 @@ function estimaUber(distanciaKm){
 }
 
 async function geocodifica(endereco){
-  const url=`https://api.openrouteservice.org/geocode/search?api_key=${encodeURIComponent(ORS_KEY)}&text=${encodeURIComponent(endereco)}&boundary.country=BR&focus.point.lon=-46.6333&focus.point.lat=-23.5505&size=1`;
+  // Quando ela digita só o nome do espaço (sem bairro/cidade), dá pra geocodificar
+  // errado — completa com "São Paulo, SP, Brasil" pra ajudar a desambiguar, e usa
+  // um raio de 80km ao redor de São Paulo como filtro DURO (não só preferência),
+  // já que nenhuma festa dela fica fora da Grande SP / Jacareí.
+  const textoCompleto=/s(ã|a)o paulo|,\s*sp\b|brasil/i.test(endereco)?endereco:`${endereco}, São Paulo, SP, Brasil`;
+  const url=`https://api.openrouteservice.org/geocode/search?api_key=${encodeURIComponent(ORS_KEY)}&text=${encodeURIComponent(textoCompleto)}&boundary.country=BR&boundary.circle.lon=-46.6333&boundary.circle.lat=-23.5505&boundary.circle.radius=80&focus.point.lon=-46.6333&focus.point.lat=-23.5505&size=1`;
   const res=await fetch(url);
   if(!res.ok)throw new Error('geocode_falhou');
   const data=await res.json();
@@ -187,6 +192,8 @@ export default async function handler(req){
     return new Response(JSON.stringify({
       ok:true,
       enderecoEncontrado:ponto.label,
+      lat:ponto.lat,
+      lon:ponto.lon,
       estacao:estacao.nome,
       linha:estacao.linha,
       distanciaKm:parseFloat(distanciaKm.toFixed(1)),

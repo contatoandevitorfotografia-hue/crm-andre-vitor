@@ -5410,7 +5410,8 @@ async function calcularTransporteFesta(){
     gastosItensTemp.push({id:uid(),desc:`Ida: Uber da estação (${data.estacao}) até o local`,val:data.estimativa,tipo:'empresa',_autoTransporte:true});
     gastosItensTemp.push({id:uid(),desc:`Volta: Uber do local até a estação (${data.estacao})`,val:data.estimativa,tipo:'pessoal',_autoTransporte:true});
     renderGastosItens();calcDistribuicao();
-    statusEl.innerHTML=`✅ ${esc(data.estacao)} fica a ${data.distanciaKm}km — Uber estimado ${fmtMoney(data.estimativa)} (ida) + ${fmtMoney(data.estimativa)} (volta) já somado nos Gastos. <span style="text-decoration:underline dotted;cursor:pointer" onclick="_lastTranspLocal=null;calcularTransporteFesta()">Recalcular</span>`;
+    const linkMapa=(typeof data.lat==='number'&&typeof data.lon==='number')?` <a href="https://www.google.com/maps?q=${data.lat},${data.lon}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">ver no mapa</a>`:'';
+    statusEl.innerHTML=`✅ Endereço encontrado: ${esc(data.enderecoEncontrado||local)}${linkMapa} — ${esc(data.estacao)} fica a ${data.distanciaKm}km — Uber estimado ${fmtMoney(data.estimativa)} (ida) + ${fmtMoney(data.estimativa)} (volta) já somado nos Gastos. <span style="text-decoration:underline dotted;cursor:pointer" onclick="_lastTranspLocal=null;calcularTransporteFesta()">Recalcular</span>`;
   }catch(e){
     statusEl.innerHTML='⚠️ Não consegui calcular agora. <span style="text-decoration:underline dotted;cursor:pointer" onclick="_lastTranspLocal=null;calcularTransporteFesta()">Tentar de novo</span>';
   }finally{
