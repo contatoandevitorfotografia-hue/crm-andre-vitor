@@ -7550,59 +7550,6 @@ function _pessoalPagoDaFesta(card){
   const entrada=(pessFD[mes]||[]).find(e=>e._opFrlId===card.id||e._opId===card.id);
   return entrada?.pago||0;
 }
-// Distribui automaticamente um valor recém-recebido do cliente entre a
-// parte do André e a parte da Empresa, "enchendo" primeiro quem ainda
-// estiver devendo mais. Ex.: festa de R$1.100 (André R$660 / Empresa
-// R$440) — se o André já tinha R$550 e chega mais R$550, os primeiros
-// R$110 completam a cota do André (chegando aos R$660) e o resto (R$440)
-// vai pra Empresa. Atualiza os dois lados (ficha do cliente + Financeiro
-// Pessoal) numa tacada só, sem precisar calcular nada na mão.
-function _distribuirPagamentoFesta(card,valorRecebido){
-  if(!card||!(valorRecebido>0))return null;
-  syncFreelancerToAndre(card); // garante que existe uma entrada vinculada no Financeiro Pessoal
-  const mes=_getMesFin(card.dataEvento);
-  const entrada=mes?(pessFD[mes]||[]).find(e=>e._opFrlId===card.id||e._opId===card.id):null;
-
-  const andreTotal=_andreLiqDaFesta(card);
-  const andreRecebido=entrada?.pago||0;
-  const andreFalta=Math.max(0,andreTotal-andreRecebido);
-
-  const empresaTotal=_empLiqDaFesta(card);
-  const empresaRecebidoAntes=card.valorReserva||0;
-  const empresaFalta=Math.max(0,empresaTotal-empresaRecebidoAntes);
-
-  const paraAndre=Math.min(valorRecebido,andreFalta);
-  let sobra=parseFloat((valorRecebido-paraAndre).toFixed(2));
-  const paraEmpresa=Math.min(sobra,empresaFalta);
-  sobra=parseFloat((sobra-paraEmpresa).toFixed(2)); // excedente raro (pagou mais que os 100%) — fica com a empresa
-
-  const novoAndrePago=parseFloat((andreRecebido+paraAndre).toFixed(2));
-  const novoEmpresaPago=parseFloat((empresaRecebidoAntes+paraEmpresa+sobra).toFixed(2));
-
-  // Empresa — mesma lógica de sempre pra valorReserva/statusPag/VG
-  const _valorAntes=card.valorReserva||0,_statusAntes=card.statusPag;
-  _ajustaVGReservaSimples(card,novoEmpresaPago);saveFinData();
-  card.valorReserva=novoEmpresaPago;
-  const _liq=_empLiqDaFesta(card);
-  const _faltaFinal=Math.max(0,_liq-novoEmpresaPago);
-  if(_faltaFinal<=0&&_liq>0){card.statusPag='pago';card.valorRestante=0;}
-  else if(novoEmpresaPago>0){card.statusPag='sinal';card.valorRestante=_faltaFinal;}
-  else{card.statusPag='pendente';card.valorRestante=_liq||0;}
-  _stamparDatasPagamento(card,_valorAntes,_statusAntes);
-  card.updatedAt=Date.now();
-  savOp();
-
-  // Pessoal — crédito do André na mesma festa
-  if(mes&&entrada){
-    _initPessVG(mes);
-    pessVG[mes]=(pessVG[mes]||0)+(novoAndrePago-(entrada.pago||0));
-    entrada.pago=novoAndrePago;
-    savePessData();
-  }
-  syncFreelancerToAndre(card); // re-sincroniza o rótulo "p" (pago) sem perder o .pago que acabou de ser salvo
-
-  return {paraAndre:parseFloat((paraAndre).toFixed(2)),paraEmpresa:parseFloat((paraEmpresa+sobra).toFixed(2)),novoAndrePago,novoEmpresaPago,andreTotal,empresaTotal,andreFalta,empresaFalta};
-}
 // Autocorreção: custos de álbum cadastrados manualmente (antes de existir o
 // campo dedicado "Álbum" no Financeiro) ficaram salvos com tipo "empresa"
 // por padrão, e isso vinha descontando errado do líquido da empresa. Custo
@@ -7629,15 +7576,17 @@ function _backfillGastoAlbumTipoErrado(){
   if(changed)savOp();
   return changed;
 }
+// Cada lado (Empresa e André) tem seu próprio campo, editado direto — sem
+// dividir automaticamente um valor "total" entre os dois. Isso evita o
+// pagamento digitado pra um lado (ex.: só a parte da Empresa) ser desviado
+// inteiro pro outro lado por trás das cortinas.
 function quickEditPag(cardId){
   const card=opCards.find(c=>c.id===cardId);if(!card)return;
   const existing=document.getElementById('qep-overlay');if(existing)existing.remove();
   const andreTotal=_andreLiqDaFesta(card);
   const andreRecebido=_pessoalPagoDaFesta(card);
-  const andreFalta=Math.max(0,andreTotal-andreRecebido);
   const empresaTotal=_empLiqDaFesta(card);
   const empresaRecebido=card.valorReserva||0;
-  const empresaFalta=Math.max(0,empresaTotal-empresaRecebido);
   const div=document.createElement('div');
   div.id='qep-overlay';
   div.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0.35)';
@@ -7646,13 +7595,19 @@ function quickEditPag(cardId){
       <span style="font-weight:700;font-size:16px">💰 Registrar Pagamento</span>
       <button onclick="document.getElementById('qep-overlay').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#999;line-height:1">×</button>
     </div>
-    <div style="font-size:12px;color:#6b7280;margin-bottom:4px">${esc(card.titulo||card.nomePais||'Cliente')}</div>
-    <div style="font-size:11px;color:#9ca3af;margin-bottom:14px">André: ${fmtMoney(andreRecebido)} de ${fmtMoney(andreTotal)} · Empresa: ${fmtMoney(empresaRecebido)} de ${fmtMoney(empresaTotal)}</div>
-    <div style="font-size:11px;font-weight:600;color:#6b7280;margin-bottom:4px">Quanto o cliente pagou agora?</div>
-    <input type="number" id="qep-input" value="" min="0" step="0.01" placeholder="0,00"
-      style="width:100%;padding:12px 14px;font-size:22px;font-weight:700;text-align:center;border:2px solid #e5e7eb;border-radius:10px;margin-bottom:10px;box-sizing:border-box;outline:none"
-      oninput="qepUpdateBadge()" onkeydown="if(event.key==='Enter')saveQuickPag('${cardId}')">
-    <div id="qep-badge" style="text-align:center;font-size:13px;font-weight:600;margin-bottom:14px;min-height:34px"></div>
+    <div style="font-size:12px;color:#6b7280;margin-bottom:16px">${esc(card.titulo||card.nomePais||'Cliente')}</div>
+    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px">
+      <div>
+        <div style="font-size:11px;font-weight:600;color:#7fd99a;margin-bottom:4px">🟢 Empresa recebeu (líquido de ${fmtMoney(empresaTotal)})</div>
+        <input type="number" id="qep-emp-input" value="${empresaRecebido||''}" min="0" step="0.01" placeholder="0,00"
+          style="width:100%;padding:10px 14px;font-size:18px;font-weight:700;text-align:center;border:2px solid #7fd99a;border-radius:10px;box-sizing:border-box;outline:none">
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:600;color:#60a5fa;margin-bottom:4px">🔵 André recebeu (líquido de ${fmtMoney(andreTotal)})</div>
+        <input type="number" id="qep-and-input" value="${andreRecebido||''}" min="0" step="0.01" placeholder="0,00"
+          style="width:100%;padding:10px 14px;font-size:18px;font-weight:700;text-align:center;border:2px solid #60a5fa;border-radius:10px;box-sizing:border-box;outline:none">
+      </div>
+    </div>
     <div style="display:flex;gap:10px">
       <button onclick="document.getElementById('qep-overlay').remove()" style="flex:1;padding:11px;border:1.5px solid #e5e7eb;background:#f9fafb;border-radius:9px;font-size:14px;cursor:pointer;font-weight:500">Cancelar</button>
       <button onclick="saveQuickPag('${cardId}')" style="flex:2;padding:11px;background:#7D95AE;color:#fff;border:none;border-radius:9px;font-size:15px;font-weight:700;cursor:pointer">Salvar</button>
@@ -7660,49 +7615,44 @@ function quickEditPag(cardId){
   </div>`;
   document.body.appendChild(div);
   div.addEventListener('click',()=>div.remove());
-  window._qepAndreFalta=andreFalta;window._qepEmpresaFalta=empresaFalta;
-  const inp=document.getElementById('qep-input');
-  qepUpdateBadge();
-  inp.focus();
-}
-// Mostra, enquanto ela digita, como o valor vai ser dividido automaticamente
-// entre André e Empresa (completa a cota de quem estiver devendo mais primeiro).
-function qepUpdateBadge(){
-  const inp=document.getElementById('qep-input');
-  const badge=document.getElementById('qep-badge');
-  if(!inp||!badge)return;
-  const andreFalta=window._qepAndreFalta||0,empresaFalta=window._qepEmpresaFalta||0;
-  const v=parseFloat(inp.value)||0;
-  if(v<=0){
-    if(andreFalta<=0&&empresaFalta<=0)badge.innerHTML='<span style="color:#7D95AE">✅ Quitado</span>';
-    else badge.innerHTML=`<span style="color:#dc2626">⏳ Falta ${fmtMoney(andreFalta+empresaFalta)} no total</span>`;
-    return;
-  }
-  const paraAndre=Math.min(v,andreFalta);
-  const paraEmpresa=Math.min(v-paraAndre,empresaFalta);
-  let html=`<div style="display:flex;justify-content:center;gap:14px;flex-wrap:wrap">`;
-  if(paraAndre>0)html+=`<span style="color:#60a5fa">🔵 André: +${fmtMoney(paraAndre)}</span>`;
-  if(paraEmpresa>0)html+=`<span style="color:#7fd99a">🟢 Empresa: +${fmtMoney(paraEmpresa)}</span>`;
-  html+='</div>';
-  const faltaDepois=Math.max(0,(andreFalta-paraAndre))+Math.max(0,(empresaFalta-paraEmpresa));
-  html+=faltaDepois<=0?'<div style="margin-top:4px;color:#7D95AE">✅ Quitado</div>':`<div style="margin-top:4px;color:#d97706">⏳ Ainda falta ${fmtMoney(faltaDepois)}</div>`;
-  badge.innerHTML=html;
+  const inp=document.getElementById('qep-emp-input');
+  inp.focus();inp.select();
 }
 function saveQuickPag(cardId){
-  const card=opCards.find(c=>c.id===cardId);if(!card)return;
-  const inp=document.getElementById('qep-input');
-  const pago=parseFloat(inp?.value)||0;
-  if(!pago){toast('⚠️ Informe quanto foi pago!','orange');return;}
-  const faltaTotal=(window._qepAndreFalta||0)+(window._qepEmpresaFalta||0);
-  if(faltaTotal>0&&pago>faltaTotal*1.3){
-    openCfm('Confirma esse valor?',`Ainda falta ${fmtMoney(faltaTotal)} nesta festa, mas você digitou ${fmtMoney(pago)}. Tem certeza que é esse o valor pago?`,()=>_commitQuickPag(cardId,pago));
-    return;
-  }
-  _commitQuickPag(cardId,pago);
+  const empInp=document.getElementById('qep-emp-input');
+  const andInp=document.getElementById('qep-and-input');
+  const novoEmpresaPago=parseFloat(empInp?.value)||0;
+  const novoAndrePago=parseFloat(andInp?.value)||0;
+  _commitQuickPag(cardId,novoEmpresaPago,novoAndrePago);
 }
-function _commitQuickPag(cardId,pago){
+function _commitQuickPag(cardId,novoEmpresaPago,novoAndrePago){
   const card=opCards.find(c=>c.id===cardId);if(!card)return;
-  const resultado=_distribuirPagamentoFesta(card,pago);
+  syncFreelancerToAndre(card); // garante que existe uma entrada vinculada no Financeiro Pessoal
+  const mes=_getMesFin(card.dataEvento);
+  const entrada=mes?(pessFD[mes]||[]).find(e=>e._opFrlId===card.id||e._opId===card.id):null;
+
+  // Empresa — direto, sem mexer no lado do André
+  const _valorAntes=card.valorReserva||0,_statusAntes=card.statusPag;
+  _ajustaVGReservaSimples(card,novoEmpresaPago);saveFinData();
+  card.valorReserva=novoEmpresaPago;
+  const _liq=_empLiqDaFesta(card);
+  const _faltaFinal=Math.max(0,_liq-novoEmpresaPago);
+  if(_faltaFinal<=0&&_liq>0){card.statusPag='pago';card.valorRestante=0;}
+  else if(novoEmpresaPago>0){card.statusPag='sinal';card.valorRestante=_faltaFinal;}
+  else{card.statusPag='pendente';card.valorRestante=_liq||0;}
+  _stamparDatasPagamento(card,_valorAntes,_statusAntes);
+  card.updatedAt=Date.now();
+  savOp();
+
+  // André — direto, sem mexer no lado da Empresa
+  if(mes&&entrada){
+    _initPessVG(mes);
+    pessVG[mes]=(pessVG[mes]||0)+(novoAndrePago-(entrada.pago||0));
+    entrada.pago=novoAndrePago;
+    savePessData();
+  }
+  syncFreelancerToAndre(card); // re-sincroniza o rótulo "p" (pago) sem perder o .pago que acabou de ser salvo
+
   renderOp();renderFinFestas();renderFinResumo();renderPessAll();
   // Se o modal desse card estiver aberto, sincroniza os campos
   if(editingOpId===cardId){
@@ -7711,7 +7661,7 @@ function _commitQuickPag(cardId,pago){
     const _fsp=document.getElementById('f-statusPag');if(_fsp)_fsp.value=card.statusPag||'pendente';
     calcDistribuicao();
   }
-  if(resultado)toast(`✅ Recebido: ${resultado.paraAndre>0?'André +'+fmtMoney(resultado.paraAndre):''}${resultado.paraAndre>0&&resultado.paraEmpresa>0?' · ':''}${resultado.paraEmpresa>0?'Empresa +'+fmtMoney(resultado.paraEmpresa):''}`,'green');
+  toast('✅ Pagamento atualizado!','green');
   const ov=document.getElementById('qep-overlay');if(ov)ov.remove();
 }
 function inlineEditValorTotal(cardId){
@@ -7819,27 +7769,19 @@ function savePessPago(mes,idx){
 }
 
 // Mesmo popup "💰 Registrar Pagamento" usado no Financeiro Empresa >
-// Festas, adaptado pras entradas do Financeiro Pessoal (pessFD).
+// Festas, adaptado pras entradas do Financeiro Pessoal (pessFD). Quando a
+// entrada está vinculada a uma festa real (tem card), delega pro popup
+// único de Empresa+André (quickEditPag) — assim os dois lados editam
+// sempre o mesmo popup, com os dois campos diretos. Só o lançamento avulso
+// (sem festa vinculada) continua com o campo único de sempre.
 function quickEditPagPess(mes,idx){
   const entrada=pessFD[mes]?.[idx];if(!entrada)return;
-  const existing=document.getElementById('qep-overlay');if(existing)existing.remove();
   const cardId=entrada._opFrlId||entrada._opId;
   const card=cardId?opCards.find(c=>c.id===cardId):null;
-  let infoHtml='',labelHtml='',valorInicial=entrada.pago||'';
-  if(card){
-    const andreTotal=_andreLiqDaFesta(card);
-    const andreRecebido=entrada.pago||0;
-    const empresaTotal=_empLiqDaFesta(card);
-    const empresaRecebido=card.valorReserva||0;
-    window._qepAndreFalta=Math.max(0,andreTotal-andreRecebido);
-    window._qepEmpresaFalta=Math.max(0,empresaTotal-empresaRecebido);
-    infoHtml=`<div style="font-size:11px;color:#9ca3af;margin-bottom:14px">André: ${fmtMoney(andreRecebido)} de ${fmtMoney(andreTotal)} · Empresa: ${fmtMoney(empresaRecebido)} de ${fmtMoney(empresaTotal)}</div>`;
-    labelHtml='<div style="font-size:11px;font-weight:600;color:#6b7280;margin-bottom:4px">Quanto o cliente pagou agora?</div>';
-    valorInicial='';
-  }else{
-    const gastosPes=_pessGastosDaFesta(entrada);
-    window._qepTotalPessSolo=Math.max(0,(entrada.v||0)-gastosPes);
-  }
+  if(card){quickEditPag(card.id);return;}
+  const existing=document.getElementById('qep-overlay');if(existing)existing.remove();
+  const gastosPes=_pessGastosDaFesta(entrada);
+  window._qepTotalPessSolo=Math.max(0,(entrada.v||0)-gastosPes);
   const div=document.createElement('div');
   div.id='qep-overlay';
   div.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0.35)';
@@ -7848,12 +7790,11 @@ function quickEditPagPess(mes,idx){
       <span style="font-weight:700;font-size:16px">💰 Registrar Pagamento</span>
       <button onclick="document.getElementById('qep-overlay').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#999;line-height:1">×</button>
     </div>
-    <div style="font-size:12px;color:#6b7280;margin-bottom:${card?'4px':'14px'}">${esc(entrada.n||entrada.t||'Cliente')}</div>
-    ${infoHtml}${labelHtml}
-    <input type="number" id="qep-input" value="${valorInicial}" min="0" step="0.01" placeholder="0,00"
+    <div style="font-size:12px;color:#6b7280;margin-bottom:14px">${esc(entrada.n||entrada.t||'Cliente')}</div>
+    <input type="number" id="qep-input" value="${entrada.pago||''}" min="0" step="0.01" placeholder="0,00"
       style="width:100%;padding:12px 14px;font-size:22px;font-weight:700;text-align:center;border:2px solid #e5e7eb;border-radius:10px;margin-bottom:10px;box-sizing:border-box;outline:none"
-      oninput="${card?'qepUpdateBadge()':'qepUpdateBadgeSolo()'}" onkeydown="if(event.key==='Enter')saveQuickPagPess('${mes}',${idx})">
-    <div id="qep-badge" style="text-align:center;font-size:13px;font-weight:600;margin-bottom:14px;min-height:${card?'34px':'20px'}"></div>
+      oninput="qepUpdateBadgeSolo()" onkeydown="if(event.key==='Enter')saveQuickPagPess('${mes}',${idx})">
+    <div id="qep-badge" style="text-align:center;font-size:13px;font-weight:600;margin-bottom:14px;min-height:20px"></div>
     <div style="display:flex;gap:10px">
       <button onclick="document.getElementById('qep-overlay').remove()" style="flex:1;padding:11px;border:1.5px solid #e5e7eb;background:#f9fafb;border-radius:9px;font-size:14px;cursor:pointer;font-weight:500">Cancelar</button>
       <button onclick="saveQuickPagPess('${mes}',${idx})" style="flex:2;padding:11px;background:#7D95AE;color:#fff;border:none;border-radius:9px;font-size:15px;font-weight:700;cursor:pointer">Salvar</button>
@@ -7862,7 +7803,7 @@ function quickEditPagPess(mes,idx){
   document.body.appendChild(div);
   div.addEventListener('click',()=>div.remove());
   const inp=document.getElementById('qep-input');
-  if(card){qepUpdateBadge();}else{qepUpdateBadgeSolo();}
+  qepUpdateBadgeSolo();
   inp.focus();inp.select();
 }
 // Badge do popup quando a entrada NÃO está vinculada a uma festa real (ex.:
@@ -7879,22 +7820,13 @@ function qepUpdateBadgeSolo(){
   else if(v>0)badge.innerHTML=`<span style="color:#d97706">⏳ Falta ${fmtMoney(total-v)}</span>`;
   else badge.innerHTML='<span style="color:#dc2626">⏳ Pendente</span>';
 }
+// Só trata lançamentos avulsos (sem festa vinculada) — entradas com festa
+// vinculada já são tratadas pelo popup único (quickEditPag), que não passa
+// por aqui (quickEditPagPess delega direto quando existe card).
 function saveQuickPagPess(mes,idx){
   const entrada=pessFD[mes]?.[idx];if(!entrada)return;
   const inp=document.getElementById('qep-input');
   const pago=parseFloat(inp?.value)||0;
-  const cardId=entrada._opFrlId||entrada._opId;
-  const card=cardId?opCards.find(c=>c.id===cardId):null;
-  if(card){
-    if(!pago){toast('⚠️ Informe quanto foi pago!','orange');return;}
-    const faltaTotal=(window._qepAndreFalta||0)+(window._qepEmpresaFalta||0);
-    if(faltaTotal>0&&pago>faltaTotal*1.3){
-      openCfm('Confirma esse valor?',`Ainda falta ${fmtMoney(faltaTotal)} nesta festa, mas você digitou ${fmtMoney(pago)}. Tem certeza que é esse o valor pago?`,()=>_commitQuickPagPess(mes,idx,pago));
-      return;
-    }
-    _commitQuickPagPess(mes,idx,pago);
-    return;
-  }
   const gastosPes=_pessGastosDaFesta(entrada);
   const liq=Math.max(0,(entrada.v||0)-gastosPes);
   if(liq>0&&pago>liq*1.3){
@@ -7905,16 +7837,6 @@ function saveQuickPagPess(mes,idx){
 }
 function _commitQuickPagPess(mes,idx,pago){
   const entrada=pessFD[mes]?.[idx];if(!entrada)return;
-  const cardId=entrada._opFrlId||entrada._opId;
-  const card=cardId?opCards.find(c=>c.id===cardId):null;
-  if(card){
-    const resultado=_distribuirPagamentoFesta(card,pago);
-    renderPessEntradas();renderPessResumo();
-    if(currentTab==='oportunidades')renderOp();
-    if(resultado)toast(`✅ Recebido: ${resultado.paraAndre>0?'André +'+fmtMoney(resultado.paraAndre):''}${resultado.paraAndre>0&&resultado.paraEmpresa>0?' · ':''}${resultado.paraEmpresa>0?'Empresa +'+fmtMoney(resultado.paraEmpresa):''}`,'green');
-    const ov=document.getElementById('qep-overlay');if(ov)ov.remove();
-    return;
-  }
   _initPessVG(mes);
   pessVG[mes]=(pessVG[mes]||0)+(pago-(entrada.pago||0));
   entrada.pago=pago;
