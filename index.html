@@ -7529,6 +7529,17 @@ function _empLiqDaFesta(card){
   const ge=(card.gastosItens||[]).filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
   return Math.max(0,es-ge);
 }
+// Mesma ideia do _empLiqDaFesta, só que do lado do André: a parte dele
+// (calcAndreShare) também precisa descontar os gastos pessoais daquela
+// festa antes de virar a "meta" de pagamento — senão o popup de Registrar
+// Pagamento cobra o valor bruto (sem desconto), que nunca fecha com o que
+// aparece como "Falta pagar" no Financeiro Pessoal > Festas (que já
+// desconta esse gasto).
+function _andreLiqDaFesta(card){
+  const as=calcAndreShare(card);
+  const gp=(card.gastosItens||[]).filter(g=>g.tipo==='pessoal').reduce((s,g)=>s+(g.val||0),0);
+  return Math.max(0,as-gp);
+}
 // Quanto já foi registrado como "pago" no Financeiro Pessoal (Festas) pra
 // essa mesma festa — usado só pra mostrar o total combinado (Empresa +
 // Pessoal) na etiqueta de pagamento da ficha, sem mexer nos cálculos do
@@ -7552,7 +7563,7 @@ function _distribuirPagamentoFesta(card,valorRecebido){
   const mes=_getMesFin(card.dataEvento);
   const entrada=mes?(pessFD[mes]||[]).find(e=>e._opFrlId===card.id||e._opId===card.id):null;
 
-  const andreTotal=calcAndreShare(card);
+  const andreTotal=_andreLiqDaFesta(card);
   const andreRecebido=entrada?.pago||0;
   const andreFalta=Math.max(0,andreTotal-andreRecebido);
 
@@ -7621,7 +7632,7 @@ function _backfillGastoAlbumTipoErrado(){
 function quickEditPag(cardId){
   const card=opCards.find(c=>c.id===cardId);if(!card)return;
   const existing=document.getElementById('qep-overlay');if(existing)existing.remove();
-  const andreTotal=calcAndreShare(card);
+  const andreTotal=_andreLiqDaFesta(card);
   const andreRecebido=_pessoalPagoDaFesta(card);
   const andreFalta=Math.max(0,andreTotal-andreRecebido);
   const empresaTotal=_empLiqDaFesta(card);
@@ -7816,7 +7827,7 @@ function quickEditPagPess(mes,idx){
   const card=cardId?opCards.find(c=>c.id===cardId):null;
   let infoHtml='',labelHtml='',valorInicial=entrada.pago||'';
   if(card){
-    const andreTotal=calcAndreShare(card);
+    const andreTotal=_andreLiqDaFesta(card);
     const andreRecebido=entrada.pago||0;
     const empresaTotal=_empLiqDaFesta(card);
     const empresaRecebido=card.valorReserva||0;
