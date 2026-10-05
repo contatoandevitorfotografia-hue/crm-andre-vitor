@@ -56,7 +56,7 @@ const ESTACOES = [
   ['Santo Amaro','5-Lilás',-23.6545,-46.7120],['Largo Treze','5-Lilás',-23.6415,-46.7090],
   ['Adolfo Pinheiro','5-Lilás',-23.6350,-46.7075],['Alto da Boa Vista','5-Lilás',-23.6280,-46.7010],
   ['Borba Gato','5-Lilás',-23.6215,-46.6950],['Brooklin','5-Lilás',-23.6155,-46.6900],
-  ['Campo Belo','5-Lilás',-23.6115,-46.6755],['Eucaliptos','5-Lilás',-23.6165,-46.6700],
+  ['Campo Belo','5-Lilás',-23.6115,-46.6755],['Eucaliptos','5-Lilás',-23.6080,-46.6718],
   ['Moema','5-Lilás',-23.6020,-46.6675],['AACD-Servidor','5-Lilás',-23.6010,-46.6645],
   ['Hospital São Paulo','5-Lilás',-23.5970,-46.6490],['Santa Cruz (Lilás)','5-Lilás',-23.5950,-46.6355],
   ['Chácara Klabin (Lilás)','5-Lilás',-23.5890,-46.6150],
@@ -133,6 +133,9 @@ function estacaoMaisProxima(lat,lon){
   }
   return melhor;
 }
+// Distância que dá pra andar a pé em ~10 minutos (velocidade média de
+// caminhada ~4.8km/h). Abaixo disso não vale a pena pedir Uber.
+const DISTANCIA_MAX_A_PE_KM=0.8;
 // Base + R$/km de um UberX em SP (aproximado) + 15% de margem de segurança
 // (a André prefere sempre arredondar pra cima), arredondado pra cima pro
 // múltiplo de R$5 mais próximo.
@@ -188,9 +191,11 @@ export default async function handler(req){
     if(!ponto)return new Response(JSON.stringify({ok:false,error:'endereco_nao_encontrado'}),{status:200});
     const estacao=estacaoMaisProxima(ponto.lat,ponto.lon);
     const distanciaKm=await distanciaRota(ponto.lat,ponto.lon,estacao.lat,estacao.lon);
-    const estimativa=estimaUber(distanciaKm);
+    const aPe=distanciaKm<=DISTANCIA_MAX_A_PE_KM;
+    const estimativa=aPe?0:estimaUber(distanciaKm);
     return new Response(JSON.stringify({
       ok:true,
+      aPe,
       enderecoEncontrado:ponto.label,
       lat:ponto.lat,
       lon:ponto.lon,
