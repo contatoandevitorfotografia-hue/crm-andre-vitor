@@ -7580,9 +7580,11 @@ function _backfillGastoAlbumTipoErrado(){
 // dividir automaticamente um valor "total" entre os dois. Isso evita o
 // pagamento digitado pra um lado (ex.: só a parte da Empresa) ser desviado
 // inteiro pro outro lado por trás das cortinas.
-function quickEditPag(cardId){
+function quickEditPag(cardId,lado){
   const card=opCards.find(c=>c.id===cardId);if(!card)return;
   const existing=document.getElementById('qep-overlay');if(existing)existing.remove();
+  const mostraEmpresa=lado!=='andre';
+  const mostraAndre=lado!=='empresa';
   const andreTotal=_andreLiqDaFesta(card);
   const andreRecebido=_pessoalPagoDaFesta(card);
   const empresaTotal=_empLiqDaFesta(card);
@@ -7597,16 +7599,16 @@ function quickEditPag(cardId){
     </div>
     <div style="font-size:12px;color:#6b7280;margin-bottom:16px">${esc(card.titulo||card.nomePais||'Cliente')}</div>
     <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px">
-      <div>
+      ${mostraEmpresa?`<div>
         <div style="font-size:11px;font-weight:600;color:#7fd99a;margin-bottom:4px">🟢 Empresa recebeu (líquido de ${fmtMoney(empresaTotal)})</div>
         <input type="number" id="qep-emp-input" value="${empresaRecebido||''}" min="0" step="0.01" placeholder="0,00"
           style="width:100%;padding:10px 14px;font-size:18px;font-weight:700;text-align:center;border:2px solid #7fd99a;border-radius:10px;box-sizing:border-box;outline:none">
-      </div>
-      <div>
+      </div>`:''}
+      ${mostraAndre?`<div>
         <div style="font-size:11px;font-weight:600;color:#60a5fa;margin-bottom:4px">🔵 André recebeu (líquido de ${fmtMoney(andreTotal)})</div>
         <input type="number" id="qep-and-input" value="${andreRecebido||''}" min="0" step="0.01" placeholder="0,00"
           style="width:100%;padding:10px 14px;font-size:18px;font-weight:700;text-align:center;border:2px solid #60a5fa;border-radius:10px;box-sizing:border-box;outline:none">
-      </div>
+      </div>`:''}
     </div>
     <div style="display:flex;gap:10px">
       <button onclick="document.getElementById('qep-overlay').remove()" style="flex:1;padding:11px;border:1.5px solid #e5e7eb;background:#f9fafb;border-radius:9px;font-size:14px;cursor:pointer;font-weight:500">Cancelar</button>
@@ -7615,16 +7617,19 @@ function quickEditPag(cardId){
   </div>`;
   document.body.appendChild(div);
   div.addEventListener('click',()=>div.remove());
-  const inp=document.getElementById('qep-emp-input');
+  const inp=document.getElementById(mostraEmpresa?'qep-emp-input':'qep-and-input');
   inp.focus();inp.select();
 }
 function saveQuickPag(cardId){
   const empInp=document.getElementById('qep-emp-input');
   const andInp=document.getElementById('qep-and-input');
-  const novoEmpresaPago=parseFloat(empInp?.value)||0;
-  const novoAndrePago=parseFloat(andInp?.value)||0;
+  const novoEmpresaPago=empInp?parseFloat(empInp.value)||0:null;
+  const novoAndrePago=andInp?parseFloat(andInp.value)||0:null;
   _commitQuickPag(cardId,novoEmpresaPago,novoAndrePago);
 }
+// novoEmpresaPago/novoAndrePago vêm null quando o popup não mostrou aquele
+// campo (ex.: aberto só com o lado da Empresa) — nesse caso o outro lado
+// nem é tocado.
 function _commitQuickPag(cardId,novoEmpresaPago,novoAndrePago){
   const card=opCards.find(c=>c.id===cardId);if(!card)return;
   syncFreelancerToAndre(card); // garante que existe uma entrada vinculada no Financeiro Pessoal
@@ -7632,20 +7637,22 @@ function _commitQuickPag(cardId,novoEmpresaPago,novoAndrePago){
   const entrada=mes?(pessFD[mes]||[]).find(e=>e._opFrlId===card.id||e._opId===card.id):null;
 
   // Empresa — direto, sem mexer no lado do André
-  const _valorAntes=card.valorReserva||0,_statusAntes=card.statusPag;
-  _ajustaVGReservaSimples(card,novoEmpresaPago);saveFinData();
-  card.valorReserva=novoEmpresaPago;
-  const _liq=_empLiqDaFesta(card);
-  const _faltaFinal=Math.max(0,_liq-novoEmpresaPago);
-  if(_faltaFinal<=0&&_liq>0){card.statusPag='pago';card.valorRestante=0;}
-  else if(novoEmpresaPago>0){card.statusPag='sinal';card.valorRestante=_faltaFinal;}
-  else{card.statusPag='pendente';card.valorRestante=_liq||0;}
-  _stamparDatasPagamento(card,_valorAntes,_statusAntes);
-  card.updatedAt=Date.now();
-  savOp();
+  if(novoEmpresaPago!==null){
+    const _valorAntes=card.valorReserva||0,_statusAntes=card.statusPag;
+    _ajustaVGReservaSimples(card,novoEmpresaPago);saveFinData();
+    card.valorReserva=novoEmpresaPago;
+    const _liq=_empLiqDaFesta(card);
+    const _faltaFinal=Math.max(0,_liq-novoEmpresaPago);
+    if(_faltaFinal<=0&&_liq>0){card.statusPag='pago';card.valorRestante=0;}
+    else if(novoEmpresaPago>0){card.statusPag='sinal';card.valorRestante=_faltaFinal;}
+    else{card.statusPag='pendente';card.valorRestante=_liq||0;}
+    _stamparDatasPagamento(card,_valorAntes,_statusAntes);
+    card.updatedAt=Date.now();
+    savOp();
+  }
 
   // André — direto, sem mexer no lado da Empresa
-  if(mes&&entrada){
+  if(novoAndrePago!==null&&mes&&entrada){
     _initPessVG(mes);
     pessVG[mes]=(pessVG[mes]||0)+(novoAndrePago-(entrada.pago||0));
     entrada.pago=novoAndrePago;
@@ -7697,7 +7704,7 @@ function saveInlineVT(cardId){
 // pergunta pra quem vai o valor (Empresa ou André) antes de salvar, pra
 // não presumir automaticamente que todo pagamento é da empresa.
 function inlineEditReserva(cardId){
-  quickEditPag(cardId);
+  quickEditPag(cardId,'empresa');
 }
 
 function inlineEditReservaPess(cardId){
@@ -7778,7 +7785,7 @@ function quickEditPagPess(mes,idx){
   const entrada=pessFD[mes]?.[idx];if(!entrada)return;
   const cardId=entrada._opFrlId||entrada._opId;
   const card=cardId?opCards.find(c=>c.id===cardId):null;
-  if(card){quickEditPag(card.id);return;}
+  if(card){quickEditPag(card.id,'andre');return;}
   const existing=document.getElementById('qep-overlay');if(existing)existing.remove();
   const gastosPes=_pessGastosDaFesta(entrada);
   window._qepTotalPessSolo=Math.max(0,(entrada.v||0)-gastosPes);
