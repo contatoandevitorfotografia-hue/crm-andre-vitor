@@ -7312,8 +7312,17 @@ function renderFinResumo(){
   const dispFin=cCurFin.totalAReceber-cCurFin.pendG-cCurFin.pendD+cCurFin.vg;
   const dfOk=dispFin>1000,dfNo=dispFin<0;
   const dfGrad=dfOk?'linear-gradient(135deg,#9FB5CB,#064e3b)':dfNo?'linear-gradient(135deg,#e78a7c,#7f1d1d)':'linear-gradient(135deg,#92400e,#78350f)';
+  // Semana atual (segunda a domingo) — valor bruto cadastrado nas fichas
+  // das festas que caem nessa janela, independente do mês.
+  const _hojeSem=new Date();
+  const _segSem=new Date(_hojeSem);_segSem.setDate(_hojeSem.getDate()-((_hojeSem.getDay()+6)%7));
+  const _domSem=new Date(_segSem);_domSem.setDate(_segSem.getDate()+6);
+  const _segISO=_segSem.toISOString().slice(0,10),_domISO=_domSem.toISOString().slice(0,10);
+  const festasSemana=fc.filter(c=>c.dataEvento&&c.dataEvento>=_segISO&&c.dataEvento<=_domISO);
+  const brutoSemana=festasSemana.reduce((s,c)=>s+(c.valorTotal||0),0);
   if(statsEl)statsEl.innerHTML=`
     <div class="stat-card sc-total"><div class="stat-icon">💰</div><div class="stat-label">Festas bruto — ${curMesFin}</div><div class="stat-value">${fmtMoney(finBrutoMes)}</div><div class="stat-sub">${cCurFin.festas.length} evento(s)</div></div>
+    <div class="stat-card" style="background:linear-gradient(135deg,#7c3aed,#4c1d95)"><div class="stat-icon">📅</div><div class="stat-label">Festas da Semana</div><div class="stat-value">${fmtMoney(brutoSemana)}</div><div class="stat-sub" style="opacity:.8">${festasSemana.length} evento(s) · ${fmtDate(_segISO)} a ${fmtDate(_domISO)}</div></div>
     <div class="stat-card sc-reservas"><div class="stat-icon">✅</div><div class="stat-label">Festas líquido — ${curMesFin}</div><div class="stat-value">${fmtMoney(cCurFin.totalF)}</div><div class="stat-sub">Parte líquida da empresa</div></div>
     <div class="stat-card sc-receber"><div class="stat-icon">⏳</div><div class="stat-label">A Receber — ${curMesFin}</div><div class="stat-value">${fmtMoney(cCurFin.totalAReceber)}</div><div class="stat-sub">Restante das festas do mês</div></div>
     <div class="stat-card" style="background:${dfGrad}"><div class="stat-icon">💸</div><div class="stat-label">Pode gastar — ${curMesFin}</div><div class="stat-value">${fmtMoney(dispFin)}</div><div class="stat-sub" style="opacity:.8">Festas − contas − gastos + ${fmtMoney(cCurFin.vg)} banco</div></div>
