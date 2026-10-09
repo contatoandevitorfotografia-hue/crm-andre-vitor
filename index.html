@@ -8608,6 +8608,7 @@ function initFinFirebase(){
       _limparFinJulAgoSet2026();
       _limparLancContasJulAgoSet2026();
       _corrigeAline27Set2026();
+      _zerarTransporteNov2026();
       _finReady=true;
       setSyncFinStatus('saved');
       if(currentTab==='financeiro')renderFin();
@@ -8671,6 +8672,7 @@ function initFinFirebase(){
     _limparFinJulAgoSet2026();
     _limparLancContasJulAgoSet2026();
     _corrigeAline27Set2026();
+    _zerarTransporteNov2026();
     _finReady=true;
     _tryVerificarContasHoje();
   }
@@ -11891,6 +11893,40 @@ function _corrigeAline27Set2026(){
   _stamparDatasPagamento(card,_valorAntes,_statusAntes);
   card.updatedAt=Date.now();
   savOp();syncFreelancerToAndre(card);
+}
+// Limpeza pedida pela André: outubro/2026 já foi cadastrado manualmente
+// certinho (fica como está); de novembro/2026 em diante, os gastos de
+// transporte (os botões rápidos de Ida/Volta, nos dois nomes — o antigo
+// "Ida: Ônibus para São Paulo" e o novo "Pássaro Marrom") ficam zerados,
+// pra recomeçar do zero mês a mês.
+function _zerarTransporteNov2026(){
+  if(localStorage.getItem('_zeraTranspNov2026'))return;
+  localStorage.setItem('_zeraTranspNov2026','1');
+  const TRANSPORTE=new Set([
+    'Ida: Uber de casa até a rodoviária','Ida: Ônibus para São Paulo','Ida: Metrô',
+    'Volta: Uber da rodoviária até em casa','Volta: Ônibus para Jacareí','Volta: Metrô',
+    'Uber até a rodoviária','Uber até em casa','Pássaro Marrom','Metrô','Uber',
+  ]);
+  const ehTransporte=g=>TRANSPORTE.has((g.desc||'').replace(/\s×\d+$/,'').trim());
+  let changed=false;
+  opCards.forEach(c=>{
+    if(!c.dataEvento||c.dataEvento<'2026-11-01')return;
+    if(!Array.isArray(c.gastosItens)||!c.gastosItens.length)return;
+    const antes=c.gastosItens.length;
+    c.gastosItens=c.gastosItens.filter(g=>!ehTransporte(g));
+    if(c.gastosItens.length===antes)return;
+    changed=true;
+    c.gastos=c.gastosItens.reduce((s,g)=>s+(g.val||0),0);
+    // Sem o gasto de transporte, o líquido da empresa sobe — recalcula o
+    // status/falta pra não ficar desatualizado (mesma lógica de sempre).
+    const _liq=_empLiqDaFesta(c);
+    const _pago=c.valorReserva||0;
+    const _falta=Math.max(0,_liq-_pago);
+    if(_falta<=0&&_liq>0){c.statusPag='pago';c.valorRestante=0;}
+    else if(_pago>0){c.statusPag='sinal';c.valorRestante=_falta;}
+    else{c.statusPag='pendente';c.valorRestante=_liq||0;}
+  });
+  if(changed)savOp();
 }
 setTimeout(checkBackupReminder, 2000);
 
