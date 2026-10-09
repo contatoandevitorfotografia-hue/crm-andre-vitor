@@ -8628,6 +8628,7 @@ function initFinFirebase(){
       _limparLancContasJulAgoSet2026();
       _corrigeAline27Set2026();
       _zerarTransporteNov2026();
+      _resyncPix2xValorPago();
       _finReady=true;
       setSyncFinStatus('saved');
       if(currentTab==='financeiro')renderFin();
@@ -8692,6 +8693,7 @@ function initFinFirebase(){
     _limparLancContasJulAgoSet2026();
     _corrigeAline27Set2026();
     _zerarTransporteNov2026();
+    _resyncPix2xValorPago();
     _finReady=true;
     _tryVerificarContasHoje();
   }
@@ -11948,6 +11950,38 @@ function _zerarTransporteNov2026(){
     if(_falta<=0&&_liq>0){c.statusPag='pago';c.valorRestante=0;}
     else if(_pago>0){c.statusPag='sinal';c.valorRestante=_falta;}
     else{c.statusPag='pendente';c.valorRestante=_liq||0;}
+  });
+  if(changed)savOp();
+}
+// Mesma correção do Pix em 2x que já existia só na hora de abrir a ficha
+// (que corrigia na tela mas só gravava se ela clicasse Salvar) — agora
+// roda em TODO carregamento do app, pra toda festa Pix em 2x, e já grava
+// sozinha. Sem guarda de "rodou uma vez": é barata e idempotente (só mexe
+// quando o valor pago realmente está errado), então não tem problema
+// rodar de novo a cada load — é isso que garante que o card do kanban
+// nunca mais fique desatualizado mesmo sem ela abrir a ficha.
+// O status usa a MESMA regra do formulário (autoStatusPag/recalcFromParcelas):
+// conta quantas parcelas foram marcadas, não compara com o líquido da
+// empresa — senão uma festa com só a 1ª parcela recebida podia pular
+// direto pra "Quitado" (se o líquido da empresa for menor que a parcela),
+// o que destoaria do "1/2 recebidas" que a ficha mostra.
+function _resyncPix2xValorPago(){
+  let changed=false;
+  opCards.forEach(c=>{
+    if(c.formaPag!=='pix-2x'||!Array.isArray(c.parcelasItens)||!c.parcelasItens.length)return;
+    const recebidas=c.parcelasItens.filter(p=>p.recebido);
+    const totalRec=parseFloat(recebidas.reduce((s,p)=>s+(p.valor||0),0).toFixed(2));
+    const totalPend=parseFloat(c.parcelasItens.filter(p=>!p.recebido).reduce((s,p)=>s+(p.valor||0),0).toFixed(2));
+    const novoStatus=recebidas.length===c.parcelasItens.length?'pago':recebidas.length>0?'sinal':'pendente';
+    if((c.valorReserva||0)===totalRec&&c.statusPag===novoStatus)return;
+    const _valorAntes=c.valorReserva||0,_statusAntes=c.statusPag;
+    _ajustaVGReservaSimples(c,totalRec);saveFinData();
+    c.valorReserva=totalRec;
+    c.statusPag=novoStatus;
+    c.valorRestante=novoStatus==='pago'?0:totalPend;
+    _stamparDatasPagamento(c,_valorAntes,_statusAntes);
+    c.updatedAt=Date.now();
+    changed=true;
   });
   if(changed)savOp();
 }
