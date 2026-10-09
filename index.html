@@ -2335,16 +2335,6 @@ input[type="date"]{cursor:pointer}
             <div style="font-size:11px;font-weight:700;color:#e78a7c;text-transform:uppercase;letter-spacing:.5px">💸 Gastos do Evento</div>
           </div>
           <div id="f-gastos-list" style="display:flex;flex-direction:column;gap:7px;margin-bottom:10px"></div>
-          <div style="display:flex;gap:6px;margin-bottom:6px">
-            <button type="button" id="btn-gasto-emp" onclick="setGastoTipo('empresa')" style="flex:1;padding:6px;border-radius:8px;border:2px solid #4A3A1E;background:#2A2113;color:#E0A14E;font:700 12px 'Montserrat',sans-serif;cursor:pointer">🏢 Empresa</button>
-            <button type="button" id="btn-gasto-pes" onclick="setGastoTipo('pessoal')" style="flex:1;padding:6px;border-radius:8px;border:2px solid #bfdbfe;background:#16202e;color:#6ba3e0;font:700 12px 'Montserrat',sans-serif;cursor:pointer;opacity:.5">👤 Pessoal</button>
-          </div>
-          <input type="hidden" id="f-gasto-tipo" value="empresa">
-          <div style="display:flex;gap:7px;align-items:center">
-            <input type="text" id="f-gasto-desc" placeholder="Descrição (ex: Freelancer, Locação...)" style="flex:1;border:1.5px solid #5c2a26;border-radius:8px;padding:7px 10px;font-size:13px;background:var(--surface)" onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('f-gasto-val').focus()}">
-            <input type="number" id="f-gasto-val" placeholder="R$" min="0" step="0.01" style="width:90px;border:1.5px solid #5c2a26;border-radius:8px;padding:7px 10px;font-size:13px;background:var(--surface)" onkeydown="if(event.key==='Enter'){event.preventDefault();addGastoItem()}">
-            <button type="button" onclick="addGastoItem()" style="background:#E06B5A;color:#fff;border:none;border-radius:8px;padding:7px 13px;font-size:18px;cursor:pointer;font-weight:700;line-height:1">＋</button>
-          </div>
           <div style="margin-top:10px;padding-top:10px;border-top:1px solid #5c2a26;display:flex;justify-content:space-between;align-items:center">
             <span style="font-size:12px;font-weight:600;color:#e78a7c">Total de gastos:</span>
             <span id="f-gastos-total" style="font-size:15px;font-weight:800;color:#E06B5A">R$ 0,00</span>
@@ -4781,7 +4771,7 @@ function clearOpForm(){
   const _obsNotesW=document.getElementById('f-obs-cl-notes');if(_obsNotesW)_obsNotesW.style.display='none';
   document.getElementById('btn-abrir-galeria').style.display='none';
   const _bvg=document.getElementById('btn-ver-galeria');if(_bvg)_bvg.style.display='none';
-  ['f-valorPlano','f-valorTotal','f-valorEmpresa','f-valorAndre','f-valorReserva','f-valorRestante','f-gastos','f-valorCores'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});const _fvp=document.getElementById('f-valorPlano');if(_fvp)_fvp.dataset.auto='1';const _vcW=document.getElementById('f-valor-cores-wrap');if(_vcW)_vcW.style.display='none';gastosItensTemp=[];renderGastosItens();parcelasItensTemp=[];renderParcelasItens();_gastoTipo='empresa';setGastoTipo('empresa');_albumGuardado=false;_renderAlbumGuardadoBtn();const _cpE=document.getElementById('f-pagoEmpresa');if(_cpE)_cpE.checked=false;const _cpA=document.getElementById('f-pagoAndre');if(_cpA)_cpA.checked=false;
+  ['f-valorPlano','f-valorTotal','f-valorEmpresa','f-valorAndre','f-valorReserva','f-valorRestante','f-gastos','f-valorCores'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});const _fvp=document.getElementById('f-valorPlano');if(_fvp)_fvp.dataset.auto='1';const _vcW=document.getElementById('f-valor-cores-wrap');if(_vcW)_vcW.style.display='none';gastosItensTemp=[];renderGastosItens();parcelasItensTemp=[];renderParcelasItens();_albumGuardado=false;_renderAlbumGuardadoBtn();const _cpE=document.getElementById('f-pagoEmpresa');if(_cpE)_cpE.checked=false;const _cpA=document.getElementById('f-pagoAndre');if(_cpA)_cpA.checked=false;
   ['f-dataReserva','f-dataRestante'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});
   document.getElementById('f-statusPag').value='pendente';const _fpRst=document.getElementById('f-formaPag');if(_fpRst)_fpRst.value='avista';const _npRst=document.getElementById('f-nParcelas');if(_npRst)_npRst.value='';const _fAvDRst=document.getElementById('f-avistaDesconto');if(_fAvDRst)_fAvDRst.checked=false;onFormaPagChange();document.querySelectorAll('.pac-chip-opt.selected').forEach(el=>el.classList.remove('selected'));renderPacChips();renderGastosItens();
   document.getElementById('f-followup').value='';document.getElementById('f-execucao').value='proprio';document.getElementById('frl-select-wrap').style.display='none';document.getElementById('f-freelancerId').value='';const _fvfRst=document.getElementById('f-valorFreelancer');if(_fvfRst)_fvfRst.value='';const _fvfW=document.getElementById('frl-valor-wrap');if(_fvfW)_fvfW.style.display='none';
@@ -5084,10 +5074,11 @@ function renderGastosItens(){
     ${_legChipsHTML(tipo)}
     ${items.map(rowHTML).join('')}
     ${items.length?`<div style="text-align:right;font-size:11px;font-weight:700;color:${cor};margin-top:3px">Subtotal: ${fmtMoney(items.reduce((s,g)=>s+(g.val||0),0))}</div>`:''}`;
+  // Em "sou-freela" não existe lado Empresa (ela não fica com nada dessa
+  // festa) — só mostra o lado Pessoal/André.
+  const isSouFreela=document.getElementById('f-execucao')?.value==='sou-freela';
   // NÃO mostrar custos de álbum aqui — aparecerão apenas na "Distribuição Independente"
-  list.innerHTML=secHTML(empresa,movimento?'🎥 Custos do Plano Movimento':'🏢 Empresa','#e0a14e','empresa')+secHTML(pessoal,'👤 Pessoal','#6ba3e0','pessoal');
-  const empBtn=document.getElementById('btn-gasto-emp');
-  if(empBtn)empBtn.textContent=movimento?'🎥 Plano Movimento':'🏢 Empresa';
+  list.innerHTML=(isSouFreela?'':secHTML(empresa,movimento?'🎥 Custos do Plano Movimento':'🏢 Empresa','#e0a14e','empresa'))+secHTML(pessoal,'👤 Pessoal','#6ba3e0','pessoal');
   // Total de gastos: SÓ empresa e pessoal (SEM álbum)
   const totalSemAlbum=empresa.reduce((s,g)=>s+(g.val||0),0)+pessoal.reduce((s,g)=>s+(g.val||0),0);
   const el=document.getElementById('f-gastos-total');
@@ -5135,14 +5126,16 @@ function quickRemoveLeg(desc,val,tipo){
   else{item.val=parseFloat((item._unit*item._qtd).toFixed(2));item.desc=item._qtd>1?`${desc} ×${item._qtd}`:desc;}
   renderGastosItens();calcDistribuicao();
 }
+// Valor variável (Uber, Hospedagem) — pergunta o valor na hora e já lança
+// direto, sem precisar de um campo de descrição/valor fixo no formulário.
 function quickFillGasto(desc,tipo){
-  setGastoTipo(tipo);
-  const descEl=document.getElementById('f-gasto-desc');
-  const valEl=document.getElementById('f-gasto-val');
-  if(descEl)descEl.value=desc;
-  if(valEl){valEl.value='';valEl.focus();}
+  const raw=prompt(`Valor de "${desc}" (R$):`);
+  if(raw===null)return;
+  const val=parseFloat(raw.replace(',','.'))||0;
+  if(!val){toast('⚠️ Informe um valor!','orange');return;}
+  gastosItensTemp.push({id:uid(),desc,val,tipo});
+  renderGastosItens();calcDistribuicao();
 }
-let _gastoTipo='empresa';
 let _albumGuardado=false;
 function toggleAlbumGuardado(){_albumGuardado=!_albumGuardado;_renderAlbumGuardadoBtn();}
 function _renderAlbumGuardadoBtn(){
@@ -5154,33 +5147,6 @@ function _renderAlbumGuardadoBtn(){
     btn.textContent='🔒 Reservar';
     btn.style.background='#2e1a18';btn.style.color='#e06b5a';btn.style.borderColor='#5c2a26';
   }
-}
-function setGastoTipo(t){
-  _gastoTipo=t;
-  const isPes=t==='pessoal';
-  const isAlb=t==='album';
-  const empBtn=document.getElementById('btn-gasto-emp');
-  const albBtn=document.getElementById('btn-gasto-alb');
-  const pesBtn=document.getElementById('btn-gasto-pes');
-  if(empBtn){empBtn.style.opacity=(isPes||isAlb)?'.45':'1';empBtn.style.borderWidth=(isPes||isAlb)?'1.5px':'2.5px';}
-  if(albBtn){albBtn.style.opacity=(isPes||!isAlb)?'.45':'1';albBtn.style.borderWidth=(isPes||!isAlb)?'1.5px':'2.5px';}
-  if(pesBtn){pesBtn.style.opacity=isPes?'1':'.45';pesBtn.style.borderWidth=isPes?'2.5px':'1.5px';}
-  const clrBorder=isPes?'#2c4a6b':isAlb?'#4ade80':'#fca5a5';
-  ['f-gasto-desc','f-gasto-val'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.border=`1.5px solid ${clrBorder}`;});
-  const box=document.getElementById('sec-gastos-box');
-  if(box){box.style.background=isPes?'#16202e':isAlb?'#1a2e1a':'#2e1a18';box.style.borderColor=isPes?'#2c4a6b':isAlb?'#586F86':'#5c2a26';}
-}
-function addGastoItem(){
-  const desc=document.getElementById('f-gasto-desc').value.trim();
-  const val=parseFloat(document.getElementById('f-gasto-val').value)||0;
-  const tipo=_gastoTipo||'empresa';
-  if(!desc&&!val)return;
-  gastosItensTemp.push({id:uid(),desc:desc||'Gasto',val,tipo});
-  document.getElementById('f-gasto-desc').value='';
-  document.getElementById('f-gasto-val').value='';
-  renderGastosItens();
-  calcDistribuicao();
-  document.getElementById('f-gasto-desc').focus();
 }
 function removeGastoItem(i){
   gastosItensTemp.splice(i,1);
@@ -6729,13 +6695,9 @@ function updateFrlWrap(){
       if(_curFrl&&(_curFrl.valorFreela||0)>0)_vfEl.value=_curFrl.valorFreela;
     }
   }
-  // Gastos: em freela só tem Pessoal (André), sem aba Empresa
-  const btnEmp=document.getElementById('btn-gasto-emp');
-  if(btnEmp){
-    btnEmp.style.display=isSouFreela?'none':'';
-    if(isSouFreela){setGastoTipo('pessoal');}
-    else{setGastoTipo('empresa');}
-  }
+  // Gastos: em freela só tem Pessoal (André), sem lado Empresa
+  // (renderGastosItens() já esconde a seção Empresa sozinho quando sou-freela)
+  renderGastosItens();
   // parceiro-wrap aparece quando "sou-freela"
   const opPWrap=document.getElementById('op-parceiro-wrap');
   if(opPWrap){
@@ -6753,7 +6715,6 @@ function updateFrlWrap(){
       gastosBox.removeAttribute('data-frl-mode');
       const lbl=gastosBox.querySelector('div[style*="font-size:11px;font-weight:700;color:#e78a7c"]');
       if(lbl)lbl.textContent='💸 Gastos do Evento';
-      gastosBox.querySelectorAll('[id^="btn-gasto-"],#f-gasto-desc,#f-gasto-val,button[onclick="addGastoItem()"],button[onclick="restaurarCustosPadrao()"]').forEach(el=>el.style.display='');
     }
   }
   // Recalcular splits ao trocar execução
