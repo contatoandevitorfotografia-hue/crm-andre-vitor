@@ -218,6 +218,18 @@ textarea{resize:vertical;min-height:68px;line-height:1.5}
 .pag-opt[data-forma="cartao"].sel .po-title{color:#B9A3E8}
 .pag-opt[data-forma="cartao"] .po-badge{background:#7C3AED}
 @media(max-width:640px){.pag-opts{grid-template-columns:1fr}}
+/* ── Botões rápidos de Gastos (mesmo estilo dos cards de Forma de Pagamento) ── */
+.leg-opts{margin-top:0}
+.leg-opt{padding:9px 6px 8px}
+.leg-opt .po-emoji{font-size:17px;margin-bottom:4px}
+.leg-opt .po-title{font-size:10.5px}
+.leg-opt .po-sub{font-size:9px;margin-top:2px}
+.leg-opt .po-sub a{color:inherit;text-decoration:underline;cursor:pointer}
+.leg-opt.sel-emp{border-color:#E06B5A;background:#2A1715}
+.leg-opt.sel-emp .po-title{color:#F0A99C}
+.leg-opt.sel-pes{border-color:#6BA3E0;background:#16202E}
+.leg-opt.sel-pes .po-title{color:#7FB0E6}
+@media(max-width:640px){.leg-opts{grid-template-columns:repeat(3,1fr)}}
 
 /* ── Botões ── */
 .btn{padding:8px 18px;border:none;border-radius:var(--r-sm);cursor:pointer;font:600 13px 'Montserrat',sans-serif;transition:.18s;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;letter-spacing:-.1px}
@@ -5095,21 +5107,28 @@ function renderGastosItens(){
 // (Uber até o local, Uber na volta, Hospedagem) que só pré-preenchem a
 // descrição e focam no campo de valor, pra ela digitar o valor daquela vez.
 function _legChipsHTML(tipo){
-  const chipBtn=(txt,onclick,dashed)=>`<button type="button" onclick="event.stopPropagation();${onclick}" style="background:none;border:1px ${dashed?'dashed':'solid'} ${tipo==='pessoal'?'#2c4a6b':'#5c2a26'};border-radius:7px;padding:4px 8px;font-size:11px;color:inherit;cursor:pointer;white-space:nowrap">${txt}</button>`;
+  const selCls=tipo==='pessoal'?'sel-pes':'sel-emp';
+  const badgeBg=tipo==='pessoal'?'#2563eb':'#E06B5A';
   const pernas=_LEGS_PADRAO.map(l=>{
-    const item=gastosItensTemp.find(g=>g._baseDesc===l.desc&&g.tipo===tipo&&g._unit===l.val);
+    const desc=(tipo==='pessoal'&&l.descPessoal)?l.descPessoal:l.desc;
+    const item=gastosItensTemp.find(g=>g._baseDesc===desc&&g.tipo===tipo&&g._unit===l.val);
     const qtd=item?._qtd||0;
-    return `<div style="display:flex;align-items:center;gap:4px;background:${tipo==='pessoal'?'#0f1a26':'#241512'};border:1px solid ${tipo==='pessoal'?'#2c4a6b':'#5c2a26'};border-radius:7px;padding:3px 3px 3px 9px;font-size:11px">
-      <span>${esc(l.desc)} · ${fmtMoney(l.val)}</span>
-      ${qtd>0?`<span style="font-weight:700;min-width:13px;text-align:center">${qtd}×</span><button type="button" onclick="event.stopPropagation();quickRemoveLeg('${esc(l.desc)}',${l.val},'${tipo}')" style="background:none;border:none;cursor:pointer;color:#fff;font-size:14px;padding:0 4px;line-height:1">−</button>`:''}
-      <button type="button" onclick="event.stopPropagation();quickAddLeg('${esc(l.desc)}',${l.val},'${tipo}')" style="background:none;border:none;cursor:pointer;color:#fff;font-size:14px;padding:0 4px;font-weight:700;line-height:1">+</button>
+    return `<div class="pag-opt leg-opt${qtd>0?' '+selCls:''}" onclick="quickAddLeg('${esc(desc)}',${l.val},'${tipo}')" title="Clique pra somar mais um(a) ${esc(desc)}">
+      ${qtd>0?`<span class="po-badge" style="background:${badgeBg};display:inline-block">${qtd}×</span>`:''}
+      <div class="po-emoji">${l.emoji}</div>
+      <div class="po-title">${esc(desc)}</div>
+      <div class="po-sub">${fmtMoney(l.val)}${qtd>0?` · <a onclick="event.stopPropagation();quickRemoveLeg('${esc(desc)}',${l.val},'${tipo}')">tirar 1</a>`:''}</div>
     </div>`;
   }).join('');
   const livres=(tipo==='empresa'
-    ?[{t:'🚖 Uber',d:'Uber'},{t:'🏠 Hospedagem',d:'Hospedagem'}]
-    :[{t:'🚖 Uber',d:'Uber'}]
-  ).map(b=>chipBtn(b.t,`quickFillGasto('${esc(b.d)}','${tipo}')`,true)).join('');
-  return `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">${pernas}${livres}</div>`;
+    ?[{t:'Uber',e:'🚖',d:'Uber'},{t:'Hospedagem',e:'🏠',d:'Hospedagem'}]
+    :[{t:'Uber',e:'🚖',d:'Uber'}]
+  ).map(b=>`<div class="pag-opt leg-opt" onclick="quickFillGasto('${esc(b.d)}','${tipo}')">
+      <div class="po-emoji">${b.e}</div>
+      <div class="po-title">${esc(b.t)}</div>
+      <div class="po-sub">valor livre</div>
+    </div>`).join('');
+  return `<div class="pag-opts leg-opts" style="margin-bottom:8px">${pernas}${livres}</div>`;
 }
 function quickAddLeg(desc,val,tipo){
   const item=gastosItensTemp.find(g=>g._baseDesc===desc&&g.tipo===tipo&&g._unit===val);
@@ -5387,14 +5406,18 @@ function calcRestante(){
 // orçamento padrão (CUSTOS_PADRAO_EVENTO) quanto nos botões rápidos de
 // Gastos (um clique soma, outro clique some — com contador de quantas vezes,
 // ex.: 2 Metrôs no mesmo trajeto).
+// O Uber da ida (empresa) vai até a rodoviária; o da volta (André) sai da
+// rodoviária e vai até em casa — mesmo trajeto, nome diferente em cada
+// ponta, por isso descPessoal.
 const _LEGS_PADRAO=[
-  {desc:'Uber até a rodoviária',val:15},
-  {desc:'Pássaro Marrom',val:40},
-  {desc:'Metrô',val:5.40},
+  {desc:'Uber até a rodoviária',descPessoal:'Uber até em casa',val:15,emoji:'🚖'},
+  {desc:'Pássaro Marrom',val:40,emoji:'🚌'},
+  {desc:'Metrô',val:5.40,emoji:'🚇'},
 ];
-const CUSTOS_PADRAO_EVENTO=['empresa','pessoal'].flatMap(tipo=>_LEGS_PADRAO.map(l=>(
-  {desc:l.desc,val:l.val,tipo,_baseDesc:l.desc,_unit:l.val,_qtd:1}
-)));
+const CUSTOS_PADRAO_EVENTO=['empresa','pessoal'].flatMap(tipo=>_LEGS_PADRAO.map(l=>{
+  const desc=(tipo==='pessoal'&&l.descPessoal)?l.descPessoal:l.desc;
+  return {desc,val:l.val,tipo,_baseDesc:desc,_unit:l.val,_qtd:1};
+}));
 // syncFreelancerToAndre() (a sincronização real, hoje ativa) marca a festa
 // com _opFrlId apontando pra um card em opCards — NÃO em opCardsPess, que
 // nunca é populado na prática. _opId é de um sincronismo antigo e
