@@ -4906,6 +4906,11 @@ function openOpModal(cardId,defaultCol,event,fromProj){
     document.getElementById('f-nParcelas').value=card.nParcelas||'';
     parcelasItensTemp=[...(card.parcelasItens||[])];
     onFormaPagChange();renderParcelasItens();
+    // Pix em 2x: o "Valor Pago" tem que refletir sempre a soma das parcelas
+    // marcadas como recebidas — recalcula aqui pra corrigir sozinho qualquer
+    // card antigo que tenha ficado dessincronizado (parcela marcada mas o
+    // valor pago do card não foi atualizado).
+    recalcFromParcelas();
     _renderOpClienteNotes(card.telefone);
     const galEl=document.getElementById('f-galeria');galEl.value=card.galeria||'';
     document.getElementById('btn-abrir-galeria').style.display=card.galeria?'inline-flex':'none';
