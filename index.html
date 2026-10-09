@@ -5418,6 +5418,16 @@ const CUSTOS_PADRAO_EVENTO=['empresa','pessoal'].flatMap(tipo=>_LEGS_PADRAO.map(
   const desc=(tipo==='pessoal'&&l.descPessoal)?l.descPessoal:l.desc;
   return {desc,val:l.val,tipo,_baseDesc:desc,_unit:l.val,_qtd:1};
 }));
+// Nomes de gasto que contam como "transporte" — cobre o estilo novo (botões
+// rápidos) e o antigo (de antes da reformulação, "Ida: Ônibus para São
+// Paulo" etc.), usado tanto na migração de novembro quanto nos cards de
+// "Transporte da Semana". Hospedagem fica de fora — não é transporte.
+const _DESCS_TRANSPORTE=new Set([
+  'Ida: Uber de casa até a rodoviária','Ida: Ônibus para São Paulo','Ida: Metrô',
+  'Volta: Uber da rodoviária até em casa','Volta: Ônibus para Jacareí','Volta: Metrô',
+  'Uber até a rodoviária','Uber até em casa','Pássaro Marrom','Metrô','Uber',
+]);
+function _ehGastoTransporte(g){return _DESCS_TRANSPORTE.has((g.desc||'').replace(/\s×\d+$/,'').trim());}
 // syncFreelancerToAndre() (a sincronização real, hoje ativa) marca a festa
 // com _opFrlId apontando pra um card em opCards — NÃO em opCardsPess, que
 // nunca é populado na prática. _opId é de um sincronismo antigo e
@@ -7312,17 +7322,17 @@ function renderFinResumo(){
   const dispFin=cCurFin.totalAReceber-cCurFin.pendG-cCurFin.pendD+cCurFin.vg;
   const dfOk=dispFin>1000,dfNo=dispFin<0;
   const dfGrad=dfOk?'linear-gradient(135deg,#9FB5CB,#064e3b)':dfNo?'linear-gradient(135deg,#e78a7c,#7f1d1d)':'linear-gradient(135deg,#92400e,#78350f)';
-  // Semana atual (segunda a domingo) — valor bruto cadastrado nas fichas
+  // Semana atual (segunda a domingo) — gasto de transporte (lado Empresa)
   // das festas que caem nessa janela, independente do mês.
   const _hojeSem=new Date();
   const _segSem=new Date(_hojeSem);_segSem.setDate(_hojeSem.getDate()-((_hojeSem.getDay()+6)%7));
   const _domSem=new Date(_segSem);_domSem.setDate(_segSem.getDate()+6);
   const _segISO=_segSem.toISOString().slice(0,10),_domISO=_domSem.toISOString().slice(0,10);
   const festasSemana=fc.filter(c=>c.dataEvento&&c.dataEvento>=_segISO&&c.dataEvento<=_domISO);
-  const brutoSemana=festasSemana.reduce((s,c)=>s+(c.valorTotal||0),0);
+  const transporteSemana=festasSemana.reduce((s,c)=>s+(c.gastosItens||[]).filter(g=>(g.tipo||'empresa')==='empresa'&&_ehGastoTransporte(g)).reduce((ss,g)=>ss+(g.val||0),0),0);
   if(statsEl)statsEl.innerHTML=`
     <div class="stat-card sc-total"><div class="stat-icon">💰</div><div class="stat-label">Festas bruto — ${curMesFin}</div><div class="stat-value">${fmtMoney(finBrutoMes)}</div><div class="stat-sub">${cCurFin.festas.length} evento(s)</div></div>
-    <div class="stat-card" style="background:linear-gradient(135deg,#7c3aed,#4c1d95)"><div class="stat-icon">📅</div><div class="stat-label">Festas da Semana</div><div class="stat-value">${fmtMoney(brutoSemana)}</div><div class="stat-sub" style="opacity:.8">${festasSemana.length} evento(s) · ${fmtDate(_segISO)} a ${fmtDate(_domISO)}</div></div>
+    <div class="stat-card" style="background:linear-gradient(135deg,#475569,#1e293b)"><div class="stat-icon">🚌</div><div class="stat-label">Transporte da Semana</div><div class="stat-value">${fmtMoney(transporteSemana)}</div><div class="stat-sub" style="opacity:.8">${festasSemana.length} evento(s) · ${fmtDate(_segISO)} a ${fmtDate(_domISO)}</div></div>
     <div class="stat-card sc-reservas"><div class="stat-icon">✅</div><div class="stat-label">Festas líquido — ${curMesFin}</div><div class="stat-value">${fmtMoney(cCurFin.totalF)}</div><div class="stat-sub">Parte líquida da empresa</div></div>
     <div class="stat-card sc-receber"><div class="stat-icon">⏳</div><div class="stat-label">A Receber — ${curMesFin}</div><div class="stat-value">${fmtMoney(cCurFin.totalAReceber)}</div><div class="stat-sub">Restante das festas do mês</div></div>
     <div class="stat-card" style="background:${dfGrad}"><div class="stat-icon">💸</div><div class="stat-label">Pode gastar — ${curMesFin}</div><div class="stat-value">${fmtMoney(dispFin)}</div><div class="stat-sub" style="opacity:.8">Festas − contas − gastos + ${fmtMoney(cCurFin.vg)} banco</div></div>
@@ -8785,9 +8795,19 @@ function renderPessResumo(){
   const disponivel=aReceberCur-cCur.pendG-cCur.pendD+cCur.vg;
   const dOk=disponivel>300,dNo=disponivel<0;
   const dGrad=dOk?'linear-gradient(135deg,#9FB5CB,#064e3b)':dNo?'linear-gradient(135deg,#e78a7c,#7f1d1d)':'linear-gradient(135deg,#92400e,#78350f)';
+  // Semana atual (segunda a domingo) — mesma lógica do Financeiro Empresa,
+  // só que olhando pras festas direto em opCards (pessFD é por mês, não dá
+  // pra usar quando a semana cruza a virada do mês).
+  const _hojeSemP=new Date();
+  const _segSemP=new Date(_hojeSemP);_segSemP.setDate(_hojeSemP.getDate()-((_hojeSemP.getDay()+6)%7));
+  const _domSemP=new Date(_segSemP);_domSemP.setDate(_segSemP.getDate()+6);
+  const _segISOP=_segSemP.toISOString().slice(0,10),_domISOP=_domSemP.toISOString().slice(0,10);
+  const festasSemanaP=opCards.filter(c=>FIN_COLS.includes(c.coluna)&&(c.tipoExecucao||'proprio')!=='sou-freela'&&(c.tipoExecucao||'proprio')!=='freelancer'&&c.dataEvento&&c.dataEvento>=_segISOP&&c.dataEvento<=_domISOP);
+  const transporteSemanaP=festasSemanaP.reduce((s,c)=>s+(c.gastosItens||[]).filter(g=>g.tipo==='pessoal'&&_ehGastoTransporte(g)).reduce((ss,g)=>ss+(g.val||0),0),0);
   const statsEl=document.getElementById('p-stats');
   if(statsEl)statsEl.innerHTML=`
     <div class="stat-card sc-total"><div class="stat-icon">💰</div><div class="stat-label">Festas bruto — ${curMes}</div><div class="stat-value">${fmtMoney(cCur.totalF)}</div><div class="stat-sub">${(pessFD[curMes]||[]).length} evento(s)</div></div>
+    <div class="stat-card" style="background:linear-gradient(135deg,#475569,#1e293b)"><div class="stat-icon">🚌</div><div class="stat-label">Transporte da Semana</div><div class="stat-value">${fmtMoney(transporteSemanaP)}</div><div class="stat-sub" style="opacity:.8">${festasSemanaP.length} evento(s) · ${fmtDate(_segISOP)} a ${fmtDate(_domISOP)}</div></div>
     <div class="stat-card sc-reservas"><div class="stat-icon">✅</div><div class="stat-label">Festas líquido — ${curMes}</div><div class="stat-value">${fmtMoney(pessLiqMes)}</div><div class="stat-sub">Depois dos gastos pessoais</div></div>
     <div class="stat-card sc-receber"><div class="stat-icon">⏳</div><div class="stat-label">A Receber — ${curMes}</div><div class="stat-value">${fmtMoney(aReceberCur)}</div><div class="stat-sub">Restante das festas do mês</div></div>
     <div class="stat-card" style="background:${dGrad}"><div class="stat-icon">💸</div><div class="stat-label">Pode gastar — ${curMes}</div><div class="stat-value">${fmtMoney(disponivel)}</div><div class="stat-sub" style="opacity:.8">Festas − contas − gastos + ${fmtMoney(cCur.vg)} banco</div></div>
@@ -11911,18 +11931,12 @@ function _corrigeAline27Set2026(){
 function _zerarTransporteNov2026(){
   if(localStorage.getItem('_zeraTranspNov2026'))return;
   localStorage.setItem('_zeraTranspNov2026','1');
-  const TRANSPORTE=new Set([
-    'Ida: Uber de casa até a rodoviária','Ida: Ônibus para São Paulo','Ida: Metrô',
-    'Volta: Uber da rodoviária até em casa','Volta: Ônibus para Jacareí','Volta: Metrô',
-    'Uber até a rodoviária','Uber até em casa','Pássaro Marrom','Metrô','Uber',
-  ]);
-  const ehTransporte=g=>TRANSPORTE.has((g.desc||'').replace(/\s×\d+$/,'').trim());
   let changed=false;
   opCards.forEach(c=>{
     if(!c.dataEvento||c.dataEvento<'2026-11-01')return;
     if(!Array.isArray(c.gastosItens)||!c.gastosItens.length)return;
     const antes=c.gastosItens.length;
-    c.gastosItens=c.gastosItens.filter(g=>!ehTransporte(g));
+    c.gastosItens=c.gastosItens.filter(g=>!_ehGastoTransporte(g));
     if(c.gastosItens.length===antes)return;
     changed=true;
     c.gastos=c.gastosItens.reduce((s,g)=>s+(g.val||0),0);
