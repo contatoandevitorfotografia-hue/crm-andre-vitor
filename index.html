@@ -5105,13 +5105,13 @@ function _legChipsHTML(tipo){
     const qtd=item?._qtd||0;
     return `<div style="display:flex;align-items:center;gap:4px;background:${tipo==='pessoal'?'#0f1a26':'#241512'};border:1px solid ${tipo==='pessoal'?'#2c4a6b':'#5c2a26'};border-radius:7px;padding:3px 3px 3px 9px;font-size:11px">
       <span>${esc(l.desc)} · ${fmtMoney(l.val)}</span>
-      ${qtd>0?`<span style="font-weight:700;min-width:13px;text-align:center">${qtd}×</span><button type="button" onclick="event.stopPropagation();quickRemoveLeg('${esc(l.desc)}',${l.val},'${tipo}')" style="background:none;border:none;cursor:pointer;font-size:14px;padding:0 4px;line-height:1">−</button>`:''}
-      <button type="button" onclick="event.stopPropagation();quickAddLeg('${esc(l.desc)}',${l.val},'${tipo}')" style="background:none;border:none;cursor:pointer;font-size:14px;padding:0 4px;font-weight:700;line-height:1">+</button>
+      ${qtd>0?`<span style="font-weight:700;min-width:13px;text-align:center">${qtd}×</span><button type="button" onclick="event.stopPropagation();quickRemoveLeg('${esc(l.desc)}',${l.val},'${tipo}')" style="background:none;border:none;cursor:pointer;color:#fff;font-size:14px;padding:0 4px;line-height:1">−</button>`:''}
+      <button type="button" onclick="event.stopPropagation();quickAddLeg('${esc(l.desc)}',${l.val},'${tipo}')" style="background:none;border:none;cursor:pointer;color:#fff;font-size:14px;padding:0 4px;font-weight:700;line-height:1">+</button>
     </div>`;
   }).join('');
   const livres=(tipo==='empresa'
-    ?[{t:'🚖 Uber até o local',d:'Uber até o local da festa'},{t:'🏠 Hospedagem',d:'Hospedagem'}]
-    :[{t:'🚖 Uber na volta',d:'Uber na volta'}]
+    ?[{t:'🚖 Uber',d:'Uber'},{t:'🏠 Hospedagem',d:'Hospedagem'}]
+    :[{t:'🚖 Uber',d:'Uber'}]
   ).map(b=>chipBtn(b.t,`quickFillGasto('${esc(b.d)}','${tipo}')`,true)).join('');
   return `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">${pernas}${livres}</div>`;
 }
