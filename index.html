@@ -5079,18 +5079,68 @@ function renderGastosItens(){
       <span style="font-size:13px;font-weight:700;color:${valColor};white-space:nowrap">${fmtMoney(g.val)}</span>
       <button type="button" onclick="removeGastoItem(${g._i})" style="background:none;border:none;cursor:pointer;color:${btnColor};font-size:16px;padding:0 2px;line-height:1">✕</button>
     </div>`;};
-  const secHTML=(items,label,cor)=>items.length?`
+  const secHTML=(items,label,cor,tipo)=>`
     <div style="font-size:11px;font-weight:700;color:${cor};text-transform:uppercase;letter-spacing:.4px;margin:8px 0 4px">${label}</div>
+    ${_legChipsHTML(tipo)}
     ${items.map(rowHTML).join('')}
-    <div style="text-align:right;font-size:11px;font-weight:700;color:${cor};margin-top:3px">Subtotal: ${fmtMoney(items.reduce((s,g)=>s+(g.val||0),0))}</div>`:'';
+    ${items.length?`<div style="text-align:right;font-size:11px;font-weight:700;color:${cor};margin-top:3px">Subtotal: ${fmtMoney(items.reduce((s,g)=>s+(g.val||0),0))}</div>`:''}`;
   // NÃO mostrar custos de álbum aqui — aparecerão apenas na "Distribuição Independente"
-  list.innerHTML=secHTML(empresa,movimento?'🎥 Custos do Plano Movimento':'🏢 Empresa','#e0a14e')+secHTML(pessoal,'👤 Pessoal','#6ba3e0');
+  list.innerHTML=secHTML(empresa,movimento?'🎥 Custos do Plano Movimento':'🏢 Empresa','#e0a14e','empresa')+secHTML(pessoal,'👤 Pessoal','#6ba3e0','pessoal');
   const empBtn=document.getElementById('btn-gasto-emp');
   if(empBtn)empBtn.textContent=movimento?'🎥 Plano Movimento':'🏢 Empresa';
   // Total de gastos: SÓ empresa e pessoal (SEM álbum)
   const totalSemAlbum=empresa.reduce((s,g)=>s+(g.val||0),0)+pessoal.reduce((s,g)=>s+(g.val||0),0);
   const el=document.getElementById('f-gastos-total');
   if(el)el.textContent=fmtMoney(totalSemAlbum);
+}
+// Botões rápidos de "pernas" do trajeto (Metrô, Pássaro Marrom, Uber até a
+// rodoviária) — clique soma 1, clique nos "−" tira 1, com contador visível
+// (ex: Metrô usado 2x no mesmo trajeto). Além deles, atalhos de valor livre
+// (Uber até o local, Uber na volta, Hospedagem) que só pré-preenchem a
+// descrição e focam no campo de valor, pra ela digitar o valor daquela vez.
+function _legChipsHTML(tipo){
+  const chipBtn=(txt,onclick,dashed)=>`<button type="button" onclick="event.stopPropagation();${onclick}" style="background:none;border:1px ${dashed?'dashed':'solid'} ${tipo==='pessoal'?'#2c4a6b':'#5c2a26'};border-radius:7px;padding:4px 8px;font-size:11px;color:inherit;cursor:pointer;white-space:nowrap">${txt}</button>`;
+  const pernas=_LEGS_PADRAO.map(l=>{
+    const item=gastosItensTemp.find(g=>g._baseDesc===l.desc&&g.tipo===tipo&&g._unit===l.val);
+    const qtd=item?._qtd||0;
+    return `<div style="display:flex;align-items:center;gap:4px;background:${tipo==='pessoal'?'#0f1a26':'#241512'};border:1px solid ${tipo==='pessoal'?'#2c4a6b':'#5c2a26'};border-radius:7px;padding:3px 3px 3px 9px;font-size:11px">
+      <span>${esc(l.desc)} · ${fmtMoney(l.val)}</span>
+      ${qtd>0?`<span style="font-weight:700;min-width:13px;text-align:center">${qtd}×</span><button type="button" onclick="event.stopPropagation();quickRemoveLeg('${esc(l.desc)}',${l.val},'${tipo}')" style="background:none;border:none;cursor:pointer;font-size:14px;padding:0 4px;line-height:1">−</button>`:''}
+      <button type="button" onclick="event.stopPropagation();quickAddLeg('${esc(l.desc)}',${l.val},'${tipo}')" style="background:none;border:none;cursor:pointer;font-size:14px;padding:0 4px;font-weight:700;line-height:1">+</button>
+    </div>`;
+  }).join('');
+  const livres=(tipo==='empresa'
+    ?[{t:'🚖 Uber até o local',d:'Uber até o local da festa'},{t:'🏠 Hospedagem',d:'Hospedagem'}]
+    :[{t:'🚖 Uber na volta',d:'Uber na volta'}]
+  ).map(b=>chipBtn(b.t,`quickFillGasto('${esc(b.d)}','${tipo}')`,true)).join('');
+  return `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">${pernas}${livres}</div>`;
+}
+function quickAddLeg(desc,val,tipo){
+  const item=gastosItensTemp.find(g=>g._baseDesc===desc&&g.tipo===tipo&&g._unit===val);
+  if(item){
+    item._qtd=(item._qtd||1)+1;
+    item.val=parseFloat((item._unit*item._qtd).toFixed(2));
+    item.desc=item._qtd>1?`${desc} ×${item._qtd}`:desc;
+  }else{
+    gastosItensTemp.push({id:uid(),desc,val,tipo,_baseDesc:desc,_unit:val,_qtd:1});
+  }
+  renderGastosItens();calcDistribuicao();
+}
+function quickRemoveLeg(desc,val,tipo){
+  const idx=gastosItensTemp.findIndex(g=>g._baseDesc===desc&&g.tipo===tipo&&g._unit===val);
+  if(idx===-1)return;
+  const item=gastosItensTemp[idx];
+  item._qtd=(item._qtd||1)-1;
+  if(item._qtd<=0){gastosItensTemp.splice(idx,1);}
+  else{item.val=parseFloat((item._unit*item._qtd).toFixed(2));item.desc=item._qtd>1?`${desc} ×${item._qtd}`:desc;}
+  renderGastosItens();calcDistribuicao();
+}
+function quickFillGasto(desc,tipo){
+  setGastoTipo(tipo);
+  const descEl=document.getElementById('f-gasto-desc');
+  const valEl=document.getElementById('f-gasto-val');
+  if(descEl)descEl.value=desc;
+  if(valEl){valEl.value='';valEl.focus();}
 }
 let _gastoTipo='empresa';
 let _albumGuardado=false;
@@ -5359,17 +5409,21 @@ function calcRestante(){
   updateAvistaBox();
 }
 // Toda festa é em São Paulo, e ela mora em Jacareí — o deslocamento
-// (ida R$65,40 na conta da empresa, volta R$65,40 na conta pessoal do
+// (ida R$60,40 na conta da empresa, volta R$60,40 na conta pessoal do
 // André) já entra automaticamente, detalhado item a item, em toda festa
 // nova. Pode ser editado ou removido card a card, se algum caso for diferente.
-const CUSTOS_PADRAO_EVENTO=[
-  {desc:'Ida: Uber de casa até a rodoviária',val:15,tipo:'empresa'},
-  {desc:'Ida: Ônibus para São Paulo',val:45,tipo:'empresa'},
-  {desc:'Ida: Metrô',val:5.40,tipo:'empresa'},
-  {desc:'Volta: Uber da rodoviária até em casa',val:15,tipo:'pessoal'},
-  {desc:'Volta: Ônibus para Jacareí',val:45,tipo:'pessoal'},
-  {desc:'Volta: Metrô',val:5.40,tipo:'pessoal'},
+// Pernas de valor fixo do trajeto Jacareí↔SP, reaproveitadas tanto no
+// orçamento padrão (CUSTOS_PADRAO_EVENTO) quanto nos botões rápidos de
+// Gastos (um clique soma, outro clique some — com contador de quantas vezes,
+// ex.: 2 Metrôs no mesmo trajeto).
+const _LEGS_PADRAO=[
+  {desc:'Uber até a rodoviária',val:15},
+  {desc:'Pássaro Marrom',val:40},
+  {desc:'Metrô',val:5.40},
 ];
+const CUSTOS_PADRAO_EVENTO=['empresa','pessoal'].flatMap(tipo=>_LEGS_PADRAO.map(l=>(
+  {desc:l.desc,val:l.val,tipo,_baseDesc:l.desc,_unit:l.val,_qtd:1}
+)));
 // syncFreelancerToAndre() (a sincronização real, hoje ativa) marca a festa
 // com _opFrlId apontando pra um card em opCards — NÃO em opCardsPess, que
 // nunca é populado na prática. _opId é de um sincronismo antigo e
