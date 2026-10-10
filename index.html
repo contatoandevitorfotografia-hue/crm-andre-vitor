@@ -4257,6 +4257,11 @@ function _salvarLembreteGaleria(opId){
 function _lembreteTransporteConfirmado(opId){
   const op=opCards.find(c=>c.id===opId);if(!op)return;
   if((op.tipoExecucao||'proprio')!=='proprio')return; // freela não gera custo de transporte pra ela
+  // Valor real do transporte dessa festa (lado Empresa), não mais um
+  // "chute" fixo — agora que salvar em Confirmado exige ter cadastrado
+  // pelo menos uma perna de transporte, esse valor sempre existe.
+  const valorTransp=(op.gastosItens||[]).filter(g=>g.tipo==='empresa'&&_ehGastoTransporte(g)).reduce((s,g)=>s+(g.val||0),0);
+  if(valorTransp<=0)return;
   const existing=document.getElementById('transp-lembrete-overlay');if(existing)existing.remove();
   const div=document.createElement('div');
   div.id='transp-lembrete-overlay';
@@ -4266,17 +4271,17 @@ function _lembreteTransporteConfirmado(opId){
       <span style="font-weight:700;font-size:16px">🚌 Separar o Transporte</span>
       <button onclick="document.getElementById('transp-lembrete-overlay').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#999;line-height:1">×</button>
     </div>
-    <div style="font-size:12px;color:#6b7280;margin-bottom:14px">🎉 Festa de <strong>${esc(op.nomePais||op.titulo||'Cliente')}</strong> confirmada! Não esquece de separar ${fmtMoney(TRANSP_IDA)} do transporte dessa festa.</div>
+    <div style="font-size:12px;color:#6b7280;margin-bottom:14px">🎉 Festa de <strong>${esc(op.nomePais||op.titulo||'Cliente')}</strong> confirmada! Não esquece de separar ${fmtMoney(valorTransp)} do transporte dessa festa.</div>
     <div style="display:flex;gap:10px">
       <button onclick="document.getElementById('transp-lembrete-overlay').remove()" style="flex:1;padding:11px;border:1.5px solid #e5e7eb;background:#f9fafb;border-radius:9px;font-size:14px;cursor:pointer;font-weight:500">Depois</button>
-      <button onclick="_separarTransporteLembrete()" style="flex:2;padding:11px;background:#22c55e;color:#fff;border:none;border-radius:9px;font-size:15px;font-weight:700;cursor:pointer">✅ Já separei</button>
+      <button onclick="_separarTransporteLembrete(${valorTransp})" style="flex:2;padding:11px;background:#22c55e;color:#fff;border:none;border-radius:9px;font-size:15px;font-weight:700;cursor:pointer">✅ Já separei</button>
     </div>
   </div>`;
   document.body.appendChild(div);
   div.addEventListener('click',()=>div.remove());
 }
-function _separarTransporteLembrete(){
-  contaSpEmp=parseFloat((contaSpEmp+TRANSP_IDA).toFixed(2));
+function _separarTransporteLembrete(valor){
+  contaSpEmp=parseFloat((contaSpEmp+(valor||0)).toFixed(2));
   saveFinData();renderFinResumo();
   toast('🚌 Transporte separado!','green');
   const ov=document.getElementById('transp-lembrete-overlay');if(ov)ov.remove();
@@ -5766,6 +5771,16 @@ function saveOpCard(){
   const nomePais=document.getElementById('f-nomePais').value.trim();
   if(!nomePais){toast('⚠️ Informe o nome dos pais!','orange');document.getElementById('f-nomePais').focus();return}
   const newCol=document.getElementById('f-col').value;
+  // Festa própria indo pra Confirmado precisa ter pelo menos um transporte
+  // (lado Empresa) cadastrado nos Gastos antes de salvar — não dá mais pra
+  // confiar só no lembrete depois, porque é fácil ignorar/perder ele.
+  const _tipoExecSave=document.getElementById('f-execucao')?.value||'proprio';
+  const _isConfSave=newCol==='confirmado'||newCol==='confirmado-pendencias';
+  if(_isConfSave&&_tipoExecSave==='proprio'&&!gastosItensTemp.some(g=>g.tipo==='empresa'&&_ehGastoTransporte(g))){
+    toast('🚌 Cadastra o transporte dessa festa nos Gastos (lado Empresa) antes de salvar!','orange');
+    document.getElementById('sec-gastos-box')?.scrollIntoView({behavior:'smooth',block:'center'});
+    return;
+  }
   const oldCard=editingOpId?opCards.find(c=>c.id===editingOpId):null;
   const oldCol=oldCard?.coluna;
   const data={id:editingOpId||uid(),coluna:newCol,somenteProjeto:oldCard?.somenteProjeto||opFromProj||false,titulo:document.getElementById('f-titulo').value.trim(),nomePais,telefone:document.getElementById('f-tel').value.trim(),nomeCrianca:document.getElementById('f-nomeCrianca').value.trim(),idade:document.getElementById('f-idade').value.trim(),nomeCrianca2:document.getElementById('f-nomeCrianca2').value.trim(),idade2:document.getElementById('f-idade2').value.trim(),dataEvento:document.getElementById('f-data').value,horario:document.getElementById('f-horario').value,horarioFim:document.getElementById('f-horarioFim').value,local:document.getElementById('f-local').value.trim(),tipo:document.getElementById('f-tipo').value,pacoteId:(getSelectedPacIds()[0]||''),pacoteIds:getSelectedPacIds(),pacoteCustom:document.getElementById('f-pacoteCustom').value.trim(),tipoExecucao:document.getElementById('f-execucao').value||'proprio',freelancerId:document.getElementById('f-freelancerId').value||'',parceiroId:(document.getElementById('f-execucao').value==='sou-freela'?document.getElementById('f-op-parceiroId')?.value||'':''),filmmakerNome:(()=>{const s=document.getElementById('f-filmakerId');if(!s)return '';const v=s.value||'';if(v==='__outro__'){return (document.getElementById('f-filmakerCustom')?.value||'').trim();}return v;})(),filmmakerCusto:(()=>{const _fids=getSelectedPacIds();const fNome=document.getElementById('f-filmakerId')?.value||'';const allFmOpts=_fids.flatMap(id=>{const p=packages.find(pk=>pk.id===id);return p?.filmmakerOptions||[];});const opt=allFmOpts.find(f=>f.nome===fNome);return opt?opt.valor:0;})(),valorEmpresa:parseFloat(document.getElementById('f-valorEmpresa')?.value)||0,valorAndre:parseFloat(document.getElementById('f-valorAndre')?.value)||0,valorFreelancer:parseFloat(document.getElementById('f-valorFreelancer')?.value)||0,valorTotal:(parseFloat(document.getElementById('f-valorEmpresa')?.value)||0)+(parseFloat(document.getElementById('f-valorAndre')?.value)||0),valorCoresJob:0,valorReserva:parseFloat(document.getElementById('f-valorReserva').value)||0,dataReserva:document.getElementById('f-dataReserva').value,valorRestante:parseFloat(document.getElementById('f-valorRestante').value)||0,dataRestante:document.getElementById('f-dataRestante').value,statusPag:document.getElementById('f-statusPag').value,gastos:gastosItensTemp.reduce((s,g)=>s+(g.val||0),0),gastosItens:[...gastosItensTemp],formaPag:document.getElementById('f-formaPag').value,avistaDesconto:document.getElementById('f-avistaDesconto')?.checked||false,nParcelas:parseInt(document.getElementById('f-nParcelas').value)||1,parcelasItens:[...parcelasItensTemp],galeria:document.getElementById('f-galeria').value.trim(),galeriaClienteId:document.getElementById('f-galeriaClienteId')?.value.trim()||'',obs:oldCard?.obs||'',motivo:document.getElementById('f-motivo').value,detalhe:document.getElementById('f-detalhe').value.trim(),pendObs:document.getElementById('f-pend-obs')?.value.trim()||'',pendencias:[...pendenciasTemp],pagoEmpresa:document.getElementById('f-pagoEmpresa')?.checked||false,pagoAndre:document.getElementById('f-pagoAndre')?.checked||false,followupDate:document.getElementById('f-followup').value||'',albumGuardado:_albumGuardado,contrato:oldCard?.contrato||null,criadoEm:oldCard?.criadoEm||Date.now(),updatedAt:Date.now()};
@@ -7022,11 +7037,6 @@ const MESES_CONTAS_SHOW=[
   ...MESES_FIN.slice(9),
   ...MESES_FIN.map(m=>m+'/27')
 ];
-// Custo de transporte por evento, usado nos indicadores de quanto depositar
-// na conta do transporte. (As declarações se perderam quando os custos
-// automáticos foram removidos, mas os indicadores continuaram usando.)
-const TRANSP_IDA=65.40;   // Uber + passagem + metrô — pago pela empresa
-const TRANSP_VOLTA=55.40; // metrô + passagem + Uber até em casa — pago pelo André
 let finGD={}, finDD={}, finVG={};
 let finRG=0, _finRGEditing=false;
 let finContas=[];
@@ -7522,7 +7532,10 @@ function renderFinFestas(){
       &&_getMesFin(c.dataEvento)===finCurF
     ).sort((a,b)=>(a.dataEvento||'').localeCompare(b.dataEvento||''));
     if(transpMes.length){
-      const nec=transpMes.length*TRANSP_IDA;
+      // Soma o transporte real (lado Empresa) já cadastrado em cada festa,
+      // não mais um valor fixo por festa — cada dia pode ter um trajeto
+      // diferente (bate-volta, já em SP, etc.).
+      const nec=transpMes.reduce((s,c)=>s+(c.gastosItens||[]).filter(g=>g.tipo==='empresa'&&_ehGastoTransporte(g)).reduce((ss,g)=>ss+(g.val||0),0),0);
       const coberto=contaSpEmp>=nec;
       const bdg=coberto?'fin-badge-ok':contaSpEmp>0?'fin-badge-wa':'fin-badge-no';
       const st=coberto?'✅ Coberto':contaSpEmp>0?'⚠️ Atenção':'🛑 Depositar';
@@ -9013,7 +9026,7 @@ function renderPessEntradas(){
       &&_getMesFin(c.dataEvento)===pessCurF
     ).sort((a,b)=>(a.dataEvento||'').localeCompare(b.dataEvento||''));
     if(transpPesMes.length){
-      const nec=transpPesMes.length*TRANSP_VOLTA;
+      const nec=transpPesMes.reduce((s,c)=>s+(c.gastosItens||[]).filter(g=>g.tipo==='pessoal'&&_ehGastoTransporte(g)).reduce((ss,g)=>ss+(g.val||0),0),0);
       const coberto=contaSP>=nec;
       const bdg=coberto?'fin-badge-ok':contaSP>0?'fin-badge-wa':'fin-badge-no';
       const st=coberto?'✅ Coberto':contaSP>0?'⚠️ Atenção':'🛑 Depositar';
