@@ -3970,9 +3970,9 @@ function buildOpCol(col,cs){
 function opCardHTML(c,cc){
   const dateStr=c.dataEvento?fmtDate(c.dataEvento):'';
   const valor=c.valorTotal?fmtMoney(c.valorTotal):'';
-  let tagCls='tag-pendente',tagTxt='⏳ Pendente';
-  if(c.statusPag==='pago'){tagCls='tag-pago';tagTxt='✅ Quitado'}
-  if(c.statusPag==='sinal'){tagCls='tag-sinal';const _vp=c.valorReserva?fmtMoney(c.valorReserva):'R$ 0';tagTxt='💰 Pago: '+_vp}
+  let tagCls='tag-pendente',tagTxt=`⏳ ${fmtMoney(c.valorReserva||0)} de ${fmtMoney(c.valorTotal||0)}`;
+  if(c.statusPag==='pago'){tagCls='tag-pago';tagTxt=`✅ ${fmtMoney(c.valorReserva||0)} de ${fmtMoney(c.valorTotal||0)}`}
+  if(c.statusPag==='sinal'){tagCls='tag-sinal';tagTxt=`💰 ${fmtMoney(c.valorReserva||0)} de ${fmtMoney(c.valorTotal||0)}`}
   // Festa que também teve pagamento registrado no Financeiro Pessoal (ex.:
   // corte do André, ou cachê de freela) — soma com o que já está registrado
   // no Financeiro Empresa pra mostrar o total combinado na ficha.
@@ -3980,8 +3980,8 @@ function opCardHTML(c,cc){
   if(_pessPago>0){
     const _devidoComb=_empLiqDaFesta(c)+calcAndreShare(c);
     const _recebidoComb=(c.valorReserva||0)+_pessPago;
-    if(_devidoComb>0&&_recebidoComb>=_devidoComb){tagCls='tag-pago';tagTxt='✅ Quitado';}
-    else if(_recebidoComb>0){tagCls='tag-sinal';tagTxt='💰 Pago: '+fmtMoney(_recebidoComb);}
+    if(_devidoComb>0&&_recebidoComb>=_devidoComb){tagCls='tag-pago';tagTxt=`✅ ${fmtMoney(_recebidoComb)} de ${fmtMoney(_devidoComb)}`;}
+    else if(_recebidoComb>0){tagCls='tag-sinal';tagTxt=`💰 ${fmtMoney(_recebidoComb)} de ${fmtMoney(_devidoComb)}`;}
   }
   const lost=c.coluna==='perdido'&&c.motivo?`<div class="c-lost">❌ ${esc(c.motivo)}</div>`:'';
   const pendNote=c.coluna==='pendencia-lead'&&c.pendObs?`<div class="c-lost" style="background:#2A2113;color:#D6A34E">🧩 ${esc(c.pendObs.slice(0,80))}${c.pendObs.length>80?'…':''}</div>`:'';
@@ -4148,9 +4148,9 @@ function prCardHTML(c,cc){
   const _plano=getCardPlano(src,c);
   const _pi=PLANO_INFO[_plano];
   const planoNome=getCardPlanoNome(src,c);
-  let pagCls='pag-pendente',pagTxt='⏳ Pendente';
-  if(statusPag==='pago'){pagCls='pag-pago';pagTxt='✅ Quitado'}
-  if(statusPag==='sinal'){pagCls='pag-sinal';pagTxt='💰 Pago: '+fmtMoney(reserva)}
+  let pagCls='pag-pendente',pagTxt=`⏳ ${fmtMoney(reserva)} de ${fmtMoney(valor)}`;
+  if(statusPag==='pago'){pagCls='pag-pago';pagTxt=`✅ ${fmtMoney(reserva)} de ${fmtMoney(valor)}`}
+  if(statusPag==='sinal'){pagCls='pag-sinal';pagTxt=`💰 ${fmtMoney(reserva)} de ${fmtMoney(valor)}`}
   const planoDeepActive=_pi&&!isPend&&freelaTipo!=='contratei'&&freelaTipo!=='sou-freela';
   const planoBg=_pi?`background:${_pi.deepBg};border:1px solid transparent;--ptext:${_pi.deepText};`:'';
   const pendBg=isPend?'background:#241e12;border:1.5px solid #c8972a;':freelaTipo==='contratei'?'background:#202A34;border:1.5px solid #71869A;':freelaTipo==='sou-freela'?'background:#241715;border:1.5px solid #b05a45;':planoBg;
@@ -4172,8 +4172,7 @@ function prCardHTML(c,cc){
       ${planoNome?`<div class="pc-line">📦 <span><strong>Plano:</strong> ${esc(planoNome)}</span></div>`:''}
     </div>
     <div class="pc-pills">
-      ${valor?`<span class="pc-pill valor">💰 ${fmtMoney(valor)}</span>`:''}
-      ${valor||statusPag?`<span class="pc-pill ${pagCls}">${pagTxt}</span>`:''}
+      <span class="pc-pill ${pagCls}">${pagTxt}</span>
     </div>
     ${c.pendenciaDesc?`<div style="font-size:11px;font-weight:700;color:#d6b16a;margin-top:5px;line-height:1.4">🧩 ${esc(c.pendenciaDesc.slice(0,60))}${c.pendenciaDesc.length>60?'…':''}</div>`:''}
     ${c.obs?`<div style="font-size:11px;color:${planoDeepActive?_pi.deepText:'var(--muted)'};${planoDeepActive?'opacity:.82;':''}margin-top:5px;line-height:1.4">${esc(c.obs.slice(0,60))}${c.obs.length>60?'…':''}</div>`:''}
