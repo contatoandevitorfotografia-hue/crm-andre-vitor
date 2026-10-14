@@ -2333,8 +2333,12 @@ input[type="date"]{cursor:pointer}
           <div style="font-size:11px;font-weight:700;color:#AFC0D1;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">💰 Pagamento</div>
           <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
             <div style="flex:0 0 auto">
-              <label style="font-size:.72rem;font-weight:700;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;display:block;margin-bottom:4px">Valor Pago</label>
+              <label style="font-size:.72rem;font-weight:700;color:#E0A14E;letter-spacing:.05em;text-transform:uppercase;display:block;margin-bottom:4px">🟢 Valor Pago — Empresa</label>
               <div class="mw"><input type="number" id="f-valorReserva" placeholder="0,00" min="0" step="0.01" oninput="calcRestante()" style="width:150px"></div>
+            </div>
+            <div style="flex:0 0 auto">
+              <label style="font-size:.72rem;font-weight:700;color:#6ba3e0;letter-spacing:.05em;text-transform:uppercase;display:block;margin-bottom:4px">🔵 Valor Pago — André</label>
+              <div class="mw"><input type="number" id="f-valorAndrePago" placeholder="0,00" min="0" step="0.01" oninput="calcRestante()" style="width:150px"></div>
             </div>
             <div id="badge-pag" style="font-size:13px;font-weight:700;padding:8px 16px;border-radius:20px;background:#222831;color:#9AA4AE;margin-top:18px">—</div>
           </div>
@@ -4796,7 +4800,7 @@ function clearOpForm(){
   const _obsNotesW=document.getElementById('f-obs-cl-notes');if(_obsNotesW)_obsNotesW.style.display='none';
   document.getElementById('btn-abrir-galeria').style.display='none';
   const _bvg=document.getElementById('btn-ver-galeria');if(_bvg)_bvg.style.display='none';
-  ['f-valorPlano','f-valorTotal','f-valorEmpresa','f-valorAndre','f-valorReserva','f-valorRestante','f-gastos','f-valorCores'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});const _fvp=document.getElementById('f-valorPlano');if(_fvp)_fvp.dataset.auto='1';const _vcW=document.getElementById('f-valor-cores-wrap');if(_vcW)_vcW.style.display='none';gastosItensTemp=[];renderGastosItens();parcelasItensTemp=[];renderParcelasItens();_albumGuardado=false;_renderAlbumGuardadoBtn();const _cpE=document.getElementById('f-pagoEmpresa');if(_cpE)_cpE.checked=false;const _cpA=document.getElementById('f-pagoAndre');if(_cpA)_cpA.checked=false;
+  ['f-valorPlano','f-valorTotal','f-valorEmpresa','f-valorAndre','f-valorReserva','f-valorAndrePago','f-valorRestante','f-gastos','f-valorCores'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});const _fvp=document.getElementById('f-valorPlano');if(_fvp)_fvp.dataset.auto='1';const _vcW=document.getElementById('f-valor-cores-wrap');if(_vcW)_vcW.style.display='none';gastosItensTemp=[];renderGastosItens();parcelasItensTemp=[];renderParcelasItens();_albumGuardado=false;_renderAlbumGuardadoBtn();const _cpE=document.getElementById('f-pagoEmpresa');if(_cpE)_cpE.checked=false;const _cpA=document.getElementById('f-pagoAndre');if(_cpA)_cpA.checked=false;
   ['f-dataReserva','f-dataRestante'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});
   document.getElementById('f-statusPag').value='pendente';const _fpRst=document.getElementById('f-formaPag');if(_fpRst)_fpRst.value='avista';const _npRst=document.getElementById('f-nParcelas');if(_npRst)_npRst.value='';const _fAvDRst=document.getElementById('f-avistaDesconto');if(_fAvDRst)_fAvDRst.checked=false;onFormaPagChange();document.querySelectorAll('.pac-chip-opt.selected').forEach(el=>el.classList.remove('selected'));renderPacChips();renderGastosItens();
   document.getElementById('f-followup').value='';document.getElementById('f-execucao').value='proprio';document.getElementById('frl-select-wrap').style.display='none';document.getElementById('f-freelancerId').value='';const _fvfRst=document.getElementById('f-valorFreelancer');if(_fvfRst)_fvfRst.value='';const _fvfW=document.getElementById('frl-valor-wrap');if(_fvfW)_fvfW.style.display='none';
@@ -4918,6 +4922,7 @@ function openOpModal(cardId,defaultCol,event,fromProj){
     document.getElementById('f-valorAndre').value=_vAnd||'';
 
     document.getElementById('f-valorReserva').value=card.valorReserva||card.valorSinal||'';
+    const _andPagoEl=document.getElementById('f-valorAndrePago');if(_andPagoEl)_andPagoEl.value=_pessoalPagoDaFesta(card)||'';
     document.getElementById('f-dataReserva').value=card.dataReserva||'';
     document.getElementById('f-valorRestante').value=card.valorRestante!==undefined?card.valorRestante:'';
     document.getElementById('f-dataRestante').value=card.dataRestante||'';
@@ -5798,8 +5803,23 @@ function saveOpCard(){
   const wasConf2=oldCol==='confirmado'||oldCol==='confirmado-pendencias';
   const isConf2=newCol==='confirmado'||newCol==='confirmado-pendencias';
   if(!wasConf2&&isConf2){autoSyncToProjects(data);toast('✅ Salvo · 🎬 Adicionado automaticamente em Projetos!','green')}else toast('✅ Cliente salvo!','green');
-  savOp();closeMo('mo-op');try{syncFreelancerToAndre(data);renderOp();renderPr();renderFin();renderAgenda();renderPendencias();}catch(err){console.error(err);}if(window._pendingFreelaRemove){deleteFreelaCardById(window._pendingFreelaRemove);window._pendingFreelaRemove=null;}
+  savOp();closeMo('mo-op');try{syncFreelancerToAndre(data);_salvarValorAndrePagoDaFicha(data);renderOp();renderPr();renderFin();renderAgenda();renderPendencias();}catch(err){console.error(err);}if(window._pendingFreelaRemove){deleteFreelaCardById(window._pendingFreelaRemove);window._pendingFreelaRemove=null;}
   if(!wasConf2&&isConf2)_lembreteTransporteConfirmado(data.id);
+}
+// O campo "Valor Pago — André" da ficha (ao lado do da Empresa) grava direto
+// na entrada vinculada do Financeiro Pessoal — mesma ideia do popup
+// Registrar Pagamento, só que direto na tela da festa. Chamado DEPOIS de
+// syncFreelancerToAndre(), que já garante a entrada vinculada (e preserva
+// o .pago antigo, que a gente sobrescreve aqui com o valor do campo).
+function _salvarValorAndrePagoDaFicha(card){
+  const novoPago=parseFloat(document.getElementById('f-valorAndrePago')?.value)||0;
+  const mes=_getMesFin(card.dataEvento);if(!mes)return;
+  const entrada=(pessFD[mes]||[]).find(e=>e._opFrlId===card.id||e._opId===card.id);if(!entrada)return;
+  if((entrada.pago||0)===novoPago)return;
+  _initPessVG(mes);
+  pessVG[mes]=(pessVG[mes]||0)+(novoPago-(entrada.pago||0));
+  entrada.pago=novoPago;
+  savePessData();
 }
 function fillPrColSelect(selected){
   const opt=c=>`<option value="${c.id}"${c.id===selected?' selected':''}>${c.emoji} ${c.name}</option>`;
