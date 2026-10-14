@@ -4613,13 +4613,21 @@ function onDrop(e,board,targetCol){
   if(!id||dragBoard!==board)return;
   if(board==='op'){
     const card=opCards.find(c=>c.id===id);if(!card||card.coluna===targetCol)return;
-    const oldCol=card.coluna;card.coluna=targetCol;card.updatedAt=Date.now();
+    const oldCol=card.coluna;
+    const wasConf=oldCol==='confirmado'||oldCol==='confirmado-pendencias';
+    const isConf=targetCol==='confirmado'||targetCol==='confirmado-pendencias';
+    // Mesma trava do Salvar na ficha — arrastar pro quadro é outro caminho
+    // pra chegar em Confirmado, então precisa da mesma exigência.
+    if(!wasConf&&isConf&&(card.tipoExecucao||'proprio')==='proprio'&&!(card.gastosItens||[]).some(g=>g.tipo==='empresa'&&_ehGastoTransporte(g))){
+      toast('🚌 Cadastra o transporte dessa festa (nos Gastos) antes de confirmar!','orange');
+      openOpModal(card.id,null);
+      return;
+    }
+    card.coluna=targetCol;card.updatedAt=Date.now();
     // Saiu de "Orçamento Enviado" pra qualquer outra fase = já teve retorno
     // do cliente, então o aviso de follow-up atrasado não faz mais sentido.
     if(oldCol==='orcamento-enviado'&&targetCol!=='orcamento-enviado')card.followupDate='';
     if(targetCol==='perdido')clearParaPerdido(card);
-    const wasConf=oldCol==='confirmado'||oldCol==='confirmado-pendencias';
-    const isConf=targetCol==='confirmado'||targetCol==='confirmado-pendencias';
     if(!wasConf&&isConf){autoSyncToProjects(card);savOp();syncFreelancerToAndre(card);renderOp();renderPr();renderFin();renderAgenda();renderDashboard();}
     else{savOp();syncFreelancerToAndre(card);renderOp();if(wasConf&&!isConf){renderFin();}renderDashboard();}
     const col=OP_COLS.find(c=>c.id===targetCol);
