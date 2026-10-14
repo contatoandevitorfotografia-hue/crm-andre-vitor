@@ -4973,7 +4973,9 @@ function openOpModal(cardId,defaultCol,event,fromProj){
       fillFilmmakerSelect(_idsToLoad,_filmNome);
     },50);
   }
-  if(!card){gastosItensTemp=CUSTOS_PADRAO_EVENTO.map(c=>({...c,id:uid()}));renderGastosItens();}
+  // Festa nova começa SEM transporte pré-cadastrado — ela prefere compor
+  // cada perna na mão, sem precisar apagar um padrão que nem sempre serve.
+  if(!card){gastosItensTemp=[];renderGastosItens();}
   initPendencias(card);renderOpContractSection(card);onColChange();atualizaBtnAgenda();document.getElementById('mo-op').classList.remove('hidden');document.getElementById('f-nomePais').focus();
 }
 // ── Barra de scroll customizada para kanbans ──
@@ -5411,14 +5413,11 @@ function calcRestante(){
   autoRecalcParcelas();
   updateAvistaBox();
 }
-// Toda festa é em São Paulo, e ela mora em Jacareí — o deslocamento
-// (ida R$60,40 na conta da empresa, volta R$60,40 na conta pessoal do
-// André) já entra automaticamente, detalhado item a item, em toda festa
-// nova. Pode ser editado ou removido card a card, se algum caso for diferente.
-// Pernas de valor fixo do trajeto Jacareí↔SP, reaproveitadas tanto no
-// orçamento padrão (CUSTOS_PADRAO_EVENTO) quanto nos botões rápidos de
-// Gastos (um clique soma, outro clique some — com contador de quantas vezes,
-// ex.: 2 Metrôs no mesmo trajeto).
+// Pernas de valor fixo do trajeto Jacareí↔SP — os botões rápidos de Gastos
+// (um clique soma, outro clique some — com contador de quantas vezes, ex.:
+// 2 Metrôs no mesmo trajeto). Festa nova NÃO vem com nenhuma pré-cadastrada
+// — ela prefere compor o transporte de cada dia na mão, já que o trajeto
+// muda (bate-volta, já em SP, emendando festas etc.).
 // O Uber da ida (empresa) vai até a rodoviária; o da volta (André) sai da
 // rodoviária e vai até em casa — mesmo trajeto, nome diferente em cada
 // ponta, por isso descPessoal.
@@ -5427,10 +5426,6 @@ const _LEGS_PADRAO=[
   {desc:'Pássaro Marrom',val:40,emoji:'🚌'},
   {desc:'Metrô',val:5.40,emoji:'🚇'},
 ];
-const CUSTOS_PADRAO_EVENTO=['empresa','pessoal'].flatMap(tipo=>_LEGS_PADRAO.map(l=>{
-  const desc=(tipo==='pessoal'&&l.descPessoal)?l.descPessoal:l.desc;
-  return {desc,val:l.val,tipo,_baseDesc:desc,_unit:l.val,_qtd:1};
-}));
 // Nomes de gasto que contam como "transporte" — cobre o estilo novo (botões
 // rápidos) e o antigo (de antes da reformulação, "Ida: Ônibus para São
 // Paulo" etc.), usado tanto na migração de novembro quanto nos cards de
@@ -5557,11 +5552,6 @@ function syncAllFreelancersToAndre(){
   });
   opCards.filter(c=>FIN_COLS.includes(c.coluna)&&(c.valorAndre||0)>0).forEach(c=>syncFreelancerToAndre(c));
   savePessData();
-}
-function restaurarCustosPadrao(){
-  gastosItensTemp=CUSTOS_PADRAO_EVENTO.map(c=>({...c,id:uid()}));
-  renderGastosItens();
-  calcDistribuicao();
 }
 function calcDistribuicao(){
   // Nova lógica: separa custos de álbum da divisão empresa/andré
@@ -6827,13 +6817,14 @@ function onPacotesChange(){
 
   // Junta custosFixos de todos os pacotes
   // IMPORTANTE: Custos fixos de Memórias devem ser tipo 'album', não 'empresa'
-  const custosPadrao=CUSTOS_PADRAO_EVENTO.map(c=>({...c,id:uid()}));
+  // Não mexe em nada que já estava em Gastos (transporte cadastrado na mão,
+  // Hospedagem etc.) — só substitui os itens que vieram de pacote antes.
   const custosPlano=pacs.flatMap(p=>(p.custosFixos||[]).map(c=>{
     // Determina o tipo baseado no plano: Memórias = album, Movimento = empresa
     const tipoCusto=p.tipoPlano==='memorias'||p.tipoPlano==='historias'?'album':'empresa';
-    return {id:uid(),desc:c.desc,val:c.valor,tipo:tipoCusto};
+    return {id:uid(),desc:c.desc,val:c.valor,tipo:tipoCusto,_fromPacote:true};
   }));
-  gastosItensTemp=[...custosPadrao,...custosPlano];
+  gastosItensTemp=[...gastosItensTemp.filter(g=>!g._fromPacote),...custosPlano];
 
   // Auto-seleciona cinegrafista se só houver um cadastrado entre todos os planos movimento
   const movPacs=pacs.filter(p=>p.tipoPlano==='movimento'||p.tipoPlano==='historias');
