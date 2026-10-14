@@ -4622,7 +4622,7 @@ function onDrop(e,board,targetCol){
     const isConf=targetCol==='confirmado'||targetCol==='confirmado-pendencias';
     // Mesma trava do Salvar na ficha — arrastar pro quadro é outro caminho
     // pra chegar em Confirmado, então precisa da mesma exigência.
-    if(!wasConf&&isConf&&(card.tipoExecucao||'proprio')==='proprio'&&!(card.gastosItens||[]).some(g=>g.tipo==='empresa'&&_ehGastoTransporte(g))){
+    if(!wasConf&&isConf&&(card.tipoExecucao||'proprio')==='proprio'&&!(card.gastosItens||[]).some(g=>(g.tipo==='empresa'||g.tipo==='pessoal')&&_ehGastoTransporte(g))){
       toast('🚌 Cadastra o transporte dessa festa (nos Gastos) antes de confirmar!','orange');
       openOpModal(card.id,null);
       return;
@@ -5775,12 +5775,14 @@ function saveOpCard(){
   if(!nomePais){toast('⚠️ Informe o nome dos pais!','orange');document.getElementById('f-nomePais').focus();return}
   const newCol=document.getElementById('f-col').value;
   // Festa própria indo pra Confirmado precisa ter pelo menos um transporte
-  // (lado Empresa) cadastrado nos Gastos antes de salvar — não dá mais pra
-  // confiar só no lembrete depois, porque é fácil ignorar/perder ele.
+  // cadastrado nos Gastos antes de salvar — não dá mais pra confiar só no
+  // lembrete depois, porque é fácil ignorar/perder ele. Aceita em qualquer
+  // um dos dois lados: às vezes a festa é a 2ª do dia e não tem gasto de
+  // ida (já tá em SP) — só o de volta, no lado do André, já conta.
   const _tipoExecSave=document.getElementById('f-execucao')?.value||'proprio';
   const _isConfSave=newCol==='confirmado'||newCol==='confirmado-pendencias';
-  if(_isConfSave&&_tipoExecSave==='proprio'&&!gastosItensTemp.some(g=>g.tipo==='empresa'&&_ehGastoTransporte(g))){
-    toast('🚌 Cadastra o transporte dessa festa nos Gastos (lado Empresa) antes de salvar!','orange');
+  if(_isConfSave&&_tipoExecSave==='proprio'&&!gastosItensTemp.some(g=>(g.tipo==='empresa'||g.tipo==='pessoal')&&_ehGastoTransporte(g))){
+    toast('🚌 Cadastra o transporte dessa festa nos Gastos (Empresa ou Pessoal) antes de salvar!','orange');
     document.getElementById('sec-gastos-box')?.scrollIntoView({behavior:'smooth',block:'center'});
     return;
   }
