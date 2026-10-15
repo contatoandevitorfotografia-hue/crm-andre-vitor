@@ -5332,6 +5332,11 @@ function updateParcelasResumo(){
 }
 function updateParcelaValor(i,val){
   parcelasItensTemp[i].valor=parseFloat(val)||0;
+  // Marca que ela editou esse valor na mão (ex.: split desigual combinado
+  // com a cliente) — _recalcParcelasData() não pode mais "achatar" essa
+  // parcela de volta pra divisão igual em nenhum recálculo automático
+  // depois disso (inclusive ao reabrir a ficha).
+  parcelasItensTemp[i]._manual=true;
   recalcFromParcelas();
   updateParcelasResumo();
 }
@@ -5370,6 +5375,12 @@ function _recalcParcelasData(){
   if(!total||parcelasItensTemp.length===0)return;
   const pendentes=parcelasItensTemp.filter(p=>!p.recebido);
   if(pendentes.length===0)return;
+  // Se ela já editou algum valor de parcela na mão (split desigual
+  // combinado com a cliente), não mexe em NENHUMA pendente — essa função é
+  // chamada automaticamente por vários outros campos (inclusive ao reabrir
+  // a ficha), e já achatou valores customizados de volta pra divisão igual
+  // sem ela pedir.
+  if(pendentes.some(p=>p._manual))return;
   const recebidoSum=parcelasItensTemp.filter(p=>p.recebido).reduce((s,p)=>s+(p.valor||0),0);
   const resto=Math.max(0,total-recebidoSum);
   const valUnit=parseFloat((resto/pendentes.length).toFixed(2));
