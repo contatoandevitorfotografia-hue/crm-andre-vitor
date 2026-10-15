@@ -5690,42 +5690,50 @@ function calcDistribuicao(){
 function autoStatusPag(){
   const sel=document.getElementById('f-statusPag');
   const badge=document.getElementById('badge-pag');
-  const empShare=parseFloat(document.getElementById('f-valorEmpresa')?.value)||0;
-  const andShare=parseFloat(document.getElementById('f-valorAndre')?.value)||0;
-  const gastosEmp=gastosItensTemp.filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
-  const gastosPes=gastosItensTemp.filter(g=>g.tipo==='pessoal').reduce((s,g)=>s+(g.val||0),0);
-  const _isFrl=document.getElementById('f-execucao')?.value==='freelancer';
-  const _vFrCachê=_isFrl?(parseFloat(document.getElementById('f-valorFreelancer')?.value)||0):0;
-  // Mesma conta do _empLiqDaFesta/_andreLiqDaFesta (líquido de cada lado,
-  // já descontando gasto/cachê) — os campos "Valor Pago" guardam progresso
-  // rumo a esse líquido, não ao valor bruto do pacote.
-  const empLiq=Math.max(0,empShare-gastosEmp);
-  const andLiq=_isFrl?Math.max(0,andShare-_vFrCachê):Math.max(0,andShare-gastosPes);
-  const empPago=parseFloat(document.getElementById('f-valorReserva')?.value)||0;
-  const andPago=parseFloat(document.getElementById('f-valorAndrePago')?.value)||0;
-  // "Status do Pagamento" e o campo oculto de restante continuam só do
-  // ponto de vista da Empresa — é o que alimenta o Financeiro Empresa
-  // (_empLiqDaFesta, _commitQuickPag etc.), sem mexer no lado do André.
-  const restanteEmp=Math.max(0,empLiq-empPago);
-  const elRest=document.getElementById('f-valorRestante');if(elRest)elRest.value=restanteEmp>0?restanteEmp:'';
-  let status='pendente';
-  if(empLiq>0&&empPago>=empLiq){status='pago';}
-  else if(empPago>0){status='sinal';}
-  if(sel)sel.value=status;
-  // Badge visual do box "Pagamento": esse sim soma os dois lados, já que
-  // mostra os dois campos (Empresa + André) juntos — "Falta" só desaparece
-  // quando AMBOS os líquidos estiverem cobertos.
-  const totalComb=parseFloat((empLiq+andLiq).toFixed(2));
-  const restanteComb=parseFloat((restanteEmp+Math.max(0,andLiq-andPago)).toFixed(2));
-  if(badge){
-    const fm=v=>'R$ '+v.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
-    if(totalComb<=0){badge.textContent='—';badge.style.cssText='font-size:13px;font-weight:700;padding:8px 16px;border-radius:20px;background:#222831;color:#9AA4AE;margin-top:18px';}
-    else if(restanteComb<=0){badge.textContent='✅ Quitado';badge.style.cssText='font-size:13px;font-weight:700;padding:8px 16px;border-radius:20px;background:#1D2630;color:#9FB5CB;margin-top:18px';}
-    else if(empPago>0||andPago>0){badge.textContent='⏳ Falta '+fm(restanteComb);badge.style.cssText='font-size:13px;font-weight:700;padding:8px 16px;border-radius:20px;background:#2A2113;color:#E0A14E;margin-top:18px';}
-    else{badge.textContent='⏳ Pendente';badge.style.cssText='font-size:13px;font-weight:700;padding:8px 16px;border-radius:20px;background:#2e1a18;color:#e78a7c;margin-top:18px';}
+  const forma=document.getElementById('f-formaPag')?.value||'avista';
+  // "À Vista" esconde os campos Empresa/André (sec-reserva-sinal) — o
+  // status ali é 100% manual, direto no dropdown. Antes este bloco rodava
+  // sempre (chamado por calcDistribuicao() a cada render, inclusive ao
+  // reabrir a ficha) e sobrescrevia silenciosamente "Pago Total" pra
+  // "Sinal" assim que os campos (vazios/zerados nesse modo) eram lidos.
+  // "PIX em 2x" tem a lógica própria baseada em parcelas, logo abaixo.
+  if(forma==='cartao'){
+    const empShare=parseFloat(document.getElementById('f-valorEmpresa')?.value)||0;
+    const andShare=parseFloat(document.getElementById('f-valorAndre')?.value)||0;
+    const gastosEmp=gastosItensTemp.filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
+    const gastosPes=gastosItensTemp.filter(g=>g.tipo==='pessoal').reduce((s,g)=>s+(g.val||0),0);
+    const _isFrl=document.getElementById('f-execucao')?.value==='freelancer';
+    const _vFrCachê=_isFrl?(parseFloat(document.getElementById('f-valorFreelancer')?.value)||0):0;
+    // Mesma conta do _empLiqDaFesta/_andreLiqDaFesta (líquido de cada lado,
+    // já descontando gasto/cachê) — os campos "Valor Pago" guardam progresso
+    // rumo a esse líquido, não ao valor bruto do pacote.
+    const empLiq=Math.max(0,empShare-gastosEmp);
+    const andLiq=_isFrl?Math.max(0,andShare-_vFrCachê):Math.max(0,andShare-gastosPes);
+    const empPago=parseFloat(document.getElementById('f-valorReserva')?.value)||0;
+    const andPago=parseFloat(document.getElementById('f-valorAndrePago')?.value)||0;
+    // "Status do Pagamento" e o campo oculto de restante continuam só do
+    // ponto de vista da Empresa — é o que alimenta o Financeiro Empresa
+    // (_empLiqDaFesta, _commitQuickPag etc.), sem mexer no lado do André.
+    const restanteEmp=Math.max(0,empLiq-empPago);
+    const elRest=document.getElementById('f-valorRestante');if(elRest)elRest.value=restanteEmp>0?restanteEmp:'';
+    let status='pendente';
+    if(empLiq>0&&empPago>=empLiq){status='pago';}
+    else if(empPago>0){status='sinal';}
+    if(sel)sel.value=status;
+    // Badge visual do box "Pagamento": esse sim soma os dois lados, já que
+    // mostra os dois campos (Empresa + André) juntos — "Falta" só desaparece
+    // quando AMBOS os líquidos estiverem cobertos.
+    const totalComb=parseFloat((empLiq+andLiq).toFixed(2));
+    const restanteComb=parseFloat((restanteEmp+Math.max(0,andLiq-andPago)).toFixed(2));
+    if(badge){
+      const fm=v=>'R$ '+v.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+      if(totalComb<=0){badge.textContent='—';badge.style.cssText='font-size:13px;font-weight:700;padding:8px 16px;border-radius:20px;background:#222831;color:#9AA4AE;margin-top:18px';}
+      else if(restanteComb<=0){badge.textContent='✅ Quitado';badge.style.cssText='font-size:13px;font-weight:700;padding:8px 16px;border-radius:20px;background:#1D2630;color:#9FB5CB;margin-top:18px';}
+      else if(empPago>0||andPago>0){badge.textContent='⏳ Falta '+fm(restanteComb);badge.style.cssText='font-size:13px;font-weight:700;padding:8px 16px;border-radius:20px;background:#2A2113;color:#E0A14E;margin-top:18px';}
+      else{badge.textContent='⏳ Pendente';badge.style.cssText='font-size:13px;font-weight:700;padding:8px 16px;border-radius:20px;background:#2e1a18;color:#e78a7c;margin-top:18px';}
+    }
   }
   // PIX em 2x
-  const forma=document.getElementById('f-formaPag')?.value||'avista';
   if(forma==='pix-2x'&&parcelasItensTemp.length>0){
     const rec=parcelasItensTemp.filter(p=>p.recebido).length;
     const tot=parcelasItensTemp.length;
