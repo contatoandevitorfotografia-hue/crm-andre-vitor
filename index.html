@@ -3970,19 +3970,16 @@ function buildOpCol(col,cs){
 function opCardHTML(c,cc){
   const dateStr=c.dataEvento?fmtDate(c.dataEvento):'';
   const valor=c.valorTotal?fmtMoney(c.valorTotal):'';
-  let tagCls='tag-pendente',tagTxt=`⏳ ${fmtMoney(c.valorReserva||0)} de ${fmtMoney(c.valorTotal||0)}`;
-  if(c.statusPag==='pago'){tagCls='tag-pago';tagTxt=`✅ ${fmtMoney(c.valorReserva||0)} de ${fmtMoney(c.valorTotal||0)}`}
-  if(c.statusPag==='sinal'){tagCls='tag-sinal';tagTxt=`💰 ${fmtMoney(c.valorReserva||0)} de ${fmtMoney(c.valorTotal||0)}`}
-  // Festa que também teve pagamento registrado no Financeiro Pessoal (ex.:
-  // corte do André, ou cachê de freela) — soma com o que já está registrado
-  // no Financeiro Empresa pra mostrar o total combinado na ficha.
+  // Badge sempre combinado (Empresa + André) contra o líquido de cada lado
+  // (_empLiqDaFesta/_andreLiqDaFesta) — não o valor bruto do pacote, que em
+  // planos com álbum físico inclui dinheiro que não é líquido de ninguém.
+  // André pode ter pago registrado separado, no Financeiro Pessoal.
   const _pessPago=_pessoalPagoDaFesta(c);
-  if(_pessPago>0){
-    const _devidoComb=_empLiqDaFesta(c)+calcAndreShare(c);
-    const _recebidoComb=(c.valorReserva||0)+_pessPago;
-    if(_devidoComb>0&&_recebidoComb>=_devidoComb){tagCls='tag-pago';tagTxt=`✅ ${fmtMoney(_recebidoComb)} de ${fmtMoney(_devidoComb)}`;}
-    else if(_recebidoComb>0){tagCls='tag-sinal';tagTxt=`💰 ${fmtMoney(_recebidoComb)} de ${fmtMoney(_devidoComb)}`;}
-  }
+  const _devidoComb=_empLiqDaFesta(c)+_andreLiqDaFesta(c);
+  const _recebidoComb=(c.valorReserva||0)+_pessPago;
+  let tagCls='tag-pendente',tagTxt=`⏳ ${fmtMoney(_recebidoComb)} de ${fmtMoney(_devidoComb)}`;
+  if(_devidoComb>0&&_recebidoComb>=_devidoComb){tagCls='tag-pago';tagTxt=`✅ ${fmtMoney(_recebidoComb)} de ${fmtMoney(_devidoComb)}`;}
+  else if(_recebidoComb>0){tagCls='tag-sinal';tagTxt=`💰 ${fmtMoney(_recebidoComb)} de ${fmtMoney(_devidoComb)}`;}
   const lost=c.coluna==='perdido'&&c.motivo?`<div class="c-lost">❌ ${esc(c.motivo)}</div>`:'';
   const pendNote=c.coluna==='pendencia-lead'&&c.pendObs?`<div class="c-lost" style="background:#2A2113;color:#D6A34E">🧩 ${esc(c.pendObs.slice(0,80))}${c.pendObs.length>80?'…':''}</div>`:'';
   const dt=c.titulo||c.nomePais||'Sem título';
@@ -4149,13 +4146,15 @@ function prCardHTML(c,cc){
   const _pi=PLANO_INFO[_plano];
   const planoNome=getCardPlanoNome(src,c);
   // "Pago" do card precisa somar os dois lados (Empresa + André) — reserva
-  // sozinho é só a parte da Empresa, e comparar isso com o valor BRUTO do
-  // pacote (valor) dava a falsa impressão de pagamento incompleto mesmo
-  // quando a cliente já tinha quitado tudo.
+  // sozinho é só a parte da Empresa. E o alvo de comparação é o líquido de
+  // cada lado (_empLiqDaFesta/_andreLiqDaFesta), não o valor BRUTO do
+  // pacote — planos com álbum físico (Memórias) têm parte do valor bruto
+  // que não é líquido de ninguém, é custo repassado pro álbum.
+  const totalLiq=_empLiqDaFesta(src||c)+_andreLiqDaFesta(src||c);
   const pagoTotal=reserva+_pessoalPagoDaFesta(src||c);
-  const faltaTotal=Math.max(0,valor-pagoTotal);
+  const faltaTotal=Math.max(0,totalLiq-pagoTotal);
   let pagCls='pag-pendente';
-  if(valor>0&&pagoTotal>=valor)pagCls='pag-pago';
+  if(totalLiq>0&&pagoTotal>=totalLiq)pagCls='pag-pago';
   else if(pagoTotal>0)pagCls='pag-sinal';
   const planoDeepActive=_pi&&!isPend&&freelaTipo!=='contratei'&&freelaTipo!=='sou-freela';
   const planoBg=_pi?`background:${_pi.deepBg};border:1px solid transparent;--ptext:${_pi.deepText};`:'';
@@ -4178,7 +4177,7 @@ function prCardHTML(c,cc){
       ${planoNome?`<div class="pc-line">📦 <span><strong>Plano:</strong> ${esc(planoNome)}</span></div>`:''}
     </div>
     ${valor?`<div class="pc-pills">
-      <span class="pc-pill valor">📦 Total: ${fmtMoney(valor)}</span>
+      <span class="pc-pill valor">💼 Total: ${fmtMoney(totalLiq)}</span>
       <span class="pc-pill ${pagCls}">💰 Pago: ${fmtMoney(pagoTotal)}</span>
       ${faltaTotal>0?`<span class="pc-pill pag-pendente">⏳ Falta: ${fmtMoney(faltaTotal)}</span>`:''}
     </div>`:''}
@@ -5678,24 +5677,38 @@ function calcDistribuicao(){
 function autoStatusPag(){
   const sel=document.getElementById('f-statusPag');
   const badge=document.getElementById('badge-pag');
-  const emp=parseFloat(document.getElementById('f-valorEmpresa')?.value)||0;
-  const and=parseFloat(document.getElementById('f-valorAndre')?.value)||0;
-  const valorInformado=parseFloat(document.getElementById('f-valorPlano')?.value)||0;
-  const total=valorInformado>0?valorInformado:emp+and;
-  const pago=parseFloat(document.getElementById('f-valorReserva')?.value)||0;
-  const restante=Math.max(0,total-pago);
-  // Atualiza campo hidden restante
-  const elRest=document.getElementById('f-valorRestante');if(elRest)elRest.value=restante>0?restante:'';
-  // Status
+  const empShare=parseFloat(document.getElementById('f-valorEmpresa')?.value)||0;
+  const andShare=parseFloat(document.getElementById('f-valorAndre')?.value)||0;
+  const gastosEmp=gastosItensTemp.filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
+  const gastosPes=gastosItensTemp.filter(g=>g.tipo==='pessoal').reduce((s,g)=>s+(g.val||0),0);
+  const _isFrl=document.getElementById('f-execucao')?.value==='freelancer';
+  const _vFrCachê=_isFrl?(parseFloat(document.getElementById('f-valorFreelancer')?.value)||0):0;
+  // Mesma conta do _empLiqDaFesta/_andreLiqDaFesta (líquido de cada lado,
+  // já descontando gasto/cachê) — os campos "Valor Pago" guardam progresso
+  // rumo a esse líquido, não ao valor bruto do pacote.
+  const empLiq=Math.max(0,empShare-gastosEmp);
+  const andLiq=_isFrl?Math.max(0,andShare-_vFrCachê):Math.max(0,andShare-gastosPes);
+  const empPago=parseFloat(document.getElementById('f-valorReserva')?.value)||0;
+  const andPago=parseFloat(document.getElementById('f-valorAndrePago')?.value)||0;
+  // "Status do Pagamento" e o campo oculto de restante continuam só do
+  // ponto de vista da Empresa — é o que alimenta o Financeiro Empresa
+  // (_empLiqDaFesta, _commitQuickPag etc.), sem mexer no lado do André.
+  const restanteEmp=Math.max(0,empLiq-empPago);
+  const elRest=document.getElementById('f-valorRestante');if(elRest)elRest.value=restanteEmp>0?restanteEmp:'';
   let status='pendente';
-  if(total>0&&pago>=total){status='pago';}
-  else if(pago>0){status='sinal';}
+  if(empLiq>0&&empPago>=empLiq){status='pago';}
+  else if(empPago>0){status='sinal';}
   if(sel)sel.value=status;
-  // Badge visual
+  // Badge visual do box "Pagamento": esse sim soma os dois lados, já que
+  // mostra os dois campos (Empresa + André) juntos — "Falta" só desaparece
+  // quando AMBOS os líquidos estiverem cobertos.
+  const totalComb=parseFloat((empLiq+andLiq).toFixed(2));
+  const restanteComb=parseFloat((restanteEmp+Math.max(0,andLiq-andPago)).toFixed(2));
   if(badge){
-    if(total<=0){badge.textContent='—';badge.style.cssText='font-size:13px;font-weight:700;padding:8px 16px;border-radius:20px;background:#222831;color:#9AA4AE;margin-top:18px';}
-    else if(status==='pago'){badge.textContent='✅ Quitado';badge.style.cssText='font-size:13px;font-weight:700;padding:8px 16px;border-radius:20px;background:#1D2630;color:#9FB5CB;margin-top:18px';}
-    else if(status==='sinal'){const fm=v=>'R$ '+v.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');badge.textContent='⏳ Falta '+fm(restante);badge.style.cssText='font-size:13px;font-weight:700;padding:8px 16px;border-radius:20px;background:#2A2113;color:#E0A14E;margin-top:18px';}
+    const fm=v=>'R$ '+v.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+    if(totalComb<=0){badge.textContent='—';badge.style.cssText='font-size:13px;font-weight:700;padding:8px 16px;border-radius:20px;background:#222831;color:#9AA4AE;margin-top:18px';}
+    else if(restanteComb<=0){badge.textContent='✅ Quitado';badge.style.cssText='font-size:13px;font-weight:700;padding:8px 16px;border-radius:20px;background:#1D2630;color:#9FB5CB;margin-top:18px';}
+    else if(empPago>0||andPago>0){badge.textContent='⏳ Falta '+fm(restanteComb);badge.style.cssText='font-size:13px;font-weight:700;padding:8px 16px;border-radius:20px;background:#2A2113;color:#E0A14E;margin-top:18px';}
     else{badge.textContent='⏳ Pendente';badge.style.cssText='font-size:13px;font-weight:700;padding:8px 16px;border-radius:20px;background:#2e1a18;color:#e78a7c;margin-top:18px';}
   }
   // PIX em 2x
