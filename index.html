@@ -5490,8 +5490,21 @@ function calcAndreShare(data){
     const vFreela=data.valorFreelancer||(frl?.valorFreela||0);
     return parseFloat(Math.max(0,(data.valorTotal||0)-vFreela).toFixed(2));
   }
-  // Sempre recalcula via calcEmpresaShare para garantir valores corretos
+  // Planos com "cores" (Memórias/Movimento/Histórias) reservam parte do
+  // valor bruto pro custo físico (álbum etc.) — essa parte não é líquido
+  // de ninguém, então sai da sobra do André antes de dividir. Mesma conta
+  // de calcDistribuicao() (live, na ficha), só que a partir do card salvo.
   const t=data.valorTotal||0;
+  const _ids=data.pacoteIds||(data.pacoteId?[data.pacoteId]:[]);
+  const _pacs=_ids.map(id=>packages.find(p=>p.id===id)).filter(Boolean);
+  const vc=data.valorCoresJob||Math.max(0,..._pacs.filter(p=>p.tipoPlano==='memorias'||p.tipoPlano==='movimento'||p.tipoPlano==='historias').map(p=>p.valorCores||0));
+  if(vc>0){
+    const gastosAlbum=(data.gastosItens||[]).filter(g=>g.tipo==='album').reduce((s,g)=>s+(g.val||0),0);
+    const gastosEmp=(data.gastosItens||[]).filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
+    const sobra=Math.max(0,t-vc-gastosAlbum-gastosEmp);
+    return parseFloat((vc*0.6+sobra).toFixed(2));
+  }
+  // Sem plano com cores: sempre recalcula via calcEmpresaShare pra garantir valores corretos
   const empShare=calcEmpresaShare(data);
   return parseFloat(Math.max(0,t-empShare).toFixed(2));
 }
