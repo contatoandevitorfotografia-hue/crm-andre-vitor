@@ -2293,7 +2293,7 @@ input[type="date"]{cursor:pointer}
           </div>
           <div class="fg" id="sec-status-pag" style="max-width:280px">
             <label>Status do Pagamento</label>
-            <select id="f-statusPag"><option value="pendente">⏳ Pendente</option><option value="sinal">💰 Sinal / Reserva Recebida</option><option value="pago">✅ Pago Total</option></select>
+            <select id="f-statusPag" onchange="onStatusPagManualChange()"><option value="pendente">⏳ Pendente</option><option value="sinal">💰 Sinal / Reserva Recebida</option><option value="pago">✅ Pago Total</option></select>
           </div>
         </div>
         <div id="sec-avista-desc" style="display:none;background:#1D2630;border:1.5px solid #244A3A;border-radius:10px;padding:13px;margin-bottom:11px">
@@ -5739,6 +5739,38 @@ function autoStatusPag(){
     const tot=parcelasItensTemp.length;
     if(rec===tot&&sel)sel.value='pago';
     else if(rec>0&&sel)sel.value='sinal';
+  }
+}
+// Em "À Vista" o dropdown "Status do Pagamento" é a ÚNICA coisa que ela
+// mexe (os campos Empresa/André ficam escondidos) — mas quem alimenta o
+// "Pago"/"Falta" dos cards são justamente esses dois campos (valorReserva
+// e o pago do André no Financeiro Pessoal). Sem isso, escolher "Pago
+// Total" só mudava o rótulo, sem nunca atualizar os valores de verdade —
+// por isso o card continuava mostrando falta. Aqui sincroniza os dois.
+function onStatusPagManualChange(){
+  const forma=document.getElementById('f-formaPag')?.value||'avista';
+  if(forma!=='avista')return;
+  const status=document.getElementById('f-statusPag')?.value;
+  if(status!=='pago'&&status!=='pendente')return; // "Sinal" não dá pra adivinhar o valor parcial
+  const _pseudoCard={
+    valorTotal:parseFloat(document.getElementById('f-valorPlano')?.value)||parseFloat(document.getElementById('f-valorTotal')?.value)||0,
+    tipoExecucao:document.getElementById('f-execucao')?.value||'proprio',
+    pacoteIds:getSelectedPacIds(),
+    valorCoresJob:0,
+    gastosItens:gastosItensTemp,
+    freelancerId:document.getElementById('f-freelancerId')?.value||'',
+    valorFreelancer:parseFloat(document.getElementById('f-valorFreelancer')?.value)||0,
+  };
+  const empLiq=_empLiqDaFesta(_pseudoCard);
+  const andLiq=_andreLiqDaFesta(_pseudoCard);
+  const fEmp=document.getElementById('f-valorReserva');
+  const fAnd=document.getElementById('f-valorAndrePago');
+  if(status==='pago'){
+    if(fEmp)fEmp.value=empLiq||'';
+    if(fAnd)fAnd.value=andLiq||'';
+  }else{
+    if(fEmp)fEmp.value='';
+    if(fAnd)fAnd.value='';
   }
 }
 function flashStatus(el,bg,border){
