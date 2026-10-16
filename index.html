@@ -2373,6 +2373,10 @@ input[type="date"]{cursor:pointer}
               <div style="font-size:10px;font-weight:700;color:#6BA3E0;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">👤 André pessoal</div>
               <div id="dist-and-liq" style="font-size:24px;font-weight:800;color:#7FB0E6;line-height:1">—</div>
               <div style="font-size:10px;color:#6B9BD0;margin-top:4px">líquido</div>
+              <label id="dist-and-recebido-wrap" style="display:none;align-items:center;justify-content:center;gap:7px;margin-top:10px;padding:7px 10px;border-radius:8px;background:#1D2630;border:1px solid #2E4258;cursor:pointer;font-size:12px;font-weight:700;color:#9FB5CB">
+                <input type="checkbox" id="f-andreRecebeu" onchange="onAndreRecebeuChange()" style="width:16px;height:16px;accent-color:#6BA3E0;cursor:pointer">
+                <span id="dist-and-recebido-txt">André já recebeu</span>
+              </label>
             </div>
           </div>
 
@@ -5673,11 +5677,28 @@ function calcDistribuicao(){
     }
   }
 
-  const empRatio=t>0?empShare/t:0;const andRatio=t>0?andShare/t:0;
-  document.getElementById('dist-emp-rec').textContent=r>0?fm(r*empRatio):'—';
-  document.getElementById('dist-and-rec').textContent=r>0?fm(r*andRatio):'—';
-  document.getElementById('dist-emp-rest').textContent=rest>0?fm(rest*empRatio):'—';
-  document.getElementById('dist-and-rest').textContent=rest>0?fm(rest*andRatio):'—';
+  // Recebido / A receber de cada lado vêm dos campos reais de cada um
+  // (Empresa: f-valorReserva · André: f-valorAndrePago), comparados com o
+  // líquido de cada lado — não mais um rateio proporcional do valor da
+  // Empresa, que mostrava pro André um "A receber" no valor bruto do plano.
+  const _empLiqD=Math.max(0,empShare-gastosEmp);
+  const _andLiqD=_isFrl?Math.max(0,andShare-_vFrCachê):Math.max(0,andShare-gastosPes);
+  const _andPagoD=parseFloat(document.getElementById('f-valorAndrePago')?.value)||0;
+  document.getElementById('dist-emp-rec').textContent=r>0?fm(r):'—';
+  document.getElementById('dist-and-rec').textContent=_andPagoD>0?fm(_andPagoD):'—';
+  const _empRestD=Math.max(0,_empLiqD-r),_andRestD=Math.max(0,_andLiqD-_andPagoD);
+  document.getElementById('dist-emp-rest').textContent=_empRestD>0.009?fm(_empRestD):'—';
+  document.getElementById('dist-and-rest').textContent=_andRestD>0.009?fm(_andRestD):'—';
+  // Freela contratada: o André recebe a parte dele num momento separado do
+  // pagamento da cliente — ela marca aqui quando o dinheiro dele caiu.
+  const _recWrap=document.getElementById('dist-and-recebido-wrap');
+  if(_recWrap){
+    _recWrap.style.display=_isFrl&&_andLiqD>0?'flex':'none';
+    const _chk=document.getElementById('f-andreRecebeu');
+    const _txt=document.getElementById('dist-and-recebido-txt');
+    if(_chk)_chk.checked=_andLiqD>0&&_andPagoD>=_andLiqD-0.009;
+    if(_txt)_txt.textContent=(_chk?.checked?'✅ André já recebeu ':'André já recebeu ')+fm(_andLiqD);
+  }
   const hasGastos=gastosEmp>0||gastosPes>0||gastosAlbum>0;
   const gastosLblEl=document.getElementById('dist-gastos-label');
   if(gastosLblEl){gastosLblEl.style.display=hasGastos?'':'none';gastosLblEl.textContent=_isFrl?'💸 Cachê Freela':'💸 Gastos';}
@@ -5769,6 +5790,10 @@ function onStatusPagManualChange(){
 // salvo antes), o onchange nunca dispara — e sem isso os valores antigos
 // (parciais) continuavam lá, com o card mostrando "Falta" mesmo quitado.
 function _preencheValoresAvistaPeloStatus(status){
+  // Só festa própria: em freela, "Pago Total" é a cliente pagando — a parte
+  // do André chega num momento separado e é marcada no check "André já
+  // recebeu" (box Distribuição), não derivada do status.
+  if((document.getElementById('f-execucao')?.value||'proprio')!=='proprio')return;
   const _pseudoCard={
     valorTotal:parseFloat(document.getElementById('f-valorPlano')?.value)||parseFloat(document.getElementById('f-valorTotal')?.value)||0,
     tipoExecucao:document.getElementById('f-execucao')?.value||'proprio',
@@ -5789,6 +5814,30 @@ function _preencheValoresAvistaPeloStatus(status){
     if(fEmp)fEmp.value='';
     if(fAnd)fAnd.value='';
   }
+}
+// Check "André já recebeu" (freela contratada): marca = André recebeu o
+// líquido dele inteiro (f-valorAndrePago = andLiq → vai pro Financeiro
+// Pessoal no save); desmarca = zera. É isso que o card lê pra mostrar
+// Pago / Falta / Quitado nessas festas.
+function onAndreRecebeuChange(){
+  const chk=document.getElementById('f-andreRecebeu');
+  const fAnd=document.getElementById('f-valorAndrePago');
+  if(!chk||!fAnd)return;
+  if(chk.checked){
+    const _pseudoCard={
+      valorTotal:parseFloat(document.getElementById('f-valorPlano')?.value)||parseFloat(document.getElementById('f-valorTotal')?.value)||0,
+      tipoExecucao:document.getElementById('f-execucao')?.value||'proprio',
+      pacoteIds:getSelectedPacIds(),
+      valorCoresJob:0,
+      gastosItens:gastosItensTemp,
+      freelancerId:document.getElementById('f-freelancerId')?.value||'',
+      valorFreelancer:parseFloat(document.getElementById('f-valorFreelancer')?.value)||0,
+    };
+    fAnd.value=_andreLiqDaFesta(_pseudoCard)||'';
+  }else{
+    fAnd.value='';
+  }
+  calcDistribuicao();
 }
 function flashStatus(el,bg,border){
   el.style.transition='background .3s';el.style.background=bg;el.style.borderColor=border;
