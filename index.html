@@ -7254,7 +7254,7 @@ const MESES_CONTAS_SHOW=[
   ...MESES_FIN.slice(9),
   ...MESES_FIN.map(m=>m+'/27')
 ];
-let finGD={}, finDD={}, finVG={}, finFD={}; // finFD: festas avulsas da Empresa (espelho do pessFD manual)
+let finGD={}, finDD={}, finVG={}, finFM={}; // finFM: festas avulsas da Empresa (espelho do pessFD manual)
 let finRG=0, _finRGEditing=false;
 let finContas=[];
 let finCurF=null, finCurG=null, finCurD=null;
@@ -7307,7 +7307,7 @@ function _getFinFestas(mes){
       rest:empFalta,
       statusPag:localSt
     };
-  }).concat((finFD[mes]||[]).map((f,i)=>{
+  }).concat((finFM[mes]||[]).map((f,i)=>{
     // Entrada avulsa da Empresa (sem card no kanban) — espelho do
     // "+ Adicionar festa" do Pessoal. Mesmo formato das festas normais, então
     // totais, fluxo de caixa, histórico e simulador a enxergam sem mais nada.
@@ -7824,7 +7824,7 @@ function delFinFesta(cardId){
 }
 // ── Festas avulsas da Empresa (espelho do "+ Adicionar festa" do Pessoal) ──
 // Entrada de dinheiro do negócio que não veio de um card do kanban. Vive em
-// finFD[mes]; _getFinFestas() a coloca no mesmo formato das festas normais.
+// finFM[mes]; _getFinFestas() a coloca no mesmo formato das festas normais.
 function saveFinEntrada(){
   const n=document.getElementById('fin-f-n').value.trim();
   const v=parseFloat(document.getElementById('fin-f-v').value)||0;
@@ -7832,35 +7832,35 @@ function saveFinEntrada(){
   const t=document.getElementById('fin-f-t').value.trim();
   if(!n||!v){alert('Preencha nome e valor!');return;}
   if(!finCurF)finCurF=_finCurMes();
-  if(!finFD[finCurF])finFD[finCurF]=[];
-  finFD[finCurF].push({id:uid(),n,v,d,t,pago:0});
+  if(!finFM[finCurF])finFM[finCurF]=[];
+  finFM[finCurF].push({id:uid(),n,v,d,t,pago:0});
   ['fin-f-n','fin-f-v','fin-f-d','fin-f-t'].forEach(id=>document.getElementById(id).value='');
   toggleFinForm('fin-ff');saveFinData();renderFinFestas();renderFinResumo();
 }
 function delFinFestaManual(mes,idx){
-  const e=finFD[mes]?.[idx];if(!e)return;
+  const e=finFM[mes]?.[idx];if(!e)return;
   if(!confirm(`Excluir "${e.n}"?`))return;
-  finFD[mes].splice(idx,1);
+  finFM[mes].splice(idx,1);
   saveFinData();renderFinFestas();renderFinResumo();toast('🗑️ Entrada removida','');
 }
 function editFinManualValor(mes,idx,el){
-  const e=finFD[mes]?.[idx];if(!e)return;
+  const e=finFM[mes]?.[idx];if(!e)return;
   el.outerHTML=`<input type="number" id="edit-fin-man-${idx}" value="${e.v||0}" step="0.01" min="0" style="width:100px;border:2px solid #6E879F;border-radius:6px;padding:4px;font-weight:700;color:#6E879F" onkeydown="if(event.key==='Enter')saveFinManualValor('${mes}',${idx});if(event.key==='Escape')renderFinFestas()" onblur="saveFinManualValor('${mes}',${idx})">`;
   setTimeout(()=>document.getElementById('edit-fin-man-'+idx)?.focus(),20);
 }
 function saveFinManualValor(mes,idx){
   const inp=document.getElementById('edit-fin-man-'+idx);if(!inp)return;
-  const e=finFD[mes]?.[idx];if(!e)return;
+  const e=finFM[mes]?.[idx];if(!e)return;
   const v=parseFloat(inp.value);
   if(isNaN(v)||v<0){renderFinFestas();return;}
   e.v=v;
   saveFinData();renderFinFestas();renderFinResumo();
 }
 // Mesmo popup "💰 Registrar Pagamento" do lançamento avulso do Pessoal
-// (quickEditPagPess sem card), gravando em finFD e ajustando o banco da
+// (quickEditPagPess sem card), gravando em finFM e ajustando o banco da
 // Empresa pela diferença.
 function quickEditPagFinManual(mes,idx){
-  const e=finFD[mes]?.[idx];if(!e)return;
+  const e=finFM[mes]?.[idx];if(!e)return;
   const existing=document.getElementById('qep-overlay');if(existing)existing.remove();
   window._qepTotalPessSolo=+(e.v)||0;
   const div=document.createElement('div');
@@ -7888,7 +7888,7 @@ function quickEditPagFinManual(mes,idx){
   inp.focus();inp.select();
 }
 function saveQuickPagFinManual(mes,idx){
-  const e=finFD[mes]?.[idx];if(!e)return;
+  const e=finFM[mes]?.[idx];if(!e)return;
   const pago=parseFloat(document.getElementById('qep-input')?.value)||0;
   _initFinVG(mes);
   finVG[mes]=(finVG[mes]||0)+(pago-(+(e.pago)||0));
@@ -8864,13 +8864,13 @@ function saveFinData(){
     localStorage.setItem('crm_fin_vg',JSON.stringify(finVG));
     localStorage.setItem('crm_fin_gd',JSON.stringify(finGD));
     localStorage.setItem('crm_fin_dd',JSON.stringify(finDD));
-    localStorage.setItem('crm_fin_fd',JSON.stringify(finFD));
+    localStorage.setItem('crm_fin_fm',JSON.stringify(finFM));
     localStorage.setItem('crm_fin_contaSpEmp',contaSpEmp.toString());
     localStorage.setItem('crm_fin_custom_cats',JSON.stringify(finCustomCats));
     localStorage.setItem('crm_fin_contas',JSON.stringify(finContas));
   }catch(e){}
   if(typeof _finDb!=='undefined'){
-    const _finPayload=JSON.parse(JSON.stringify({vg:finVG,gd:finGD,dd:finDD,fd:finFD,contaSpEmp,finCustomCats,finContas,rg:finRG}));
+    const _finPayload=JSON.parse(JSON.stringify({vg:finVG,gd:finGD,dd:finDD,fm:finFM,contaSpEmp,finCustomCats,finContas,rg:finRG}));
     _finDb.ref('crm26').update(_finPayload)
       .then(()=>setSyncFinStatus('saved'))
       .catch(()=>setSyncFinStatus('err'));
@@ -8880,7 +8880,7 @@ function loadFinLocal(){
   try{const v=localStorage.getItem('crm_fin_vg');if(v)finVG=JSON.parse(v);}catch{}
   try{const g=localStorage.getItem('crm_fin_gd');if(g)finGD=JSON.parse(g);}catch{}
   try{const d=localStorage.getItem('crm_fin_dd');if(d)finDD=JSON.parse(d);}catch{}
-  try{const f=localStorage.getItem('crm_fin_fd');if(f)finFD=JSON.parse(f)||{};}catch{}
+  try{const f=localStorage.getItem('crm_fin_fm');if(f)finFM=JSON.parse(f)||{};}catch{}
   try{const v=localStorage.getItem('crm_fin_contaSpEmp');if(v)contaSpEmp=parseFloat(v)||0;}catch{}
   // Carrega custom cats ANTES de migrar, para usar as categorias corretas
   try{const v=localStorage.getItem('crm_fin_custom_cats');if(v){const p=JSON.parse(v);if(Array.isArray(p)&&p.length)finCustomCats=p;}}catch{}
@@ -9009,7 +9009,9 @@ function initFinFirebase(){
         if(_fresh&&data.vg)finVG=data.vg;
         if(_fresh&&data.gd)finGD=data.gd;
         if(_fresh&&data.dd)finDD=data.dd;
-        if(_fresh&&data.fd)finFD=data.fd;
+        // "fm" (festas manuais) e NÃO "fd": a chave "fd" já existia no banco com
+        // registros de uma versão antiga do app, que apareciam como "avulsa".
+        if(_fresh&&data.fm)finFM=data.fm;
         if(data.rg!==undefined)finRG=data.rg;
         if(data.contaSpEmp!==undefined)contaSpEmp=parseFloat(data.contaSpEmp)||0;
         if(data.finCustomCats&&Array.isArray(data.finCustomCats)&&data.finCustomCats.length)finCustomCats=data.finCustomCats;
@@ -11932,7 +11934,7 @@ function openBackupModal(){
 // Cada entrada: [chave no arquivo, getter, setter].
 const BK_FIN=[
   ['finVG',()=>finVG,v=>finVG=v],['finGD',()=>finGD,v=>finGD=v],['finDD',()=>finDD,v=>finDD=v],
-  ['finFD',()=>finFD,v=>finFD=v],['finRG',()=>finRG,v=>finRG=v],['contaSpEmp',()=>contaSpEmp,v=>contaSpEmp=v],
+  ['finFM',()=>finFM,v=>finFM=v],['finRG',()=>finRG,v=>finRG=v],['contaSpEmp',()=>contaSpEmp,v=>contaSpEmp=v],
   ['finCustomCats',()=>finCustomCats,v=>finCustomCats=v],['finContas',()=>finContas,v=>finContas=v],
 ];
 const BK_PESS=[
