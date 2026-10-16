@@ -1837,6 +1837,7 @@ input[type="date"]{cursor:pointer}
         <div class="fin-trow"><span style="color:var(--muted)">Total do mês</span><span id="fin-ftot-all" style="font-weight:700"></span></div>
         <div class="fin-trow" style="border-top:none;padding-top:2px"><span style="color:var(--muted)">Recebido (pagos)</span><span id="fin-ftot-paid" style="font-weight:700;color:var(--success)"></span></div>
         <div class="fin-trow" style="border-top:none;padding-top:2px"><span style="color:var(--muted)">A receber</span><span id="fin-ftot-rest" style="font-weight:700;color:#d97706"></span></div>
+        <div class="fin-trow" style="border-top:none;padding-top:2px"><span style="color:var(--muted)">Custos transporte</span><span id="fin-ftot-custo" style="font-weight:700;color:#dc2626"></span></div>
         <div class="fin-trow" style="border-top:none;padding-top:2px"><span style="color:var(--muted)">Lucro líquido</span><span id="fin-ftot-lucro" style="font-weight:800;color:#9FB5CB"></span></div>
       </div>
     </div>
@@ -1857,7 +1858,7 @@ input[type="date"]{cursor:pointer}
         <div class="fin-hdr"><h3 id="fin-dtitle">—</h3></div>
         <div class="fin-tbl-wrap">
           <table style="width:100%;border-collapse:collapse">
-            <thead><tr><th style="width:20%">Data</th><th style="width:25%">Valor</th><th style="width:43%">Descrição</th><th style="width:12%"></th></tr></thead>
+            <thead><tr><th style="width:6%" title="Pago?">✓</th><th style="width:18%">Data</th><th style="width:24%">Valor</th><th style="width:40%">Descrição</th><th style="width:12%"></th></tr></thead>
             <tbody id="fin-dtb"></tbody>
           </table>
         </div>
@@ -1926,6 +1927,7 @@ input[type="date"]{cursor:pointer}
       <div class="fin-mes-tabs" id="p-fms"></div>
       <div class="fin-card">
         <div class="fin-hdr"><h3 id="p-ftitle">—</h3><span class="fin-sub" id="p-fcount"></span></div>
+        <p style="font-size:11px;color:var(--muted);margin-bottom:12px">As festas aparecem automaticamente quando você move para <strong>Confirmado</strong> no kanban. Clique para abrir o cadastro.</p>
         <div id="p-mes-resumo" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px"></div>
         <div id="p-sp-mes" style="margin-bottom:14px"></div>
         <div class="fin-tbl-wrap">
@@ -1938,6 +1940,7 @@ input[type="date"]{cursor:pointer}
         <div class="fin-trow" style="border-top:none;padding-top:2px"><span style="color:var(--muted)">Recebido (pagos)</span><span id="p-ftot-paid" style="font-weight:700;color:#78350f"></span></div>
         <div class="fin-trow" style="border-top:none;padding-top:2px"><span style="color:var(--muted)">A receber</span><span id="p-ftot-rest" style="font-weight:700;color:#92400e"></span></div>
         <div class="fin-trow" style="border-top:none;padding-top:2px"><span style="color:var(--muted)">Custos transporte</span><span id="p-ftot-lucro" style="font-weight:700;color:#dc2626"></span></div>
+        <div class="fin-trow" style="border-top:none;padding-top:2px"><span style="color:var(--muted)">Lucro líquido</span><span id="p-ftot-lucroliq" style="font-weight:800;color:#9FB5CB"></span></div>
       </div>
       <button class="fin-add-btn" onclick="toggleFinForm('p-ff')">+ Adicionar festa</button>
       <div class="fin-add-form" id="p-ff">
@@ -1971,7 +1974,7 @@ input[type="date"]{cursor:pointer}
         <div class="fin-hdr"><h3 id="p-dtitle">—</h3></div>
         <div class="fin-tbl-wrap">
           <table style="width:100%;border-collapse:collapse">
-            <thead><tr><th style="width:20%">Data</th><th style="width:25%">Valor</th><th style="width:43%">Descrição</th><th style="width:12%"></th></tr></thead>
+            <thead><tr><th style="width:6%" title="Pago?">✓</th><th style="width:18%">Data</th><th style="width:24%">Valor</th><th style="width:40%">Descrição</th><th style="width:12%"></th></tr></thead>
             <tbody id="p-dtb"></tbody>
           </table>
         </div>
@@ -7704,6 +7707,7 @@ function renderFinFestas(){
   document.getElementById('fin-ftot-paid').textContent=totPaid?fmtMoney(totPaid):'';
   document.getElementById('fin-ftot-rest').textContent=totRest?fmtMoney(totRest):'';
   document.getElementById('fin-ftot-lucro').textContent=totAll?fmtMoney(totLucro):'';
+  const _fcEl=document.getElementById('fin-ftot-custo');if(_fcEl)_fcEl.textContent=totCusto?fmtMoney(totCusto):''; // espelho da linha "Custos transporte" do Pessoal
   // Summary cards
   const resumoEl=document.getElementById('fin-mes-resumo');
   if(resumoEl&&festas.length){
@@ -8270,6 +8274,29 @@ function saveInlineCusto(cardId){
   savOp();syncFreelancerToAndre(card);renderFinFestas();renderPessAll();
   toast('✅ Custo de empresa atualizado!','green');
 }
+// Espelho do inlineEditCusto, só que pro lado Pessoal (Financeiro Pessoal >
+// Festas): consolida os gastos "pessoal" da festa num item só.
+function inlineEditCustoPess(cardId){
+  const cell=document.getElementById('p-ccell-'+cardId);if(!cell)return;
+  cell.innerHTML=`<div style="display:flex;gap:5px;align-items:center" onclick="event.stopPropagation()">
+    <input id="iicp-${cardId}" type="number" step="0.01" min="0" placeholder="Custo (R$)"
+      style="width:110px;border:2px solid #dc2626;border-radius:7px;padding:5px 8px;font-size:13px;font-weight:700"
+      onkeydown="if(event.key==='Enter'){event.preventDefault();saveInlineCustoPess('${cardId}')}if(event.key==='Escape'){renderPessEntradas()}"
+      onblur="setTimeout(()=>saveInlineCustoPess('${cardId}'),150)">
+    <button onclick="event.stopPropagation();saveInlineCustoPess('${cardId}')" style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:5px 9px;font-size:12px;font-weight:700;cursor:pointer">✓</button>
+  </div>`;
+  setTimeout(()=>{const inp=document.getElementById('iicp-'+cardId);if(inp)inp.focus();},30);
+}
+function saveInlineCustoPess(cardId){
+  const inp=document.getElementById('iicp-'+cardId);if(!inp)return;
+  const val=Math.max(0,parseFloat(inp.value)||0);
+  const card=opCards.find(c=>c.id===cardId);if(!card)return;
+  if(!card.gastosItens)card.gastosItens=[];
+  card.gastosItens=card.gastosItens.filter(g=>g.tipo!=='pessoal');
+  if(val>0)card.gastosItens.push({id:uid(),desc:'Custos pessoais',val,tipo:'pessoal'});
+  savOp();syncFreelancerToAndre(card);renderPessEntradas();renderPessResumo();renderFinFestas();
+  toast('✅ Custo pessoal atualizado!','green');
+}
 function inlineEditCustoAlbum(cardId,triggerEl){
   const cell=document.getElementById('fin-cacell-'+cardId);if(!cell)return;
   cell.innerHTML=`<div style="display:flex;gap:5px;align-items:center" onclick="event.stopPropagation()">
@@ -8622,12 +8649,13 @@ function renderFinDiarios(){
   const dtEl=document.getElementById('fin-dtitle');if(dtEl)dtEl.textContent=finCurD+' 2026 — gastos diários';
   const D=(finDD[finCurD]||[]).sort((a,b)=>a.dt.localeCompare(b.dt));
   const dtb=document.getElementById('fin-dtb');if(!dtb)return;
-  if(!D.length){dtb.innerHTML=`<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px">Nenhum gasto registrado.</td></tr>`;}
+  if(!D.length){dtb.innerHTML=`<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">Nenhum gasto registrado.</td></tr>`;}
   else dtb.innerHTML=D.map((d,i)=>{
     const autoTag=d._opId?`<span style="font-size:9px;background:#e8d5c0;color:#e0a14e;border-radius:4px;padding:1px 4px;margin-left:4px">auto</span>`:'';
     return`<tr${d._opId?' style="opacity:.85"':''}>
+    <td><input type="checkbox" class="fin-check" ${d.p?'checked':''} onchange="toggleFinDiario('${finCurD}',${i},this.checked)"></td>
     <td style="color:var(--muted)">${d.dt?d.dt.split('-').reverse().join('/'):'—'}</td>
-    <td style="color:var(--danger);font-weight:700;cursor:pointer" onclick="editFinDiarioValor('${finCurD}',${i},this)" title="✏️ Clique para editar">${fmtMoney(d.v)}${autoTag} <span style='font-size:10px;opacity:.4'>✏️</span></td>
+    <td style="color:${d.p?'var(--muted)':'var(--danger)'};font-weight:700;cursor:pointer;${d.p?'text-decoration:line-through;opacity:.5':''}" onclick="editFinDiarioValor('${finCurD}',${i},this)" title="✏️ Clique para editar">${fmtMoney(d.v)}${autoTag} <span style='font-size:10px;opacity:.4'>✏️</span></td>
     <td style="color:var(--muted)">${esc(d.l||'')}</td>
     <td><button class="fin-del" onclick="delFinDiario('${finCurD}',${i})" title="Excluir">×</button></td>
   </tr>`;}).join('');
@@ -8655,6 +8683,18 @@ function saveFinDiarioValor(mes,i,inp){
   saveFinData();renderFinDiarios();renderFinResumo();
   toast('✅ Gasto atualizado!','green');
 }
+// Espelho do togglePessDiario: marcar/desmarcar "pago" devolve ou desconta
+// o valor do banco do mês, igual já acontece no Pessoal.
+function toggleFinDiario(mes,i,val){
+  if(!finDD[mes]||!finDD[mes][i])return;
+  const d=finDD[mes][i];
+  const foiPago=d.p;
+  d.p=val;
+  _initFinVG(mes);
+  if(val&&!foiPago)finVG[mes]=(finVG[mes]||0)-d.v;
+  else if(!val&&foiPago)finVG[mes]=(finVG[mes]||0)+d.v;
+  saveFinData();renderFinDiarios();renderFinResumo();
+}
 function delFinDiario(mes,i){
   if(!finDD[mes])return;
   if(!confirm('Excluir este gasto?'))return;
@@ -8676,7 +8716,7 @@ function saveFinDiario(){
   document.getElementById('fin-d-dt').value='';
   document.getElementById('fin-d-v').value='';
   document.getElementById('fin-d-l').value='';
-  toggleFinForm('fin-df');saveFinData();renderFinDiarios();renderFinResumo();
+  toggleFinForm('fin-df');saveFinData();renderFinDiarios();renderFinResumo();setTimeout(()=>document.getElementById('fin-dtb')?.closest('.fin-card')?.scrollIntoView({behavior:'smooth',block:'nearest'}),80);
 }
 
 function renderFinReserva(){
@@ -9190,6 +9230,16 @@ function renderPessEntradas(){
           title="Clique para editar o valor pago" onclick="event.stopPropagation();inlineEditReservaPess('${op.id}')">${fmtMoney(rest)}</span>`
       :`<span style="color:#E06B5A;font-weight:700">${fmtMoney(rest)}</span>`;
     const realIdx = (pessFD[pessCurF]||[]).indexOf(f);
+    // Espelho do Financeiro Empresa: entrada vinculada a uma festa do kanban
+    // abre a ficha ao clicar na linha e deixa editar o custo (lado Pessoal).
+    const _cardIdPess=f._opFrlId||f._opId||'';
+    const _cardPess=_cardIdPess?opCards.find(o=>o.id===_cardIdPess):null;
+    const custoCellPess=_cardPess
+      ?(gastosPes>0
+        ?`<span style="color:var(--danger);cursor:pointer;text-decoration:underline dotted" title="Clique para editar" onclick="event.stopPropagation();inlineEditCustoPess('${_cardPess.id}')">${fmtMoney(gastosPes)}</span>`
+        :`<span style="color:#6b7280;cursor:pointer;font-size:12px" onclick="event.stopPropagation();inlineEditCustoPess('${_cardPess.id}')">— editar</span>`)
+      :(gastosPes>0?`<span style="color:var(--danger)">${fmtMoney(gastosPes)}</span>`:'—');
+    const statusClickPess=op?`inlineEditReservaPess('${op.id}')`:`quickEditPagPess('${pessCurF}',${realIdx})`;
     const delBtn = (f._opId||f._opFrlId)
       ? `<button class="fin-del" onclick="event.stopPropagation();delPessFesta('${pessCurF}',${realIdx},true)" title="Remover entrada">×</button>`
       : `<button class="fin-del" onclick="event.stopPropagation();delPessFesta('${pessCurF}',${realIdx},false)" title="Excluir">×</button>`;
@@ -9204,15 +9254,15 @@ function renderPessEntradas(){
       ?`<span style="color:var(--muted);font-size:12px">quitado</span>`
       :`<span style="color:#E06B5A;font-weight:700;cursor:pointer;text-decoration:underline dotted" title="Clique para editar" onclick="event.stopPropagation();editPessRest('${pessCurF}',${realIdx},this)">${fmtMoney(rest)}</span>`;
     
-    return`<tr style="cursor:default">
+    return`<tr ${_cardPess?`onclick="openOpModal('${_cardPess.id}',null,event)" style="cursor:pointer"`:'style="cursor:default"'}>
       <td style="font-weight:600">${f.d>0?'Dia '+f.d:''}</td>
       <td><div style="font-weight:600">${esc(f.n)}</div><div style="font-size:11px;color:var(--muted)">${esc(f.t||'')}</div></td>
-      <td>${brutoCell}</td>
+      <td onclick="event.stopPropagation()">${brutoCell}</td>
       <td>${valorCell}</td>
       <td onclick="event.stopPropagation()">${pagoBtnHtml}</td>
       <td onclick="event.stopPropagation()">${restCell2}</td>
-      <td>${gastosPes>0?`<span style="color:var(--danger)">${fmtMoney(gastosPes)}</span>`:'—'}</td>
-      <td><span class="pay-badge ${pc}">${pt}</span></td>
+      <td id="p-ccell-${_cardIdPess}" onclick="event.stopPropagation()">${custoCellPess}</td>
+      <td onclick="event.stopPropagation()"><span class="pay-badge ${pc}" style="cursor:pointer" title="Clique para registrar/editar o valor pago" onclick="event.stopPropagation();${statusClickPess}">${pt}</span></td>
       <td onclick="event.stopPropagation()">${delBtn}</td>
     </tr>`;
   }).join('');
@@ -9232,6 +9282,7 @@ function renderPessEntradas(){
   const paidEl=document.getElementById('p-ftot-paid');if(paidEl)paidEl.textContent=totPaid?fmtMoney(totPaid):'';
   const restEl=document.getElementById('p-ftot-rest');if(restEl)restEl.textContent=totRest?fmtMoney(totRest):'';
   const lucroEl=document.getElementById('p-ftot-lucro');if(lucroEl)lucroEl.textContent=totCusto?fmtMoney(totCusto):'';
+  const lucroLiqEl=document.getElementById('p-ftot-lucroliq');if(lucroLiqEl)lucroLiqEl.textContent=tot?fmtMoney(tot-totCusto):''; // mesma conta do Financeiro Empresa
   const resumoEl=document.getElementById('p-mes-resumo');
   if(resumoEl&&F.length){
     const pcards=[
@@ -9465,7 +9516,7 @@ function renderPessDiarios(){
   const el=document.getElementById('p-dtitle');if(el)el.textContent=pessCurD+' 2026 — gastos diários';
   const D=(pessDD[pessCurD]||[]).sort((a,b)=>a.dt.localeCompare(b.dt));
   const tb=document.getElementById('p-dtb');if(!tb)return;
-  if(!D.length){tb.innerHTML=`<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px">Nenhum gasto registrado.</td></tr>`;}
+  if(!D.length){tb.innerHTML=`<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">Nenhum gasto registrado.</td></tr>`;}
   else tb.innerHTML=D.map((d,i)=>{
     const autoTag=d._opId?`<span style="font-size:9px;background:#e8d5c0;color:#e0a14e;border-radius:4px;padding:1px 4px;margin-left:4px">auto</span>`:'';
     return`<tr${d._opId?' style="opacity:.85"':''}>
