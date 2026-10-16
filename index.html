@@ -7795,7 +7795,7 @@ function _andreLiqDaFesta(card){
 function _pessoalPagoDaFesta(card){
   const mes=_getMesFin(card.dataEvento);if(!mes)return 0;
   const entrada=(pessFD[mes]||[]).find(e=>e._opFrlId===card.id||e._opId===card.id);
-  return entrada?.pago||0;
+  return +(entrada?.pago)||0; // sempre número — valor salvo como texto virava concatenação na soma
 }
 // Pago / Falta / Quitado de uma festa PELA ÓTICA DA CLIENTE, pros cards:
 // Total = "Valor deste trabalho" (bruto, sempre). Pago = soma do que foi
@@ -7805,11 +7805,18 @@ function _pessoalPagoDaFesta(card){
 // gastos pra sempre. Freela contratada: Pago = o que a cliente pagou
 // (status "pago" = tudo); a parte do André é tratada à parte.
 function _pagamentoDaFesta(card,forceFrl){
-  const total=card.valorTotal||0;
+  const total=+(card.valorTotal)||0;
   const isFrl=forceFrl||((card.tipoExecucao==='freelancer'||!!card.freelancerId)&&card.tipoExecucao!=='sou-freela');
-  const empPago=card.valorReserva||0;
+  const empPago=+(card.valorReserva)||0;
   let pago,quitado;
-  if(isFrl){
+  // PIX em 2x: as parcelas são a fonte da verdade do que a cliente pagou
+  // (mesma regra do status na ficha: 1/2 recebidas = sinal). Os campos
+  // Empresa/André ficam escondidos nesse modo, então não entram na conta.
+  if(_migraFormaPag(card.formaPag||'avista')==='pix-2x'&&Array.isArray(card.parcelasItens)&&card.parcelasItens.length){
+    const rec=card.parcelasItens.filter(p=>p.recebido);
+    quitado=total>0&&rec.length===card.parcelasItens.length;
+    pago=quitado?total:Math.min(total,rec.reduce((s,p)=>s+(+(p.valor)||0),0));
+  }else if(isFrl){
     pago=card.statusPag==='pago'?total:Math.min(total,empPago);
     quitado=total>0&&pago>=total;
   }else{
