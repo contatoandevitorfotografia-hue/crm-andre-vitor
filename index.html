@@ -5732,7 +5732,10 @@ function autoStatusPag(){
   // reabrir a ficha) e sobrescrevia silenciosamente "Pago Total" pra
   // "Sinal" assim que os campos (vazios/zerados nesse modo) eram lidos.
   // "PIX em 2x" tem a lógica própria baseada em parcelas, logo abaixo.
-  if(forma==='cartao'){
+  // Freela (contratada ou "sou freela"): a Empresa não recebe nada, então
+  // derivar o status do campo Empresa forçava "Pendente" pra sempre —
+  // nesses casos o dropdown fica manual, como no À Vista.
+  if(forma==='cartao'&&(document.getElementById('f-execucao')?.value||'proprio')==='proprio'){
     const empShare=parseFloat(document.getElementById('f-valorEmpresa')?.value)||0;
     const andShare=parseFloat(document.getElementById('f-valorAndre')?.value)||0;
     const gastosEmp=gastosItensTemp.filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
@@ -5778,6 +5781,7 @@ function autoStatusPag(){
     const tot=parcelasItensTemp.length;
     if(rec===tot&&sel)sel.value='pago';
     else if(rec>0&&sel)sel.value='sinal';
+    else if(sel)sel.value='pendente'; // mesma regra do _resyncPix2xValorPago no carregamento
   }
 }
 // Em "À Vista" o dropdown "Status do Pagamento" é a ÚNICA coisa que ela
@@ -5786,12 +5790,21 @@ function autoStatusPag(){
 // e o pago do André no Financeiro Pessoal). Sem isso, escolher "Pago
 // Total" só mudava o rótulo, sem nunca atualizar os valores de verdade —
 // por isso o card continuava mostrando falta. Aqui sincroniza os dois.
+// O dropdown "Status do Pagamento" funciona como atalho em todos os modos:
+// "Pago Total" grava a verdade por baixo (campos / parcelas), senão o
+// próximo recálculo desfaz a escolha. "Sinal" não mexe em nada — não dá
+// pra adivinhar o valor parcial.
 function onStatusPagManualChange(){
   const forma=document.getElementById('f-formaPag')?.value||'avista';
-  if(forma!=='avista')return;
   const status=document.getElementById('f-statusPag')?.value;
-  if(status!=='pago'&&status!=='pendente')return; // "Sinal" não dá pra adivinhar o valor parcial
-  _preencheValoresAvistaPeloStatus(status);
+  if(status!=='pago'&&status!=='pendente')return;
+  if(forma==='pix-2x'){
+    parcelasItensTemp.forEach(p=>{p.recebido=status==='pago';});
+    renderParcelasItens();recalcFromParcelas();updateParcelasResumo();
+    return;
+  }
+  _preencheValoresAvistaPeloStatus(status); // À Vista e Cartão (festa própria)
+  if(forma==='cartao')calcDistribuicao();
 }
 // Chamada também no saveOpCard(): se a ficha já ABRE em "Pago Total" (card
 // salvo antes), o onchange nunca dispara — e sem isso os valores antigos
@@ -5868,8 +5881,20 @@ function copyClientMsg(){
   const _pacSelIds=getSelectedPacIds();
   const _pacSelList=_pacSelIds.map(id=>packages.find(p=>p.id===id)).filter(Boolean);
   const pacNome=_pacSelList.map(p=>p.nome).join(' + ')||document.getElementById('f-pacoteCustom')?.value||'';
-  const statusTxt=statusPag==='pago'?'✅ Quitado':statusPag==='sinal'?'💰 Sinal recebido':'⏳ Pendente';
-  const falta=statusPag==='pago'?0:Math.max(0,total-reserva);
+  // Mesma conta dos cards (_pagamentoDaFesta), montada a partir da ficha
+  // aberta — antes usava só o lado da Empresa e mandava "falta pagar" errado
+  // pra cliente em festa já quitada.
+  const _pgMsg=_pagamentoDaFesta({
+    id:editingOpId||'__ficha__',valorTotal:parseFloat(document.getElementById('f-valorPlano')?.value)||total,
+    valorReserva:reserva,statusPag,tipoExecucao:document.getElementById('f-execucao')?.value||'proprio',
+    pacoteIds:_pacSelIds,valorCoresJob:0,gastosItens:gastosItensTemp,
+    freelancerId:document.getElementById('f-freelancerId')?.value||'',
+    valorFreelancer:parseFloat(document.getElementById('f-valorFreelancer')?.value)||0,
+    formaPag:document.getElementById('f-formaPag')?.value||'avista',parcelasItens:parcelasItensTemp,
+  },false,parseFloat(document.getElementById('f-valorAndrePago')?.value)||0);
+  const recebidoMsg=_pgMsg.pago;
+  const statusTxt=_pgMsg.quitado?'✅ Quitado':recebidoMsg>0?'💰 Sinal recebido':'⏳ Pendente';
+  const falta=_pgMsg.falta;
   const dataFmt=data?fmtDate(data):'';
   let lines=[];
   if(nome)lines.push(`👤 *${nome}*`);
@@ -5883,7 +5908,7 @@ function copyClientMsg(){
   if(pacNome)lines.push(`📦 ${pacNome}`);
   lines.push('');
   if(total>0)lines.push(`💰 Valor total: *${fmtMoney(total)}*`);
-  if(reserva>0)lines.push(`✅ Recebido: ${fmtMoney(reserva)}`);
+  if(recebidoMsg>0)lines.push(`✅ Recebido: ${fmtMoney(recebidoMsg)}`);
   if(falta>0)lines.push(`⏳ Falta pagar: *${fmtMoney(falta)}*`);
   lines.push(`📊 Status: ${statusTxt}`);
   const msg=lines.filter((_,i)=>!(lines[i]===''&&lines[i-1]==='')).join('\n');
@@ -7793,6 +7818,7 @@ function _andreLiqDaFesta(card){
 // Financeiro Empresa (Resumo, Fluxo de Caixa etc.), que continuam usando
 // só valorReserva/statusPag, exatamente como sempre.
 function _pessoalPagoDaFesta(card){
+  if(!card?.id)return 0; // sem id, o find abaixo casaria com qualquer entrada manual (undefined===undefined)
   const mes=_getMesFin(card.dataEvento);if(!mes)return 0;
   const entrada=(pessFD[mes]||[]).find(e=>e._opFrlId===card.id||e._opId===card.id);
   return +(entrada?.pago)||0; // sempre número — valor salvo como texto virava concatenação na soma
@@ -7804,7 +7830,7 @@ function _pessoalPagoDaFesta(card){
 // tudo pago — senão o card ficaria "faltando" exatamente o valor dos
 // gastos pra sempre. Freela contratada: Pago = o que a cliente pagou
 // (status "pago" = tudo); a parte do André é tratada à parte.
-function _pagamentoDaFesta(card,forceFrl){
+function _pagamentoDaFesta(card,forceFrl,andPagoOverride){
   const total=+(card.valorTotal)||0;
   const isFrl=forceFrl||((card.tipoExecucao==='freelancer'||!!card.freelancerId)&&card.tipoExecucao!=='sou-freela');
   const empPago=+(card.valorReserva)||0;
@@ -7820,7 +7846,8 @@ function _pagamentoDaFesta(card,forceFrl){
     pago=card.statusPag==='pago'?total:Math.min(total,empPago);
     quitado=total>0&&pago>=total;
   }else{
-    const empLiq=_empLiqDaFesta(card),andLiq=_andreLiqDaFesta(card),andPago=_pessoalPagoDaFesta(card);
+    const empLiq=_empLiqDaFesta(card),andLiq=_andreLiqDaFesta(card);
+    const andPago=andPagoOverride!==undefined?(+andPagoOverride||0):_pessoalPagoDaFesta(card);
     quitado=(empLiq+andLiq)>0&&empPago>=empLiq-0.009&&andPago>=andLiq-0.009;
     pago=quitado?total:Math.min(total,empPago+andPago);
   }
