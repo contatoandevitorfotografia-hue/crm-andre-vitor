@@ -8804,8 +8804,8 @@ function toggleFinDiario(mes,i,val){
   const foiPago=d.p;
   d.p=val;
   _initFinVG(mes);
-  if(val&&!foiPago)finVG[mes]=(finVG[mes]||0)-d.v;
-  else if(!val&&foiPago)finVG[mes]=(finVG[mes]||0)+d.v;
+  if(val&&!foiPago)finVG[mes]=(+finVG[mes]||0)-(+d.v||0);
+  else if(!val&&foiPago)finVG[mes]=(+finVG[mes]||0)+(+d.v||0);
   saveFinData();renderFinDiarios();renderFinResumo();
 }
 function delFinDiario(mes,i){
@@ -9027,6 +9027,7 @@ function initFinFirebase(){
       _limparLancContasJulAgoSet2026();
       _corrigeAline27Set2026();
       _zerarTransporteNov2026();
+      _normalizaNumerosFin();
       _resyncPix2xValorPago();
       _resyncAvistaPagoTotal();
       _finReady=true;
@@ -9064,7 +9065,7 @@ function initFinFirebase(){
       }
       const _fresh=Date.now()-_dadosSaveTs>2000;
       if(!_fresh)return; // dados que acabamos de salvar — ignora
-      if(data.op&&Array.isArray(data.op)){opCards=data.op;_backfillGastoAlbumTipoErrado();localStorage.setItem('crm_op_v4',JSON.stringify(opCards));}
+      if(data.op&&Array.isArray(data.op)){opCards=data.op;_normalizaNumerosOp();_backfillGastoAlbumTipoErrado();localStorage.setItem('crm_op_v4',JSON.stringify(opCards));}
       if(data.pr&&Array.isArray(data.pr)){prCards=data.pr;_backfillCoresRuidoFinalizados();localStorage.setItem('crm_pr_v4',JSON.stringify(prCards));}
       if(data.pac&&Array.isArray(data.pac)){packages=data.pac;localStorage.setItem('crm_pac_v4',JSON.stringify(packages));}
       if(data.cl&&Array.isArray(data.cl)){clients=data.cl;localStorage.setItem('crm_cl_v4',JSON.stringify(clients));}
@@ -9093,6 +9094,7 @@ function initFinFirebase(){
     _limparLancContasJulAgoSet2026();
     _corrigeAline27Set2026();
     _zerarTransporteNov2026();
+    _normalizaNumerosFin();
     _resyncPix2xValorPago();
     _resyncAvistaPagoTotal();
     _finReady=true;
@@ -9674,8 +9676,8 @@ function togglePessDiario(mes,i,val){
   const foiPago=d.p;
   d.p=val;
   _initPessVG(mes);
-  if(val&&!foiPago) pessVG[mes]=(pessVG[mes]||0)-d.v;
-  else if(!val&&foiPago) pessVG[mes]=(pessVG[mes]||0)+d.v;
+  if(val&&!foiPago) pessVG[mes]=(+pessVG[mes]||0)-(+d.v||0);
+  else if(!val&&foiPago) pessVG[mes]=(+pessVG[mes]||0)+(+d.v||0);
   savePessData();renderPessDiarios();renderPessResumo();
 }
 function delPessDiario(mes,i){if(!pessDD[mes])return;if(!confirm('Excluir?'))return;const _d=pessDD[mes][i];if(_d&&_d.p){_initPessVG(mes);pessVG[mes]=(pessVG[mes]||0)+_d.v;}pessDD[mes].splice(i,1);savePessData();renderPessDiarios();renderPessResumo();}
@@ -11306,6 +11308,7 @@ function initPessFirebase(){
       }
       _limparPessJulAgoSet2026();
       _pessReady=true;
+      _normalizaNumerosPess();
       _resyncAvistaPagoTotal(); // lado do André precisa do pessFD já carregado
       syncAllDistrib();
       if(currentTab==='financeiro')renderPessAll();
@@ -11313,7 +11316,7 @@ function initPessFirebase(){
     });
   }catch(e){
     console.warn('Firebase pessoais não conectado:',e.message);
-    loadPessLocal();_limparPessJulAgoSet2026();_pessReady=true;_resyncAvistaPagoTotal();syncAllDistrib();syncAllFreelancersToAndre();_tryVerificarContasHoje();
+    loadPessLocal();_limparPessJulAgoSet2026();_pessReady=true;_normalizaNumerosPess();_resyncAvistaPagoTotal();syncAllDistrib();syncAllFreelancersToAndre();_tryVerificarContasHoje();
   }
 }
 // ── LEADS DA LANDPAGE (Firebase leads26) ──
@@ -12390,6 +12393,35 @@ function _zerarTransporteNov2026(){
 // empresa — senão uma festa com só a 1ª parcela recebida podia pular
 // direto pra "Quitado" (se o líquido da empresa for menor que a parcela),
 // o que destoaria do "1/2 recebidas" que a ficha mostra.
+// Número gravado como texto (ex.: "36.69", "36,69") vira concatenação em
+// qualquer soma do Valor no Banco (7888 + "36.69" = "788836.69"). Converte
+// SÓ o tipo, nunca o valor; o que não for numérico fica como está.
+function _toNum(v){
+  if(typeof v==='number')return v;
+  if(typeof v!=='string')return v;
+  const s=v.trim();if(!s)return v;
+  let n=Number(s);
+  if(!Number.isFinite(n))n=Number(s.replace(/\./g,'').replace(',','.'));
+  return Number.isFinite(n)?n:v;
+}
+function _normalizaNumerosOp(){
+  (opCards||[]).forEach(c=>{
+    ['valorTotal','valorReserva','valorRestante','valorEmpresa','valorAndre','valorFreelancer','gastos'].forEach(k=>{if(c[k]!==undefined)c[k]=_toNum(c[k]);});
+    (c.gastosItens||[]).forEach(g=>{g.val=_toNum(g.val);});
+    (c.parcelasItens||[]).forEach(p=>{p.valor=_toNum(p.valor);});
+  });
+}
+function _normalizaNumerosFin(){
+  _normalizaNumerosOp();
+  Object.keys(finVG||{}).forEach(m=>{finVG[m]=_toNum(finVG[m]);});
+  [finDD,finGD].forEach(store=>Object.values(store||{}).forEach(arr=>{if(Array.isArray(arr))arr.forEach(e=>{e.v=_toNum(e.v);});}));
+  Object.values(finFM||{}).forEach(arr=>{if(Array.isArray(arr))arr.forEach(e=>{e.v=_toNum(e.v);e.pago=_toNum(e.pago);});});
+}
+function _normalizaNumerosPess(){
+  Object.keys(pessVG||{}).forEach(m=>{pessVG[m]=_toNum(pessVG[m]);});
+  [pessDD,pessGD].forEach(store=>Object.values(store||{}).forEach(arr=>{if(Array.isArray(arr))arr.forEach(e=>{e.v=_toNum(e.v);});}));
+  Object.values(pessFD||{}).forEach(arr=>{if(Array.isArray(arr))arr.forEach(e=>{e.v=_toNum(e.v);if(e.pago!==undefined)e.pago=_toNum(e.pago);});});
+}
 function _resyncPix2xValorPago(){
   let changed=false;
   opCards.forEach(c=>{
