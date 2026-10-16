@@ -5763,6 +5763,12 @@ function onStatusPagManualChange(){
   if(forma!=='avista')return;
   const status=document.getElementById('f-statusPag')?.value;
   if(status!=='pago'&&status!=='pendente')return; // "Sinal" não dá pra adivinhar o valor parcial
+  _preencheValoresAvistaPeloStatus(status);
+}
+// Chamada também no saveOpCard(): se a ficha já ABRE em "Pago Total" (card
+// salvo antes), o onchange nunca dispara — e sem isso os valores antigos
+// (parciais) continuavam lá, com o card mostrando "Falta" mesmo quitado.
+function _preencheValoresAvistaPeloStatus(status){
   const _pseudoCard={
     valorTotal:parseFloat(document.getElementById('f-valorPlano')?.value)||parseFloat(document.getElementById('f-valorTotal')?.value)||0,
     tipoExecucao:document.getElementById('f-execucao')?.value||'proprio',
@@ -5870,6 +5876,9 @@ function saveOpCard(){
     document.getElementById('sec-gastos-box')?.scrollIntoView({behavior:'smooth',block:'center'});
     return;
   }
+  // À Vista + "Pago Total" = os dois lados recebidos por inteiro. Garante os
+  // valores no save mesmo que ela não tenha mexido no dropdown nesta sessão.
+  if((document.getElementById('f-formaPag')?.value||'avista')==='avista'&&document.getElementById('f-statusPag')?.value==='pago')_preencheValoresAvistaPeloStatus('pago');
   const oldCard=editingOpId?opCards.find(c=>c.id===editingOpId):null;
   const oldCol=oldCard?.coluna;
   const data={id:editingOpId||uid(),coluna:newCol,somenteProjeto:oldCard?.somenteProjeto||opFromProj||false,titulo:document.getElementById('f-titulo').value.trim(),nomePais,telefone:document.getElementById('f-tel').value.trim(),nomeCrianca:document.getElementById('f-nomeCrianca').value.trim(),idade:document.getElementById('f-idade').value.trim(),nomeCrianca2:document.getElementById('f-nomeCrianca2').value.trim(),idade2:document.getElementById('f-idade2').value.trim(),dataEvento:document.getElementById('f-data').value,horario:document.getElementById('f-horario').value,horarioFim:document.getElementById('f-horarioFim').value,local:document.getElementById('f-local').value.trim(),tipo:document.getElementById('f-tipo').value,pacoteId:(getSelectedPacIds()[0]||''),pacoteIds:getSelectedPacIds(),pacoteCustom:document.getElementById('f-pacoteCustom').value.trim(),tipoExecucao:document.getElementById('f-execucao').value||'proprio',freelancerId:document.getElementById('f-freelancerId').value||'',parceiroId:(document.getElementById('f-execucao').value==='sou-freela'?document.getElementById('f-op-parceiroId')?.value||'':''),filmmakerNome:(()=>{const s=document.getElementById('f-filmakerId');if(!s)return '';const v=s.value||'';if(v==='__outro__'){return (document.getElementById('f-filmakerCustom')?.value||'').trim();}return v;})(),filmmakerCusto:(()=>{const _fids=getSelectedPacIds();const fNome=document.getElementById('f-filmakerId')?.value||'';const allFmOpts=_fids.flatMap(id=>{const p=packages.find(pk=>pk.id===id);return p?.filmmakerOptions||[];});const opt=allFmOpts.find(f=>f.nome===fNome);return opt?opt.valor:0;})(),valorEmpresa:parseFloat(document.getElementById('f-valorEmpresa')?.value)||0,valorAndre:parseFloat(document.getElementById('f-valorAndre')?.value)||0,valorFreelancer:parseFloat(document.getElementById('f-valorFreelancer')?.value)||0,valorTotal:(parseFloat(document.getElementById('f-valorEmpresa')?.value)||0)+(parseFloat(document.getElementById('f-valorAndre')?.value)||0),valorCoresJob:0,valorReserva:parseFloat(document.getElementById('f-valorReserva').value)||0,dataReserva:document.getElementById('f-dataReserva').value,valorRestante:parseFloat(document.getElementById('f-valorRestante').value)||0,dataRestante:document.getElementById('f-dataRestante').value,statusPag:document.getElementById('f-statusPag').value,gastos:gastosItensTemp.reduce((s,g)=>s+(g.val||0),0),gastosItens:[...gastosItensTemp],formaPag:document.getElementById('f-formaPag').value,avistaDesconto:document.getElementById('f-avistaDesconto')?.checked||false,nParcelas:parseInt(document.getElementById('f-nParcelas').value)||1,parcelasItens:[...parcelasItensTemp],galeria:document.getElementById('f-galeria').value.trim(),galeriaClienteId:document.getElementById('f-galeriaClienteId')?.value.trim()||'',obs:oldCard?.obs||'',motivo:document.getElementById('f-motivo').value,detalhe:document.getElementById('f-detalhe').value.trim(),pendObs:document.getElementById('f-pend-obs')?.value.trim()||'',pendencias:[...pendenciasTemp],pagoEmpresa:document.getElementById('f-pagoEmpresa')?.checked||false,pagoAndre:document.getElementById('f-pagoAndre')?.checked||false,followupDate:document.getElementById('f-followup').value||'',albumGuardado:_albumGuardado,contrato:oldCard?.contrato||null,criadoEm:oldCard?.criadoEm||Date.now(),updatedAt:Date.now()};
@@ -8747,6 +8756,7 @@ function initFinFirebase(){
       _corrigeAline27Set2026();
       _zerarTransporteNov2026();
       _resyncPix2xValorPago();
+      _resyncAvistaPagoTotal();
       _finReady=true;
       setSyncFinStatus('saved');
       if(currentTab==='financeiro')renderFin();
@@ -8812,6 +8822,7 @@ function initFinFirebase(){
     _corrigeAline27Set2026();
     _zerarTransporteNov2026();
     _resyncPix2xValorPago();
+    _resyncAvistaPagoTotal();
     _finReady=true;
     _tryVerificarContasHoje();
   }
@@ -11000,13 +11011,14 @@ function initPessFirebase(){
       }
       _limparPessJulAgoSet2026();
       _pessReady=true;
+      _resyncAvistaPagoTotal(); // lado do André precisa do pessFD já carregado
       syncAllDistrib();
       if(currentTab==='financeiro')renderPessAll();
       _tryVerificarContasHoje();
     });
   }catch(e){
     console.warn('Firebase pessoais não conectado:',e.message);
-    loadPessLocal();_limparPessJulAgoSet2026();_pessReady=true;syncAllDistrib();syncAllFreelancersToAndre();_tryVerificarContasHoje();
+    loadPessLocal();_limparPessJulAgoSet2026();_pessReady=true;_resyncAvistaPagoTotal();syncAllDistrib();syncAllFreelancersToAndre();_tryVerificarContasHoje();
   }
 }
 // ── LEADS DA LANDPAGE (Firebase leads26) ──
@@ -12102,6 +12114,42 @@ function _resyncPix2xValorPago(){
     changed=true;
   });
   if(changed)savOp();
+}
+// À Vista + "Pago Total" = cliente pagou tudo de uma vez. Nesse modo o
+// dropdown é a única coisa que ela marca (os campos Empresa/André ficam
+// escondidos), mas quem alimenta o "Pago"/"Falta" dos cards e os dois
+// Financeiros são justamente esses valores. Roda a cada carregamento
+// (idempotente) pra consertar sozinho cards antigos que ficaram com status
+// "pago" mas valores parciais por baixo. Só festa própria — freela tem
+// regras próprias e a Empresa não recebe nada nelas.
+function _resyncAvistaPagoTotal(){
+  let changedOp=false,changedPess=false;
+  opCards.forEach(c=>{
+    if(_migraFormaPag(c.formaPag||'avista')!=='avista'||c.statusPag!=='pago')return;
+    if(!FIN_COLS.includes(c.coluna)||(c.tipoExecucao||'proprio')!=='proprio'||!((c.valorTotal||0)>0))return;
+    const empLiq=parseFloat(_empLiqDaFesta(c).toFixed(2));
+    if(Math.abs((c.valorReserva||0)-empLiq)>0.009){
+      const _va=c.valorReserva||0;
+      _ajustaVGReservaSimples(c,empLiq);
+      c.valorReserva=empLiq;c.valorRestante=0;
+      _stamparDatasPagamento(c,_va,'pago');
+      c.updatedAt=Date.now();
+      changedOp=true;
+    }
+    const mes=_getMesFin(c.dataEvento);
+    const entrada=mes?(pessFD[mes]||[]).find(e=>e._opFrlId===c.id||e._opId===c.id):null;
+    if(entrada){
+      const andLiq=parseFloat(_andreLiqDaFesta(c).toFixed(2));
+      if(Math.abs((entrada.pago||0)-andLiq)>0.009){
+        _initPessVG(mes);
+        pessVG[mes]=(pessVG[mes]||0)+(andLiq-(entrada.pago||0));
+        entrada.pago=andLiq;
+        changedPess=true;
+      }
+    }
+  });
+  if(changedOp){saveFinData();savOp();}
+  if(changedPess)savePessData();
 }
 setTimeout(checkBackupReminder, 2000);
 
