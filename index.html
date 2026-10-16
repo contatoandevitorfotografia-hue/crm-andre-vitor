@@ -3979,8 +3979,11 @@ function opCardHTML(c,cc){
   // planos com álbum físico inclui dinheiro que não é líquido de ninguém.
   // André pode ter pago registrado separado, no Financeiro Pessoal.
   const _pessPago=_pessoalPagoDaFesta(c);
-  const _devidoComb=_empLiqDaFesta(c)+_andreLiqDaFesta(c);
-  const _recebidoComb=(c.valorReserva||0)+_pessPago;
+  // Freela contratada: o card vale o plano inteiro e "pago" é o que a
+  // cliente pagou — a parte do André é controlada à parte (check na ficha).
+  const _isFrlOp=(c.tipoExecucao==='freelancer'||!!c.freelancerId)&&c.tipoExecucao!=='sou-freela';
+  const _devidoComb=_isFrlOp?(c.valorTotal||0):_empLiqDaFesta(c)+_andreLiqDaFesta(c);
+  const _recebidoComb=_isFrlOp?(c.statusPag==='pago'?(c.valorTotal||0):(c.valorReserva||0)):(c.valorReserva||0)+_pessPago;
   let tagCls='tag-pendente',tagTxt=`⏳ ${fmtMoney(_recebidoComb)} de ${fmtMoney(_devidoComb)}`;
   if(_devidoComb>0&&_recebidoComb>=_devidoComb){tagCls='tag-pago';tagTxt=`✅ ${fmtMoney(_recebidoComb)} de ${fmtMoney(_devidoComb)}`;}
   else if(_recebidoComb>0){tagCls='tag-sinal';tagTxt=`💰 ${fmtMoney(_recebidoComb)} de ${fmtMoney(_devidoComb)}`;}
@@ -4154,9 +4157,16 @@ function prCardHTML(c,cc){
   // cada lado (_empLiqDaFesta/_andreLiqDaFesta), não o valor BRUTO do
   // pacote — planos com álbum físico (Memórias) têm parte do valor bruto
   // que não é líquido de ninguém, é custo repassado pro álbum.
-  const totalLiq=_empLiqDaFesta(src||c)+_andreLiqDaFesta(src||c);
-  const pagoTotal=reserva+_pessoalPagoDaFesta(src||c);
+  // Freela contratada: o projeto vale o plano inteiro (a cliente paga o
+  // bruto); a parte do André (plano − cachê) é detalhe interno, mostrada
+  // num selo à parte. Pago = o que a cliente já pagou (status "pago" =
+  // tudo; senão o que estiver registrado/parcelas recebidas).
+  const _isFrlCard=freelaTipo==='contratei';
+  const totalLiq=_isFrlCard?valor:_empLiqDaFesta(src||c)+_andreLiqDaFesta(src||c);
+  const pagoTotal=_isFrlCard?(statusPag==='pago'?valor:reserva):reserva+_pessoalPagoDaFesta(src||c);
   const faltaTotal=Math.max(0,totalLiq-pagoTotal);
+  const _andLiqFr=_isFrlCard?_andreLiqDaFesta(src||c):0;
+  const _andRecebeuFr=_isFrlCard&&_andLiqFr>0&&_pessoalPagoDaFesta(src||c)>=_andLiqFr-0.009;
   let pagCls='pag-pendente';
   if(totalLiq>0&&pagoTotal>=totalLiq)pagCls='pag-pago';
   else if(pagoTotal>0)pagCls='pag-sinal';
@@ -4184,6 +4194,7 @@ function prCardHTML(c,cc){
       <span class="pc-pill valor">💼 Total: ${fmtMoney(totalLiq)}</span>
       <span class="pc-pill ${pagCls}">💰 Pago: ${fmtMoney(pagoTotal)}</span>
       ${faltaTotal>0?`<span class="pc-pill pag-pendente">⏳ Falta: ${fmtMoney(faltaTotal)}</span>`:pagCls==='pag-pago'?`<span class="pc-pill pag-pago">✅ Quitado</span>`:''}
+      ${_andLiqFr>0?(_andRecebeuFr?`<span class="pc-pill pag-pago">👤 André: ✅ recebeu ${fmtMoney(_andLiqFr)}</span>`:`<span class="pc-pill pag-sinal">👤 André: ⏳ a receber ${fmtMoney(_andLiqFr)}</span>`):''}
     </div>`:''}
     ${c.pendenciaDesc?`<div style="font-size:11px;font-weight:700;color:#d6b16a;margin-top:5px;line-height:1.4">🧩 ${esc(c.pendenciaDesc.slice(0,60))}${c.pendenciaDesc.length>60?'…':''}</div>`:''}
     ${c.obs?`<div style="font-size:11px;color:${planoDeepActive?_pi.deepText:'var(--muted)'};${planoDeepActive?'opacity:.82;':''}margin-top:5px;line-height:1.4">${esc(c.obs.slice(0,60))}${c.obs.length>60?'…':''}</div>`:''}
