@@ -5572,8 +5572,13 @@ function syncFreelancerToAndre(card){
   // senão, todo save do card (até edições sem relação com pagamento) reseta
   // o "pago" que já tinha sido registrado no Financeiro Pessoal pra essa festa.
   if(!pessFD[mes])pessFD[mes]=[];
-  const _pagoAntigo=pessFD[mes].find(e=>e._opFrlId===card.id)?.pago||0;
-  pessFD[mes]=pessFD[mes].filter(e=>e._opFrlId!==card.id);
+  // Vínculo legado (_opId, do sync antigo "Fotografia (auto)") conta como a
+  // mesma festa: migra pro vínculo atual (_opFrlId) preservando o maior
+  // "pago" já registrado — senão ficava uma entrada velha + uma duplicada
+  // nova com pago 0, e o valor digitado ia pra uma e a tabela mostrava a outra.
+  const _antigas=pessFD[mes].filter(e=>e._opFrlId===card.id||e._opId===card.id);
+  const _pagoAntigo=_antigas.reduce((m,e)=>Math.max(m,+(e.pago)||0),0);
+  pessFD[mes]=pessFD[mes].filter(e=>e._opFrlId!==card.id&&e._opId!==card.id);
 
   // Calcula o que André recebe
   let vAndre=0;
@@ -9322,7 +9327,7 @@ function renderPessEntradas(){
   const tb=document.getElementById('p-ftb');if(!tb)return;
   if(!F.length){tb.innerHTML=`<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">Nenhuma entrada neste mês.</td></tr>`;}
   else tb.innerHTML=F.map((f,i)=>{
-    const op=f._opId?opCardsPess.find(o=>o.id===f._opId):null;
+    const op=null; // opCardsPess é legado e nunca é populado — o "pago" vem sempre de f.pago (vínculo via quickEditPagPess)
     const gastosPes=_pessGastosDaFesta(f);
     const _vPagoPess=op?(op.valorReserva??0):(f.pago||0);
     const _andShare=f.v;
@@ -11258,15 +11263,27 @@ function initPessFirebase(){
           const MESES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
           MESES.forEach(mes=>{
             if(!pessFD[mes]||!pessFD[mes].length)return;
-            const auto=pessFD[mes].filter(e=>!!e._opId);
-            const manual=pessFD[mes].filter(e=>!e._opId);
-            if(!auto.length)return; // sem auto, mantém tudo
-            const autoNomes=new Set(auto.map(e=>(e.n||'').toLowerCase().split(/[\s(]/)[0]));
-            const limpo=manual.filter(e=>{
-              const fn=(e.n||'').toLowerCase().split(/[\s(]/)[0];
-              return !autoNomes.has(fn);
+            // 1) Mesma festa com entrada legada (_opId) + atual (_opFrlId):
+            //    funde numa só (a atual), ficando com o maior "pago".
+            const porCard={};
+            pessFD[mes].forEach(e=>{const id=e._opFrlId||e._opId;if(id)(porCard[id]=porCard[id]||[]).push(e);});
+            const descartar=new Set();
+            Object.values(porCard).forEach(list=>{
+              if(list.length<2)return;
+              const atual=list.find(e=>e._opFrlId)||list[0];
+              atual.pago=list.reduce((m,e)=>Math.max(m,+(e.pago)||0),0);
+              list.forEach(e=>{if(e!==atual)descartar.add(e);});
             });
-            pessFD[mes]=[...auto,...limpo];
+            if(descartar.size)pessFD[mes]=pessFD[mes].filter(e=>!descartar.has(e));
+            // 2) Entrada vinculada a card (qualquer vínculo) nunca é apagada
+            //    por coincidência de nome — isso apagava a entrada certa e
+            //    deixava a legada. Só lançamento manual duplicado sai.
+            const vinculadas=pessFD[mes].filter(e=>!!(e._opId||e._opFrlId));
+            const manuais=pessFD[mes].filter(e=>!(e._opId||e._opFrlId));
+            if(!vinculadas.length)return;
+            const nomesVinc=new Set(vinculadas.map(e=>(e.n||'').toLowerCase().split(/[\s(]/)[0]));
+            const limpo=manuais.filter(e=>!nomesVinc.has((e.n||'').toLowerCase().split(/[\s(]/)[0]));
+            pessFD[mes]=[...vinculadas,...limpo];
           });
         })();
         if(data.ap)pessAP=data.ap;
