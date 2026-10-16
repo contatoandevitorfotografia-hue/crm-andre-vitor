@@ -4179,7 +4179,7 @@ function prCardHTML(c,cc){
     ${valor?`<div class="pc-pills">
       <span class="pc-pill valor">💼 Total: ${fmtMoney(totalLiq)}</span>
       <span class="pc-pill ${pagCls}">💰 Pago: ${fmtMoney(pagoTotal)}</span>
-      ${faltaTotal>0?`<span class="pc-pill pag-pendente">⏳ Falta: ${fmtMoney(faltaTotal)}</span>`:''}
+      ${faltaTotal>0?`<span class="pc-pill pag-pendente">⏳ Falta: ${fmtMoney(faltaTotal)}</span>`:pagCls==='pag-pago'?`<span class="pc-pill pag-pago">✅ Quitado</span>`:''}
     </div>`:''}
     ${c.pendenciaDesc?`<div style="font-size:11px;font-weight:700;color:#d6b16a;margin-top:5px;line-height:1.4">🧩 ${esc(c.pendenciaDesc.slice(0,60))}${c.pendenciaDesc.length>60?'…':''}</div>`:''}
     ${c.obs?`<div style="font-size:11px;color:${planoDeepActive?_pi.deepText:'var(--muted)'};${planoDeepActive?'opacity:.82;':''}margin-top:5px;line-height:1.4">${esc(c.obs.slice(0,60))}${c.obs.length>60?'…':''}</div>`:''}
