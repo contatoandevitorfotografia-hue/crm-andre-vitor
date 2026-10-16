@@ -7624,7 +7624,7 @@ function startFinEditVG(m,cell){
   const cur=finVG[m]||0;
   cell.outerHTML=`<input class="fin-vg-inp" id="fin-vg-inp" type="number" step="0.01" value="${cur||''}" placeholder="0,00"
     onblur="commitFinVG()" onkeydown="if(event.key==='Enter')commitFinVG();if(event.key==='Escape'){finEditVG=null;renderFinResumo();renderFinReserva()}">`;
-  setTimeout(()=>{const i=document.getElementById('fin-vg-inp');if(i)i.focus();},10);
+  setTimeout(()=>{const i=document.getElementById('fin-vg-inp');if(i){i.focus();i.select();}},10);
 }
 function commitFinVG(){
   if(!finEditVG)return;
@@ -9290,7 +9290,7 @@ function startPessEditVG(m,cell){
   const cur=pessVG[m]||0;
   cell.outerHTML=`<input class="fin-vg-inp" id="p-vg-inp" type="number" step="0.01" value="${cur||''}" placeholder="0,00"
     onblur="commitPessVG()" onkeydown="if(event.key==='Enter')commitPessVG();if(event.key==='Escape'){pessEditVG=null;renderPessResumo();renderPessReserva()}">`;
-  setTimeout(()=>{const i=document.getElementById('p-vg-inp');if(i)i.focus();},10);
+  setTimeout(()=>{const i=document.getElementById('p-vg-inp');if(i){i.focus();i.select();}},10);
 }
 function commitPessVG(){
   if(!pessEditVG)return;
