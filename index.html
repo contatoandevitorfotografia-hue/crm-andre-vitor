@@ -3974,18 +3974,12 @@ function buildOpCol(col,cs){
 function opCardHTML(c,cc){
   const dateStr=c.dataEvento?fmtDate(c.dataEvento):'';
   const valor=c.valorTotal?fmtMoney(c.valorTotal):'';
-  // Badge sempre combinado (Empresa + André) contra o líquido de cada lado
-  // (_empLiqDaFesta/_andreLiqDaFesta) — não o valor bruto do pacote, que em
-  // planos com álbum físico inclui dinheiro que não é líquido de ninguém.
-  // André pode ter pago registrado separado, no Financeiro Pessoal.
-  const _pessPago=_pessoalPagoDaFesta(c);
-  // Freela contratada: o card vale o plano inteiro e "pago" é o que a
-  // cliente pagou — a parte do André é controlada à parte (check na ficha).
-  const _isFrlOp=(c.tipoExecucao==='freelancer'||!!c.freelancerId)&&c.tipoExecucao!=='sou-freela';
-  const _devidoComb=_isFrlOp?(c.valorTotal||0):_empLiqDaFesta(c)+_andreLiqDaFesta(c);
-  const _recebidoComb=_isFrlOp?(c.statusPag==='pago'?(c.valorTotal||0):(c.valorReserva||0)):(c.valorReserva||0)+_pessPago;
+  // Mesma conta do card de Projetos (_pagamentoDaFesta): Total = valor do
+  // trabalho, Pago pela ótica da cliente, quitado quando os dois lados
+  // (Empresa + André) atingiram o líquido deles.
+  const {total:_devidoComb,pago:_recebidoComb,quitado:_quitadoOp}=_pagamentoDaFesta(c);
   let tagCls='tag-pendente',tagTxt=`⏳ ${fmtMoney(_recebidoComb)} de ${fmtMoney(_devidoComb)}`;
-  if(_devidoComb>0&&_recebidoComb>=_devidoComb){tagCls='tag-pago';tagTxt=`✅ ${fmtMoney(_recebidoComb)} de ${fmtMoney(_devidoComb)}`;}
+  if(_quitadoOp){tagCls='tag-pago';tagTxt=`✅ ${fmtMoney(_recebidoComb)} de ${fmtMoney(_devidoComb)}`;}
   else if(_recebidoComb>0){tagCls='tag-sinal';tagTxt=`💰 ${fmtMoney(_recebidoComb)} de ${fmtMoney(_devidoComb)}`;}
   const lost=c.coluna==='perdido'&&c.motivo?`<div class="c-lost">❌ ${esc(c.motivo)}</div>`:'';
   const pendNote=c.coluna==='pendencia-lead'&&c.pendObs?`<div class="c-lost" style="background:#2A2113;color:#D6A34E">🧩 ${esc(c.pendObs.slice(0,80))}${c.pendObs.length>80?'…':''}</div>`:'';
@@ -4162,13 +4156,11 @@ function prCardHTML(c,cc){
   // num selo à parte. Pago = o que a cliente já pagou (status "pago" =
   // tudo; senão o que estiver registrado/parcelas recebidas).
   const _isFrlCard=freelaTipo==='contratei';
-  const totalLiq=_isFrlCard?valor:_empLiqDaFesta(src||c)+_andreLiqDaFesta(src||c);
-  const pagoTotal=_isFrlCard?(statusPag==='pago'?valor:reserva):reserva+_pessoalPagoDaFesta(src||c);
-  const faltaTotal=Math.max(0,totalLiq-pagoTotal);
+  const {total:totalLiq,pago:pagoTotal,falta:faltaTotal,quitado:_quitadoPr}=_pagamentoDaFesta(src||c,_isFrlCard);
   const _andLiqFr=_isFrlCard?_andreLiqDaFesta(src||c):0;
   const _andRecebeuFr=_isFrlCard&&_andLiqFr>0&&_pessoalPagoDaFesta(src||c)>=_andLiqFr-0.009;
   let pagCls='pag-pendente';
-  if(totalLiq>0&&pagoTotal>=totalLiq)pagCls='pag-pago';
+  if(_quitadoPr)pagCls='pag-pago';
   else if(pagoTotal>0)pagCls='pag-sinal';
   const planoDeepActive=_pi&&!isPend&&freelaTipo!=='contratei'&&freelaTipo!=='sou-freela';
   const planoBg=_pi?`background:${_pi.deepBg};border:1px solid transparent;--ptext:${_pi.deepText};`:'';
@@ -4807,7 +4799,7 @@ function togglePacChip(pacId){
   if(!btn)return;
   btn.classList.toggle('selected');
   renderPacChips();
-  onPacotesChange();
+  onPacotesChange(true);
   // Garante que o campo do cinegrafista reflita a seleção atual
   try{ fillFilmmakerSelect(getSelectedPacIds(), document.getElementById('f-filmakerId')?.value||''); }catch(_){}
 }
@@ -5766,13 +5758,17 @@ function autoStatusPag(){
     // Badge visual do box "Pagamento": esse sim soma os dois lados, já que
     // mostra os dois campos (Empresa + André) juntos — "Falta" só desaparece
     // quando AMBOS os líquidos estiverem cobertos.
-    const totalComb=parseFloat((empLiq+andLiq).toFixed(2));
-    const restanteComb=parseFloat((restanteEmp+Math.max(0,andLiq-andPago)).toFixed(2));
+    // Pela ótica da cliente, igual aos cards: Total = "Valor deste trabalho"
+    // (bruto); quitado quando os dois lados atingiram o líquido deles.
+    const totalBruto=parseFloat(document.getElementById('f-valorPlano')?.value)||parseFloat(document.getElementById('f-valorTotal')?.value)||0;
+    const quitadoComb=(empLiq+andLiq)>0&&empPago>=empLiq-0.009&&andPago>=andLiq-0.009;
+    const pagoBruto=quitadoComb?totalBruto:Math.min(totalBruto,empPago+andPago);
+    const restanteComb=parseFloat(Math.max(0,totalBruto-pagoBruto).toFixed(2));
     if(badge){
       const fm=v=>'R$ '+v.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
-      if(totalComb<=0){badge.textContent='—';badge.style.cssText='font-size:13px;font-weight:700;padding:8px 16px;border-radius:20px;background:#222831;color:#9AA4AE;margin-top:18px';}
-      else if(restanteComb<=0){badge.textContent='✅ Quitado';badge.style.cssText='font-size:13px;font-weight:700;padding:8px 16px;border-radius:20px;background:#1D2630;color:#9FB5CB;margin-top:18px';}
-      else if(empPago>0||andPago>0){badge.textContent='⏳ Falta '+fm(restanteComb);badge.style.cssText='font-size:13px;font-weight:700;padding:8px 16px;border-radius:20px;background:#2A2113;color:#E0A14E;margin-top:18px';}
+      if(totalBruto<=0){badge.textContent='—';badge.style.cssText='font-size:13px;font-weight:700;padding:8px 16px;border-radius:20px;background:#222831;color:#9AA4AE;margin-top:18px';}
+      else if(quitadoComb){badge.textContent='✅ Quitado';badge.style.cssText='font-size:13px;font-weight:700;padding:8px 16px;border-radius:20px;background:#1D2630;color:#9FB5CB;margin-top:18px';}
+      else if(pagoBruto>0){badge.textContent='⏳ Falta '+fm(restanteComb);badge.style.cssText='font-size:13px;font-weight:700;padding:8px 16px;border-radius:20px;background:#2A2113;color:#E0A14E;margin-top:18px';}
       else{badge.textContent='⏳ Pendente';badge.style.cssText='font-size:13px;font-weight:700;padding:8px 16px;border-radius:20px;background:#2e1a18;color:#e78a7c;margin-top:18px';}
     }
   }
@@ -6970,7 +6966,7 @@ function onValorFreelancerChange(){
   onValorPlanoChange();
 }
 function onPacoteChange(){ onPacotesChange(); } // alias retrocompat
-function onPacotesChange(){
+function onPacotesChange(fromClick){
   updateFrlWrap();
   const ids=getSelectedPacIds();
   const pacs=ids.map(id=>packages.find(p=>p.id===id)).filter(Boolean);
@@ -6979,10 +6975,12 @@ function onPacotesChange(){
   // Soma preços dos pacotes selecionados
   const totalPacs=pacs.reduce((s,p)=>s+(p.preco||0),0);
 
-  // valorPlano: usa o campo manual se preenchido e o usuário editou, caso contrário preenche automaticamente
+  // "Valor deste trabalho" é quem manda em tudo. Clicar num pacote joga o
+  // preço dele no campo (sempre, mesmo que já tivesse valor); se ela editar
+  // o campo depois, vale o que ela digitou.
   const manualEl=document.getElementById('f-valorPlano');
   const manualVal=parseFloat(manualEl?.value)||0;
-  if(!manualVal||manualEl?.dataset.auto==='1'){
+  if(fromClick||!manualVal||manualEl?.dataset.auto==='1'){
     if(manualEl){manualEl.value=totalPacs||'';manualEl.dataset.auto='1';}
   }
 
@@ -7798,6 +7796,28 @@ function _pessoalPagoDaFesta(card){
   const mes=_getMesFin(card.dataEvento);if(!mes)return 0;
   const entrada=(pessFD[mes]||[]).find(e=>e._opFrlId===card.id||e._opId===card.id);
   return entrada?.pago||0;
+}
+// Pago / Falta / Quitado de uma festa PELA ÓTICA DA CLIENTE, pros cards:
+// Total = "Valor deste trabalho" (bruto, sempre). Pago = soma do que foi
+// registrado nos dois lados (Empresa + André); quando os dois lados já
+// atingiram o líquido deles (que desconta transporte/álbum), conta como
+// tudo pago — senão o card ficaria "faltando" exatamente o valor dos
+// gastos pra sempre. Freela contratada: Pago = o que a cliente pagou
+// (status "pago" = tudo); a parte do André é tratada à parte.
+function _pagamentoDaFesta(card,forceFrl){
+  const total=card.valorTotal||0;
+  const isFrl=forceFrl||((card.tipoExecucao==='freelancer'||!!card.freelancerId)&&card.tipoExecucao!=='sou-freela');
+  const empPago=card.valorReserva||0;
+  let pago,quitado;
+  if(isFrl){
+    pago=card.statusPag==='pago'?total:Math.min(total,empPago);
+    quitado=total>0&&pago>=total;
+  }else{
+    const empLiq=_empLiqDaFesta(card),andLiq=_andreLiqDaFesta(card),andPago=_pessoalPagoDaFesta(card);
+    quitado=(empLiq+andLiq)>0&&empPago>=empLiq-0.009&&andPago>=andLiq-0.009;
+    pago=quitado?total:Math.min(total,empPago+andPago);
+  }
+  return {total,pago,falta:Math.max(0,total-pago),quitado};
 }
 // Autocorreção: custos de álbum cadastrados manualmente (antes de existir o
 // campo dedicado "Álbum" no Financeiro) ficaram salvos com tipo "empresa"
