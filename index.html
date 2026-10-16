@@ -7288,6 +7288,10 @@ function calcEmpresaShare(c){
   }
   return parseFloat((t*0.4).toFixed(2));
 }
+// Subtítulo da festa nas tabelas de Festas — igual nos dois Financeiros:
+// título do projeto (lido do card na hora, não gravado); sem título, o tipo
+// do evento; sem nada, o fallback.
+function _subtituloFesta(card,fallback){return (card?.titulo||'').trim()||card?.tipo||fallback||'';}
 function _getFinFestas(mes){
   return opCards.filter(c=>FIN_COLS.includes(c.coluna)&&_getMesFin(c.dataEvento)===mes&&(c.tipoExecucao||'proprio')!=='sou-freela'&&(c.tipoExecucao||'proprio')!=='freelancer').map(c=>{
     const t=c.valorTotal||0;
@@ -7300,7 +7304,7 @@ function _getFinFestas(mes){
     const empFalta=Math.max(0,parseFloat((empLiq-vPago).toFixed(2)));
     // Status: Quitado se valor pago >= valor total
     const localSt=vPago>=empLiq&&empLiq>0?'pago':vPago>0?'sinal':'pendente';
-    return{id:c.id,n:c.nomePais||c.titulo||'Cliente',t:c.tipo||'festa',
+    return{id:c.id,n:c.nomePais||c.titulo||'Cliente',t:_subtituloFesta(c,'festa'),
       d:c.dataEvento?parseInt(c.dataEvento.split('-')[2]):0,
       v:empShare,liq:empLiq,vFull:t,p:localSt==='pago',
       custo:gastosEmp,custoAlbum:gastosAlbum,reserva:vPago,
@@ -9370,7 +9374,7 @@ function renderPessEntradas(){
     
     return`<tr ${_cardPess?`onclick="openOpModal('${_cardPess.id}',null,event)" style="cursor:pointer"`:'style="cursor:default"'}>
       <td style="font-weight:600">${f.d>0?'Dia '+f.d:''}</td>
-      <td><div style="font-weight:600">${esc(f.n)}</div><div style="font-size:11px;color:var(--muted)">${esc(f.t||'')}</div></td>
+      <td><div style="font-weight:600">${esc(f.n)}</div><div style="font-size:11px;color:var(--muted)">${esc(_cardPess?((_cardPess.tipoExecucao==='freelancer'?'📸 Freela: ':'')+_subtituloFesta(_cardPess,'festa')):(f.t||''))}</div></td>
       <td onclick="event.stopPropagation()">${brutoCell}</td>
       <td>${valorCell}</td>
       <td onclick="event.stopPropagation()">${pagoBtnHtml}</td>
