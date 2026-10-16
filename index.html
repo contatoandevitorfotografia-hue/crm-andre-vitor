@@ -6013,7 +6013,7 @@ function _salvarValorAndrePagoDaFicha(card){
   const entrada=(pessFD[mes]||[]).find(e=>e._opFrlId===card.id||e._opId===card.id);if(!entrada)return;
   if((entrada.pago||0)===novoPago)return;
   _initPessVG(mes);
-  pessVG[mes]=(pessVG[mes]||0)+(novoPago-(entrada.pago||0));
+  pessVG[mes]=(+pessVG[mes]||0)+(novoPago-(entrada.pago||0));
   entrada.pago=novoPago;
   savePessData();
 }
@@ -7643,7 +7643,7 @@ function addEntradaFinVG(){
   const desc=(descEl?.value||'').trim();
   const mes=_finCurMes();
   _initFinVG(mes);
-  finVG[mes]=parseFloat(((finVG[mes]||0)+v).toFixed(2));
+  finVG[mes]=parseFloat(((+finVG[mes]||0)+v).toFixed(2));
   saveFinData();
   if(descEl)descEl.value='';
   if(vEl)vEl.value='';
@@ -7895,7 +7895,7 @@ function saveQuickPagFinManual(mes,idx){
   const e=finFM[mes]?.[idx];if(!e)return;
   const pago=parseFloat(document.getElementById('qep-input')?.value)||0;
   _initFinVG(mes);
-  finVG[mes]=(finVG[mes]||0)+(pago-(+(e.pago)||0));
+  finVG[mes]=(+finVG[mes]||0)+(pago-(+(e.pago)||0));
   e.pago=pago;
   saveFinData();toast('✅ Valor pago salvo!','green');
   renderFinFestas();renderFinResumo();
@@ -8074,7 +8074,7 @@ function _commitQuickPag(cardId,novoEmpresaPago,novoAndrePago){
   // André — direto, sem mexer no lado da Empresa
   if(novoAndrePago!==null&&mes&&entrada){
     _initPessVG(mes);
-    pessVG[mes]=(pessVG[mes]||0)+(novoAndrePago-(entrada.pago||0));
+    pessVG[mes]=(+pessVG[mes]||0)+(novoAndrePago-(entrada.pago||0));
     entrada.pago=novoAndrePago;
     savePessData();
   }
@@ -8155,7 +8155,7 @@ function saveInlineVRPess(cardId){
   const val=parseFloat(inp.value)||0;
   const card=opCardsPess.find(c=>c.id===cardId);if(!card)return;
   const mes=_getMesFin(card.dataEvento);
-  if(mes){_initPessVG(mes);pessVG[mes]=(pessVG[mes]||0)+(val-(card.valorReserva||0));savePessData();}
+  if(mes){_initPessVG(mes);pessVG[mes]=(+pessVG[mes]||0)+(val-(card.valorReserva||0));savePessData();}
   card.valorReserva=val;
   savOpPess();toast('✅ Valor pago salvo!','green');
   renderPessEntradas();renderPessResumo();
@@ -8189,7 +8189,7 @@ function savePessPago(mes,idx){
   if(pessFD[mes]&&pessFD[mes][idx]){
     const entrada=pessFD[mes][idx];
     _initPessVG(mes);
-    pessVG[mes]=(pessVG[mes]||0)+(val-(entrada.pago||0));
+    pessVG[mes]=(+pessVG[mes]||0)+(val-(entrada.pago||0));
     entrada.pago=val;
     savePessData();renderPessEntradas();renderPessResumo();
   }
@@ -8265,7 +8265,7 @@ function saveQuickPagPess(mes,idx){
 function _commitQuickPagPess(mes,idx,pago){
   const entrada=pessFD[mes]?.[idx];if(!entrada)return;
   _initPessVG(mes);
-  pessVG[mes]=(pessVG[mes]||0)+(pago-(entrada.pago||0));
+  pessVG[mes]=(+pessVG[mes]||0)+(pago-(entrada.pago||0));
   entrada.pago=pago;
   savePessData();toast('✅ Valor pago salvo!','green');
   renderPessEntradas();renderPessResumo();
@@ -8291,7 +8291,7 @@ function savePessRest(mes,idx){
     const andLiq=Math.max(0,(entrada.v||0)-gastosPes);
     const novoPago=Math.max(0,parseFloat((andLiq-val).toFixed(2)));
     _initPessVG(mes);
-    pessVG[mes]=(pessVG[mes]||0)+(novoPago-(entrada.pago||0));
+    pessVG[mes]=(+pessVG[mes]||0)+(novoPago-(entrada.pago||0));
     entrada.pago=novoPago;
     entrada.rest=val;
     savePessData();renderPessEntradas();renderPessResumo();
@@ -8791,7 +8791,7 @@ function saveFinDiarioValor(mes,i,inp){
   if(!finDD[mes]||!finDD[mes][i])return;
   const d=finDD[mes][i];
   // Ajusta diferença no banco se o gasto estava marcado como pago
-  if(d.p){_initFinVG(mes);finVG[mes]+=(d.v-v);}
+  if(d.p){_initFinVG(mes);finVG[mes]=(+finVG[mes]||0)+((+d.v||0)-v);}
   d.v=v;
   saveFinData();renderFinDiarios();renderFinResumo();
   toast('✅ Gasto atualizado!','green');
@@ -8812,7 +8812,7 @@ function delFinDiario(mes,i){
   if(!finDD[mes])return;
   if(!confirm('Excluir este gasto?'))return;
   const _d=finDD[mes][i];
-  if(_d&&_d.p){_initFinVG(mes);finVG[mes]+=_d.v;}
+  if(_d&&_d.p){_initFinVG(mes);finVG[mes]=(+finVG[mes]||0)+(+_d.v||0);}
   finDD[mes].splice(i,1);saveFinData();renderFinDiarios();renderFinResumo();
 }
 function saveFinDiario(){
@@ -8823,7 +8823,7 @@ function saveFinDiario(){
   if(!finDD[finCurD])finDD[finCurD]=[];
   // Marca como pago e deduz do banco imediatamente
   _initFinVG(finCurD);
-  finVG[finCurD]-=v;
+  finVG[finCurD]=(+finVG[finCurD]||0)-(+v||0);
   finDD[finCurD].push({dt,v,l,p:true});
   finDD[finCurD].sort((a,b)=>a.dt.localeCompare(b.dt));
   document.getElementById('fin-d-dt').value='';
@@ -9308,7 +9308,7 @@ function addEntradaPessVG(){
   const desc=(descEl?.value||'').trim();
   const mes=_finCurMes();
   _initPessVG(mes);
-  pessVG[mes]=parseFloat(((pessVG[mes]||0)+v).toFixed(2));
+  pessVG[mes]=parseFloat(((+pessVG[mes]||0)+v).toFixed(2));
   savePessData();
   if(descEl)descEl.value='';
   if(vEl)vEl.value='';
@@ -9590,8 +9590,8 @@ function togglePessGasto(mes,i,val){
   const gasto=pessGD[mes][i];
   const foiPago=gasto.p;
   gasto.p=val;
-  if(val&&!foiPago) pessVG[mes]=(pessVG[mes]||0)-gasto.v;
-  else if(!val&&foiPago) pessVG[mes]=(pessVG[mes]||0)+gasto.v;
+  if(val&&!foiPago) pessVG[mes]=(+pessVG[mes]||0)-gasto.v;
+  else if(!val&&foiPago) pessVG[mes]=(+pessVG[mes]||0)+(+gasto.v||0);
   savePessData();renderPessGastos();renderPessResumo();
 }
 
@@ -9612,7 +9612,7 @@ function savePessGastoValor(mes,i,inp){
   pessGD[mes][i].v=v;
   savePessData();renderPessGastos();renderPessResumo();
 }
-function delPessGasto(mes,i){if(!pessGD[mes])return;if(!confirm('Excluir?'))return;const _g=pessGD[mes][i];if(_g&&_g.p)pessVG[mes]=(pessVG[mes]||0)+_g.v;pessGD[mes].splice(i,1);savePessData();renderPessGastos();renderPessResumo();}
+function delPessGasto(mes,i){if(!pessGD[mes])return;if(!confirm('Excluir?'))return;const _g=pessGD[mes][i];if(_g&&_g.p)pessVG[mes]=(+pessVG[mes]||0)+(+_g.v||0);pessGD[mes].splice(i,1);savePessData();renderPessGastos();renderPessResumo();}
 function savePessGasto(){
   const n=document.getElementById('p-g-n').value.trim();
   const v=parseFloat(document.getElementById('p-g-v').value)||0;
@@ -9665,7 +9665,7 @@ function savePessDiarioValor(mes,i,inp){
   if(isNaN(v)||v<0){renderPessDiarios();return;}
   if(!pessDD[mes]||!pessDD[mes][i])return;
   const d=pessDD[mes][i];
-  if(d.p){_initPessVG(mes);pessVG[mes]=(pessVG[mes]||0)+(d.v-v);}
+  if(d.p){_initPessVG(mes);pessVG[mes]=(+pessVG[mes]||0)+((+d.v||0)-v);}
   d.v=v;
   savePessData();renderPessDiarios();renderPessResumo();
   toast('✅ Gasto atualizado!','green');
@@ -9680,7 +9680,7 @@ function togglePessDiario(mes,i,val){
   else if(!val&&foiPago) pessVG[mes]=(+pessVG[mes]||0)+(+d.v||0);
   savePessData();renderPessDiarios();renderPessResumo();
 }
-function delPessDiario(mes,i){if(!pessDD[mes])return;if(!confirm('Excluir?'))return;const _d=pessDD[mes][i];if(_d&&_d.p){_initPessVG(mes);pessVG[mes]=(pessVG[mes]||0)+_d.v;}pessDD[mes].splice(i,1);savePessData();renderPessDiarios();renderPessResumo();}
+function delPessDiario(mes,i){if(!pessDD[mes])return;if(!confirm('Excluir?'))return;const _d=pessDD[mes][i];if(_d&&_d.p){_initPessVG(mes);pessVG[mes]=(+pessVG[mes]||0)+(+_d.v||0);}pessDD[mes].splice(i,1);savePessData();renderPessDiarios();renderPessResumo();}
 function savePessDiario(){
   const dt=document.getElementById('p-d-dt').value;
   const v=parseFloat(document.getElementById('p-d-v').value)||0;
@@ -9689,7 +9689,7 @@ function savePessDiario(){
   if(!pessDD[pessCurD])pessDD[pessCurD]=[];
   // Marca como pago e deduz do banco imediatamente
   _initPessVG(pessCurD);
-  pessVG[pessCurD]=(pessVG[pessCurD]||0)-v;
+  pessVG[pessCurD]=(+pessVG[pessCurD]||0)-(+v||0);
   pessDD[pessCurD].push({dt,v,l,p:true});
   pessDD[pessCurD].sort((a,b)=>a.dt.localeCompare(b.dt));
   ['p-d-dt','p-d-v','p-d-l'].forEach(id=>document.getElementById(id).value='');
@@ -10102,7 +10102,7 @@ function _ajustaVGReservaSimples(card,novoValor){
   if(!_elegivelVG(card))return;
   const mes=_getMesFin(card.dataEvento);if(!mes)return;
   _initFinVG(mes);
-  finVG[mes]=(finVG[mes]||0)+(novoValor-(card.valorReserva||0));
+  finVG[mes]=(+finVG[mes]||0)+(novoValor-(card.valorReserva||0));
 }
 // Uso: quando o card inteiro pode mudar (modal completo) — cobre também
 // troca de data/coluna/execução, removendo a contribuição antiga do mês
@@ -10114,8 +10114,8 @@ function _syncVGReservaChange(oldCard,newCard){
   const valD=mesD?(newCard.valorReserva||0):0;
   if(mesA)_initFinVG(mesA);
   if(mesD)_initFinVG(mesD);
-  if(mesA)finVG[mesA]=(finVG[mesA]||0)-valA;
-  if(mesD)finVG[mesD]=(finVG[mesD]||0)+valD;
+  if(mesA)finVG[mesA]=(+finVG[mesA]||0)-(+valA||0);
+  if(mesD)finVG[mesD]=(+finVG[mesD]||0)+(+valD||0);
 }
 // Registra automaticamente QUANDO cada pagamento aconteceu, pra aparecer
 // na ficha do cliente. "dataPrimeiroPagamento" carimba assim que o valor
@@ -10145,14 +10145,14 @@ function pagarFinConta(i){
       var xFoiPago=_itemPagoMes(x,mes);
       _setItemPagoMes(x,mes,novoPago);
       var valor=_itemValorMes(x,mes);
-      if(novoPago&&!xFoiPago) finVG[mes]-=valor;
-      else if(!novoPago&&xFoiPago) finVG[mes]+=valor;
+      if(novoPago&&!xFoiPago) finVG[mes]=(+finVG[mes]||0)-(+valor||0);
+      else if(!novoPago&&xFoiPago) finVG[mes]=(+finVG[mes]||0)+(+valor||0);
     });
   } else {
     var val=_itemValorMes(c,mes);
     _setItemPagoMes(c,mes,novoPago);
-    if(novoPago&&!foiPago) finVG[mes]-=val;
-    else if(!novoPago&&foiPago) finVG[mes]+=val;
+    if(novoPago&&!foiPago) finVG[mes]=(+finVG[mes]||0)-(+val||0);
+    else if(!novoPago&&foiPago) finVG[mes]=(+finVG[mes]||0)+(+val||0);
   }
   saveFinData(); renderFinContas(); renderFinResumo();
   toast(novoPago?'✅ Conta paga e descontada do banco!':'↩️ Marcado como não pago.','green');
@@ -10232,12 +10232,12 @@ function pagarContaItem(tipo,ci,ii){
   else _initPessVG(mes);
   if(novoPago&&!foiPago){
     // marcou como pago — subtrai do banco
-    if(tipo==='fin') finVG[mes]-=valor;
-    else pessVG[mes]=(pessVG[mes]||0)-valor;
+    if(tipo==='fin') finVG[mes]=(+finVG[mes]||0)-(+valor||0);
+    else pessVG[mes]=(+pessVG[mes]||0)-valor;
   } else if(!novoPago&&foiPago){
     // desmarcou — devolve ao banco
-    if(tipo==='fin') finVG[mes]+=valor;
-    else pessVG[mes]=(pessVG[mes]||0)+valor;
+    if(tipo==='fin') finVG[mes]=(+finVG[mes]||0)+(+valor||0);
+    else pessVG[mes]=(+pessVG[mes]||0)+(+valor||0);
   }
   if(tipo==='fin'){saveFinData();renderFinContas();renderFinResumo();}
   else{savePessData();renderPessContas();renderPessResumo();}
@@ -10291,8 +10291,8 @@ function addLancamento(tipo,i){
   c.lancamentos[mes].push({id:uid(),dia,valor});
   c.lancamentos[mes].sort((a,b)=>(a.dia||0)-(b.dia||0));
   if(dEl)dEl.value='';if(vEl)vEl.value='';
-  if(tipo==='fin'){_initFinVG(mes);finVG[mes]=(finVG[mes]||0)-valor;saveFinData();renderFinContas();renderFinResumo();}
-  else{_initPessVG(mes);pessVG[mes]=(pessVG[mes]||0)-valor;savePessData();renderPessContas();renderPessResumo();}
+  if(tipo==='fin'){_initFinVG(mes);finVG[mes]=(+finVG[mes]||0)-valor;saveFinData();renderFinContas();renderFinResumo();}
+  else{_initPessVG(mes);pessVG[mes]=(+pessVG[mes]||0)-valor;savePessData();renderPessContas();renderPessResumo();}
   setTimeout(()=>{
     const el=document.getElementById(tipo+'-citens-'+i);
     const tog=document.getElementById(tipo+'-ctog-'+i);
@@ -10308,8 +10308,8 @@ function delLancamento(tipo,i,j){
   const removido=c.lancamentos[mes][j];
   c.lancamentos[mes].splice(j,1);
   const valorRemovido=removido?.valor||0;
-  if(tipo==='fin'){_initFinVG(mes);finVG[mes]=(finVG[mes]||0)+valorRemovido;saveFinData();renderFinContas();renderFinResumo();}
-  else{_initPessVG(mes);pessVG[mes]=(pessVG[mes]||0)+valorRemovido;savePessData();renderPessContas();renderPessResumo();}
+  if(tipo==='fin'){_initFinVG(mes);finVG[mes]=(+finVG[mes]||0)+(+valorRemovido||0);saveFinData();renderFinContas();renderFinResumo();}
+  else{_initPessVG(mes);pessVG[mes]=(+pessVG[mes]||0)+(+valorRemovido||0);savePessData();renderPessContas();renderPessResumo();}
   setTimeout(()=>{
     const el=document.getElementById(tipo+'-citens-'+i);
     const tog=document.getElementById(tipo+'-ctog-'+i);
@@ -10736,14 +10736,14 @@ function pagarPessConta(i){
       var xFoiPago=_itemPagoMes(x,mes);
       _setItemPagoMes(x,mes,novoPago);
       var valor=_itemValorMes(x,mes);
-      if(novoPago&&!xFoiPago) pessVG[mes]=(pessVG[mes]||0)-valor;
-      else if(!novoPago&&xFoiPago) pessVG[mes]=(pessVG[mes]||0)+valor;
+      if(novoPago&&!xFoiPago) pessVG[mes]=(+pessVG[mes]||0)-valor;
+      else if(!novoPago&&xFoiPago) pessVG[mes]=(+pessVG[mes]||0)+(+valor||0);
     });
   } else {
     var val=_itemValorMes(c,mes);
     _setItemPagoMes(c,mes,novoPago);
-    if(novoPago&&!foiPago) pessVG[mes]=(pessVG[mes]||0)-val;
-    else if(!novoPago&&foiPago) pessVG[mes]=(pessVG[mes]||0)+val;
+    if(novoPago&&!foiPago) pessVG[mes]=(+pessVG[mes]||0)-val;
+    else if(!novoPago&&foiPago) pessVG[mes]=(+pessVG[mes]||0)+(+val||0);
   }
   savePessData(); renderPessContas(); renderPessResumo();
   toast(novoPago?'✅ Conta paga e descontada do banco!':'↩️ Marcado como não pago.','green');
@@ -10937,8 +10937,8 @@ function toggleAnaSimples(pessoa,val){
   else pessAnaP[0].pagoPedro=val;
   // Atualiza banco: +valor quando marca pago, -valor quando desmarca
   const mes=_finCurMes();
-  if(val&&!antes){pessVG[mes]=(pessVG[mes]||0)+ANA_PEDRO_V;}
-  else if(!val&&antes){pessVG[mes]=Math.max(0,(pessVG[mes]||0)-ANA_PEDRO_V);}
+  if(val&&!antes){pessVG[mes]=(+pessVG[mes]||0)+ANA_PEDRO_V;}
+  else if(!val&&antes){pessVG[mes]=Math.max(0,(+pessVG[mes]||0)-ANA_PEDRO_V);}
   savePessData();renderPessAnaP();renderPessResumo();
   toast(val?`✅ +${fmtMoney(ANA_PEDRO_V)} adicionado ao banco`:`↩️ ${fmtMoney(ANA_PEDRO_V)} removido do banco`,'green');
 }
@@ -12416,11 +12416,15 @@ function _normalizaNumerosFin(){
   Object.keys(finVG||{}).forEach(m=>{finVG[m]=_toNum(finVG[m]);});
   [finDD,finGD].forEach(store=>Object.values(store||{}).forEach(arr=>{if(Array.isArray(arr))arr.forEach(e=>{e.v=_toNum(e.v);});}));
   Object.values(finFM||{}).forEach(arr=>{if(Array.isArray(arr))arr.forEach(e=>{e.v=_toNum(e.v);e.pago=_toNum(e.pago);});});
+  (finContas||[]).forEach(c=>{if(c.valor!==undefined)c.valor=_toNum(c.valor);(c.itens||[]).forEach(x=>{if(x&&x.valor!==undefined)x.valor=_toNum(x.valor);});});
+  if(typeof finRG!=='undefined')finRG=_toNum(finRG);
 }
 function _normalizaNumerosPess(){
   Object.keys(pessVG||{}).forEach(m=>{pessVG[m]=_toNum(pessVG[m]);});
   [pessDD,pessGD].forEach(store=>Object.values(store||{}).forEach(arr=>{if(Array.isArray(arr))arr.forEach(e=>{e.v=_toNum(e.v);});}));
   Object.values(pessFD||{}).forEach(arr=>{if(Array.isArray(arr))arr.forEach(e=>{e.v=_toNum(e.v);if(e.pago!==undefined)e.pago=_toNum(e.pago);});});
+  (pessContas||[]).forEach(c=>{if(c.valor!==undefined)c.valor=_toNum(c.valor);(c.itens||[]).forEach(x=>{if(x&&x.valor!==undefined)x.valor=_toNum(x.valor);});});
+  if(typeof pessRG!=='undefined')pessRG=_toNum(pessRG);
 }
 function _resyncPix2xValorPago(){
   let changed=false;
@@ -12469,7 +12473,7 @@ function _resyncAvistaPagoTotal(){
       const andLiq=parseFloat(_andreLiqDaFesta(c).toFixed(2));
       if(Math.abs((entrada.pago||0)-andLiq)>0.009){
         _initPessVG(mes);
-        pessVG[mes]=(pessVG[mes]||0)+(andLiq-(entrada.pago||0));
+        pessVG[mes]=(+pessVG[mes]||0)+(andLiq-(entrada.pago||0));
         entrada.pago=andLiq;
         changedPess=true;
       }
