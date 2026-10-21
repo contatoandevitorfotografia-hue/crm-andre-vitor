@@ -13726,21 +13726,6 @@ function _verificarFollowupGaleria(){
   if(salvou)localStorage.setItem('crm_galeria_followup_avisos',JSON.stringify(avisos));
 }
 
-function _verificarLembreteAnaP(){
-  const hoje=new Date();
-  if(hoje.getDate()!==20)return;
-  const mesKey=hoje.getFullYear()+'-'+String(hoje.getMonth()+1).padStart(2,'0');
-  const visto=localStorage.getItem('crm_lembrete_anap')||'';
-  if(visto===mesKey)return;
-  localStorage.setItem('crm_lembrete_anap',mesKey);
-  _showLembrete(
-    '🏠 Dia 20 — Cobrar inquilinos!',
-    'Hoje é dia 20. Lembre de cobrar <strong>Ana</strong> e <strong>Pedro</strong> pelo apartamento.',
-    null, null
-  );
-  _enviarPushMobile('🏠 Dia 20 — Cobrar!','Cobrar Ana e Pedro pelo apartamento.','dia20');
-}
-
 // ══════════════════════════════════════════════
 // CALENDÁRIO CUSTOMIZADO — vale pra todo <input type="date"> do CRM
 // ══════════════════════════════════════════════
@@ -13832,7 +13817,6 @@ document.addEventListener('mousedown',e=>{
 // Checar ao carregar e a cada minuto
 function _initTarefasChecks(){
   loadTarefasData();
-  _verificarLembreteAnaP();
   _verificarPopupsPendencias();
   _verificarContasVencendoPush();
   _verificarFollowupGaleria();
