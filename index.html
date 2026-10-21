@@ -3324,6 +3324,7 @@ let gastosItensTemp=[];
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
 function load(){
   try{opCards=JSON.parse(localStorage.getItem('crm_op_v4')||'[]')}catch{opCards=[]}
+  _normalizaNumerosOp();
   _backfillGastoAlbumTipoErrado();
   try{opCardsPess=JSON.parse(localStorage.getItem('crm_op_pess_v4')||'[]')}catch{opCardsPess=[]}
   // Migração única: remove pendências padrão pré-carregadas automaticamente
@@ -3454,7 +3455,7 @@ window.addEventListener('pagehide',_flushDadosFirebase);
 window.addEventListener('beforeunload',_flushDadosFirebase);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')_flushDadosFirebase()});
 function savTemplates(){localStorage.setItem('crm_tpl_v1',JSON.stringify(templates));_saveDadosFirebase()}
-function savOp(){localStorage.setItem('crm_op_v4',JSON.stringify(opCards));_saveDadosFirebase()}
+function savOp(){_normalizaNumerosOp();localStorage.setItem('crm_op_v4',JSON.stringify(opCards));_saveDadosFirebase()}
 function savOpPess(){localStorage.setItem('crm_op_pess_v4',JSON.stringify(opCardsPess));_saveDadosFirebase()}
 function savPr(){localStorage.setItem('crm_pr_v4',JSON.stringify(prCards));_saveDadosFirebase()}
 function savAlb(){localStorage.setItem('crm_alb_v1',JSON.stringify(albCards));_saveDadosFirebase()}
@@ -7297,8 +7298,8 @@ function _getFinFestas(mes){
     const t=c.valorTotal||0;
     const empShare=calcEmpresaShare(c);
     const ratio=t>0?empShare/t:0.4;
-    const vPago=c.valorReserva||0;
-    const gastosEmp=(c.gastosItens||[]).filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
+    const vPago=+c.valorReserva||0;
+    const gastosEmp=(c.gastosItens||[]).filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(+g.val||0),0);
     const gastosAlbum=(c.gastosItens||[]).filter(g=>g.tipo==='album').reduce((s,g)=>s+(g.val||0),0);
     const empLiq=parseFloat((empShare-gastosEmp).toFixed(2));
     const empFalta=Math.max(0,parseFloat((empLiq-vPago).toFixed(2)));
@@ -7500,13 +7501,14 @@ function _calcFinMes(mes){
   const festas=_getFinFestas(mes);
   const D=finDD[mes]||[];
   const totalF=festas.reduce((s,f)=>s+(f.liq??f.v),0);
+  const _vgRaw=finVG[mes];
   const contasMes=_contasDoMes(finContas,mes);
   const totalG=contasMes.reduce((s,c)=>s+_contaValor(c,mes),0);
   const pendG=contasMes.reduce((s,c)=>s+_contaValorPendente(c,mes),0);
   const totalD=D.reduce((s,d)=>s+d.v,0);
   const pendD=D.filter(d=>!d.p).reduce((s,d)=>s+d.v,0);
   const autoVg=festas.reduce((s,f)=>s+(f.reserva||0),0);
-  const vg=finVG[mes]!==undefined?finVG[mes]:autoVg;
+  const vg=_vgRaw!==undefined?(+_vgRaw||0):autoVg;
   const prevF=festas.filter(f=>!f.p).reduce((s,f)=>s+(f.liq??f.v),0);
   const totalAReceber=festas.reduce((s,f)=>s+f.rest,0);
   // "Sobrou" projeta o que ainda falta entrar/sair: contas e gastos já
@@ -8862,6 +8864,7 @@ function setSyncFinStatus(s){
   el.textContent=s==='saving'?'🔄 Salvando...' : s==='saved'?'☁️ Sincronizado' : s==='err'?'⚠️ Sem conexão':'';
 }
 function saveFinData(){
+  _normalizaNumerosFin();
   _finSaveTs=Date.now();
   setSyncFinStatus('saving');
   try{
@@ -9013,6 +9016,7 @@ function initFinFirebase(){
         if(_fresh&&data.vg)finVG=data.vg;
         if(_fresh&&data.gd)finGD=data.gd;
         if(_fresh&&data.dd)finDD=data.dd;
+        _normalizaNumerosFin();
         // "fm" (festas manuais) e NÃO "fd": a chave "fd" já existia no banco com
         // registros de uma versão antiga do app, que apareciam como "avulsa".
         if(_fresh&&data.fm)finFM=data.fm;
@@ -9150,8 +9154,8 @@ function _calcPessMes(mes){
   const pendG=contasMes.reduce((s,c)=>s+_contaValorPendente(c,mes),0);
   const totalD=D.reduce((s,d)=>s+d.v,0);
   const pendD=D.filter(d=>!d.p).reduce((s,d)=>s+d.v,0);
-  const vg=pessVG[mes]||0;
-  const prevF=F.filter(f=>!f.p).reduce((s,f)=>s+f.v,0);
+  const vg=+pessVG[mes]||0;
+  const prevF=F.filter(f=>!f.p).reduce((s,f)=>s+(+f.v||0),0);
   // Ana & Pedro — só conta no mês atual, só se ainda não pagaram
   const ap=pessAnaP[0]||{pagoAna:false,pagoPedro:false};
   const pendIF=mes===_finCurMes()?(!ap.pagoAna?ANA_PEDRO_V:0)+(!ap.pagoPedro?ANA_PEDRO_V:0):0;
@@ -11140,6 +11144,7 @@ function savePessAlug(){
 function delPessAlug(i){if(!confirm('Excluir?'))return;pessAlug.splice(i,1);savePessData();renderPessAlug();}
 
 function savePessData(){
+  _normalizaNumerosPess();
   _pessSaveTs=Date.now();
   try{
     localStorage.setItem('crm_pess_vg',JSON.stringify(pessVG));
