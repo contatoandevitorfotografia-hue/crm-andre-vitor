@@ -4652,7 +4652,7 @@ function onDrop(e,board,targetCol){
     const isConf=targetCol==='confirmado'||targetCol==='confirmado-pendencias';
     // Mesma trava do Salvar na ficha — arrastar pro quadro é outro caminho
     // pra chegar em Confirmado, então precisa da mesma exigência.
-    if(!wasConf&&isConf&&(card.tipoExecucao||'proprio')==='proprio'&&!(card.gastosItens||[]).some(g=>(g.tipo==='empresa'||g.tipo==='pessoal')&&_ehGastoTransporte(g))){
+    if(!wasConf&&isConf&&(card.tipoExecucao||'proprio')==='proprio'&&!_festaJaPassou(card.dataEvento)&&!(card.gastosItens||[]).some(g=>(g.tipo==='empresa'||g.tipo==='pessoal')&&_ehGastoTransporte(g))){
       toast('🚌 Cadastra o transporte dessa festa (nos Gastos) antes de confirmar!','orange');
       openOpModal(card.id,null);
       return;
@@ -5481,6 +5481,13 @@ const _DESCS_TRANSPORTE=new Set([
   'Uber até a rodoviária','Uber até em casa','Pássaro Marrom','Metrô','Uber',
 ]);
 function _ehGastoTransporte(g){return _DESCS_TRANSPORTE.has((g.desc||'').replace(/\s×\d+$/,'').trim());}
+// Festa que já aconteceu não precisa mais de transporte cadastrado pra salvar.
+function _festaJaPassou(ds){
+  if(!ds)return false;
+  const d=new Date();
+  const hoje=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  return ds<hoje;
+}
 // syncFreelancerToAndre() (a sincronização real, hoje ativa) marca a festa
 // com _opFrlId apontando pra um card em opCards — NÃO em opCardsPess, que
 // nunca é populado na prática. _opId é de um sincronismo antigo e
@@ -5973,7 +5980,7 @@ function saveOpCard(){
   // ida (já tá em SP) — só o de volta, no lado do André, já conta.
   const _tipoExecSave=document.getElementById('f-execucao')?.value||'proprio';
   const _isConfSave=newCol==='confirmado'||newCol==='confirmado-pendencias';
-  if(_isConfSave&&_tipoExecSave==='proprio'&&!gastosItensTemp.some(g=>(g.tipo==='empresa'||g.tipo==='pessoal')&&_ehGastoTransporte(g))){
+  if(_isConfSave&&_tipoExecSave==='proprio'&&!_festaJaPassou(document.getElementById('f-data')?.value)&&!gastosItensTemp.some(g=>(g.tipo==='empresa'||g.tipo==='pessoal')&&_ehGastoTransporte(g))){
     toast('🚌 Cadastra o transporte dessa festa nos Gastos (Empresa ou Pessoal) antes de salvar!','orange');
     document.getElementById('sec-gastos-box')?.scrollIntoView({behavior:'smooth',block:'center'});
     return;
