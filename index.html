@@ -11852,14 +11852,16 @@ function renderDashAnalytics(year){
   const pHtml=pArr.length?pArr.map(([nm,n])=>`<div class="chart-row"><div class="chart-label" title="${nm}" style="width:150px">${nm}</div><div class="chart-bar-wrap"><div class="chart-bar" style="width:${Math.round(n/maxP*100)}%;background:var(--accent)"></div></div><div class="chart-val">${n}</div></div>`).join(''):`<div style="color:var(--muted);font-size:13px">Registre pacotes nos cards para ver dados aqui</div>`;
   // Origin chart
   const ORIG_LBL={'instagram':'📸 Instagram','google':'🔍 Google','trafego-pago':'💰 Tráfego Pago','indicacao':'🤝 Indicação','site':'🌐 Site','whatsapp':'💬 WhatsApp','ja-era-cliente':'🔁 Já era cliente','outro':'Outro'};
-  const oCounts={};clients.forEach(c=>{if(c.origem&&c.origem!==''){const k=c.origem;if(!oCounts[k])oCounts[k]=0;oCounts[k]++}});
-  const oArr=Object.entries(oCounts).sort((a,b)=>b[1]-a[1]);
+  const ORIG_ORDEM=['nao-informado','instagram','google','trafego-pago','indicacao','site','whatsapp','ja-era-cliente','outro'];
+  const oCounts={};ORIG_ORDEM.forEach(k=>oCounts[k]=0);
+  clients.forEach(c=>{const k=c.origem||'nao-informado';oCounts[k]=(oCounts[k]||0)+1;});
+  const oArr=[...ORIG_ORDEM,...Object.keys(oCounts).filter(k=>!ORIG_ORDEM.includes(k))].map(k=>[k,oCounts[k]||0]);
   const maxO=Math.max(...oArr.map(([,v])=>v),1);
-  const oHtml=oArr.length?oArr.map(([k,n])=>`<div class="chart-row" style="cursor:pointer" title="Clique para ver os clientes" onclick="toggleOrigemLista('${k}')"><div class="chart-label" style="width:120px;font-size:11.5px">${ORIG_LBL[k]||k}</div><div class="chart-bar-wrap"><div class="chart-bar" style="width:${Math.round(n/maxO*100)}%;background:#7D95AE"></div></div><div class="chart-val">${n} cliente${n!==1?'s':''}</div></div><div id="orig-lista-${k}" style="display:none;margin:4px 0 12px 120px">${_listaOrigem(k)}</div>`).join(''):`<div style="color:var(--muted);font-size:13px">Cadastre clientes com origem para ver dados aqui</div>`;
+  const oHtml=oArr.length?oArr.map(([k,n])=>`<div class="chart-row" style="cursor:pointer" title="Clique para ver os clientes" onclick="toggleOrigemLista('${k}')"><div class="chart-label" style="width:120px;font-size:11.5px">${k==='nao-informado'?'❔ Não informado':(ORIG_LBL[k]||k)}</div><div class="chart-bar-wrap"><div class="chart-bar" style="width:${Math.round(n/maxO*100)}%;background:#7D95AE"></div></div><div class="chart-val">${n} cliente${n!==1?'s':''}</div></div><div id="orig-lista-${k}" style="display:none;margin:4px 0 12px 120px">${_listaOrigem(k)}</div>`).join(''):`<div style="color:var(--muted);font-size:13px">Cadastre clientes com origem para ver dados aqui</div>`;
   document.getElementById('dash-analytics-body').innerHTML=`<div><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div class="chart-title" style="margin-bottom:0">Eventos por mês</div><div style="display:flex;align-items:center;gap:8px"><span style="font-size:11px;color:var(--muted);font-weight:600">Ano:</span>${yearSel}</div></div>${mHtml}</div><div><div class="chart-title">Pacotes mais escolhidos</div>${pHtml}</div><div style="grid-column:1/-1;border-top:1px solid var(--border);padding-top:20px"><div class="chart-title">Origem dos Clientes</div>${oHtml}</div>`;
 }
 function _listaOrigem(k){
-  const cls=clients.filter(c=>c.origem===k);
+  const cls=clients.filter(c=>k==='nao-informado'?!c.origem:c.origem===k);
   return cls.map(c=>{
     const ref=k==='indicacao'&&c.origemClienteId?clients.find(r=>r.id===c.origemClienteId):null;
     return `<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:12px">👤 ${esc(c.nome||'Sem nome')}${c.telefone?` <span style="color:var(--muted)">· ${esc(c.telefone)}</span>`:''}${ref?` <span style="color:var(--muted)">· indicado por ${esc(ref.nome)}</span>`:''}</div>`;
