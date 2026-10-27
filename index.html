@@ -4030,7 +4030,7 @@ function opCardHTML(c,cc){
   const pendOpenList=(c.pendencias||[]).filter(p=>!p.done);
   const pendBox=pendOpenList.length?`<div style="font-size:11px;font-weight:700;color:#E0A14E;background:#2e2213;border:1px solid #5c4a26;border-radius:6px;padding:6px 8px;margin-top:6px;line-height:1.4">${pendOpenList.map(p=>`📌 ${esc((p.label||'').slice(0,100))}${(p.label||'').length>100?'…':''}`).join('<br>')}</div>`:'';
   return `<div class="card" draggable="true" data-id="${c.id}" style="--cc:${cc}${leadStyle}" ondragstart="onDS(event,'${c.id}','op')" ondragend="onDE2(event)" onclick="openOpModal('${c.id}',null,event)">
-    <div class="card-actions"><button class="cab del" onclick="qDel('op','${c.id}',event)">🗑</button>${c.telefone?`<button class="cab wa" onclick="event.stopPropagation();openTplSend('${c.id}')" title="Enviar WhatsApp">💬</button>`:''}<button class="cab" onclick="event.stopPropagation();openContractModal('${c.id}')" title="Contrato digital">📄</button><button class="cab" onclick="event.stopPropagation();abrirOrcamento('${c.id}')" title="Gerar orçamento">📋</button><button class="cab">✏️</button></div>
+    <div class="card-actions"><button class="cab del" onclick="qDel('op','${c.id}',event)">🗑</button>${c.telefone?`<button class="cab wa" onclick="event.stopPropagation();openTplSend('${c.id}')" title="Enviar WhatsApp">💬</button>`:''}<button class="cab" onclick="event.stopPropagation();openContractModal('${c.id}')" title="Contrato digital">📄</button><button class="cab" onclick="event.stopPropagation();abrirOrcamento('${c.id}')" title="Gerar orçamento">📋</button>${_clienteDoCard(c)?`<button class="cab" onclick="event.stopPropagation();abrirFichaClienteDoCard('${c.id}')" title="Abrir ficha do cliente">👤</button>`:''}<button class="cab">✏️</button></div>
     <div class="c-titulo">${esc(dt)}</div>
     ${c.nomePais&&c.titulo?`<div class="c-name">👤 ${esc(c.nomePais)}</div>`:''}
     ${_getCriancas(c).map(crianca=>`<div class="c-child">🎈 <strong>${esc(crianca.nome)}</strong>${crianca.idade?' · '+esc(crianca.idade):''}</div>`).join('')}
@@ -11502,6 +11502,15 @@ function _pagamentoHistLabel(ev){
     linhas.push(`<div style="margin-top:2px;font-size:12px;font-weight:700;color:var(--success,#6E879F)">✅ Quitado em ${fmtDate(ev.dataQuitacao)} — ${fmtMoney(restante)}</div>`);
   }
   return linhas.join('');
+}
+function _clienteDoCard(card){
+  const tel=(card?.telefone||'').replace(/\D/g,'');
+  if(!tel)return null;
+  return clients.find(c=>(c.telefone||'').replace(/\D/g,'')===tel)||null;
+}
+function abrirFichaClienteDoCard(cardId){
+  const cl=_clienteDoCard(opCards.find(c=>c.id===cardId));
+  if(cl)openClientDetail(cl.id);
 }
 function openClientDetail(clientId){
   viewingClId=clientId;const cl=clients.find(c=>c.id===clientId);if(!cl)return;
