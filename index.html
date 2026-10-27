@@ -2784,7 +2784,7 @@ input[type="date"]{cursor:pointer}
           </div>
           <button type="button" id="btn-abrir-galeria-cl" onclick="abrirGaleriaCliente()" style="display:none;padding:9px 14px;background:var(--primary-light);color:var(--primary-dark);border:1.5px solid var(--primary);border-radius:8px;font:600 12px 'Montserrat',sans-serif;cursor:pointer;white-space:nowrap;margin-top:20px">🔗 Abrir</button>
         </div>
-        <div class="fg"><label>📍 Como nos encontrou?</label><select id="cl-origem" onchange="onOrigemChange()"><option value="">Não informado</option><option value="instagram">📸 Instagram</option><option value="google">🔍 Google</option><option value="trafego-pago">💰 Tráfego Pago</option><option value="indicacao">🤝 Indicação</option><option value="site">🌐 Site</option><option value="whatsapp">💬 WhatsApp</option><option value="outro">Outro</option></select></div>
+        <div class="fg"><label>📍 Como nos encontrou?</label><select id="cl-origem" onchange="onOrigemChange()"><option value="">Não informado</option><option value="instagram">📸 Instagram</option><option value="google">🔍 Google</option><option value="trafego-pago">💰 Tráfego Pago</option><option value="indicacao">🤝 Indicação</option><option value="site">🌐 Site</option><option value="whatsapp">💬 WhatsApp</option><option value="ja-era-cliente">🔁 Já era cliente</option><option value="outro">Outro</option></select></div>
         <div class="fg" id="cl-ref-wrap" style="display:none;position:relative">
           <label>👤 Indicado por</label>
           <input type="hidden" id="cl-origem-ref-id">
@@ -11465,9 +11465,9 @@ function renderClientes(){
     const color=avatarColors[(c.nome||'').charCodeAt(0)%avatarColors.length];
     const tags=getClientTags(c);
     const tagsHtml=tags.length?tags.map(t=>`<span class="cl-tag" onclick="event.stopPropagation();filterByTag('${t}')">${esc(t)}</span>`).join(' '):'<span style="color:var(--muted)">—</span>';
-    const ORIG_ICON={'instagram':'📸','google':'🔍','trafego-pago':'💰','indicacao':'🤝','site':'🌐','whatsapp':'💬','outro':'•'};
+    const ORIG_ICON={'instagram':'📸','google':'🔍','trafego-pago':'💰','indicacao':'🤝','site':'🌐','whatsapp':'💬','ja-era-cliente':'🔁','outro':'•'};
     const origIcon=c.origem?ORIG_ICON[c.origem]||'•':'';
-    const origLabel={'instagram':'Instagram','google':'Google','trafego-pago':'Tráfego Pago','indicacao':'Indicação','site':'Site','whatsapp':'WhatsApp','outro':'Outro'}[c.origem]||'';
+    const origLabel={'instagram':'Instagram','google':'Google','trafego-pago':'Tráfego Pago','indicacao':'Indicação','site':'Site','whatsapp':'WhatsApp','ja-era-cliente':'Já era cliente','outro':'Outro'}[c.origem]||'';
     const refName=c.origem==='indicacao'&&c.origemClienteId?clients.find(r=>r.id===c.origemClienteId)?.nome:'';
     const isParceiro=c.tipo==='parceiro';
     const avatarBg=isParceiro?`linear-gradient(135deg,#9FB5CB,#1a5c38)`:`linear-gradient(135deg,${color},${color}cc)`;
@@ -11522,7 +11522,7 @@ function openClientDetail(clientId){
   const rows=[{label:'WhatsApp / Telefone',val:cl.telefone,icon:'📱'},{label:'Email',val:cl.email,icon:'✉️'},{label:'CPF',val:cl.cpf,icon:'🪪'},{label:'Cidade',val:cl.cidade,icon:'📍'},{label:'Endereço (brindes)',val:cl.endereco,icon:'📦'}].filter(r=>r.val);
   const galeriaHtml=cl.galeria?`<div class="cl-info-row"><div class="cl-info-label">Galeria</div><div class="cl-info-val"><a href="${esc(cl.galeria)}" target="_blank" rel="noopener" style="color:var(--primary);font-weight:700;text-decoration:none">🔗 Ver Galeria</a></div></div>`:'';
   const clTags=getClientTags(cl);
-  const ORIG_LBL={'instagram':'📸 Instagram','google':'🔍 Google','trafego-pago':'💰 Tráfego Pago','indicacao':'🤝 Indicação','site':'🌐 Site','whatsapp':'💬 WhatsApp','outro':'Outro'};
+  const ORIG_LBL={'instagram':'📸 Instagram','google':'🔍 Google','trafego-pago':'💰 Tráfego Pago','indicacao':'🤝 Indicação','site':'🌐 Site','whatsapp':'💬 WhatsApp','ja-era-cliente':'🔁 Já era cliente','outro':'Outro'};
   let origemHtml='';
   if(cl.origem){
     const lbl=ORIG_LBL[cl.origem]||cl.origem;
@@ -11851,7 +11851,7 @@ function renderDashAnalytics(year){
   const maxP=Math.max(...pArr.map(([,v])=>v),1);
   const pHtml=pArr.length?pArr.map(([nm,n])=>`<div class="chart-row"><div class="chart-label" title="${nm}" style="width:150px">${nm}</div><div class="chart-bar-wrap"><div class="chart-bar" style="width:${Math.round(n/maxP*100)}%;background:var(--accent)"></div></div><div class="chart-val">${n}</div></div>`).join(''):`<div style="color:var(--muted);font-size:13px">Registre pacotes nos cards para ver dados aqui</div>`;
   // Origin chart
-  const ORIG_LBL={'instagram':'📸 Instagram','google':'🔍 Google','trafego-pago':'💰 Tráfego Pago','indicacao':'🤝 Indicação','site':'🌐 Site','whatsapp':'💬 WhatsApp','outro':'Outro'};
+  const ORIG_LBL={'instagram':'📸 Instagram','google':'🔍 Google','trafego-pago':'💰 Tráfego Pago','indicacao':'🤝 Indicação','site':'🌐 Site','whatsapp':'💬 WhatsApp','ja-era-cliente':'🔁 Já era cliente','outro':'Outro'};
   const oCounts={};clients.forEach(c=>{if(c.origem&&c.origem!==''){const k=c.origem;if(!oCounts[k])oCounts[k]=0;oCounts[k]++}});
   const oArr=Object.entries(oCounts).sort((a,b)=>b[1]-a[1]);
   const maxO=Math.max(...oArr.map(([,v])=>v),1);
