@@ -2135,6 +2135,9 @@ input[type="date"]{cursor:pointer}
       <div style="font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5">5% de desconto na festa, se ela fechar. Marque aqui quando já tiver dado.</div>
     </div>
   </div>
+  <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+    <button onclick="zerarDadosIndicacoes()" style="background:none;color:#E06B5A;border:1.5px solid #5c2a26;border-radius:9px;padding:7px 14px;font:700 12px 'Montserrat',sans-serif;cursor:pointer">🧹 Zerar dados desta aba</button>
+  </div>
   <div id="indic-empty" style="display:none" class="empty">
     <div class="empty-icon">💛</div>
     <div class="empty-title">Nenhuma indicação registrada ainda</div>
@@ -11756,6 +11759,13 @@ function renderIndicacoes(){
       ${enderecoHtml}
     </div>`;
   }).join('');
+}
+function zerarDadosIndicacoes(){
+  if(!confirm('Apagar os dados desta aba?\n\nSão apagados: caixas enviadas, descontos dados, brindes e cupons.\n\nOs clientes e os endereços NÃO são apagados.'))return;
+  indicData={};
+  clients.forEach(c=>{delete c.indicDescontoDado;delete c.indicCaixaEnviada;});
+  savIndic();savCl();renderIndicacoes();
+  toast('🧹 Dados da aba Indicações zerados','green');
 }
 function setIndicFlag(clientId,campo,val){
   const cl=clients.find(c=>c.id===clientId);if(!cl)return;
