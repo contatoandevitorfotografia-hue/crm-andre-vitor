@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Painel de Tráfego</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<style>
+  :root{--bg:#14171c;--card:#1d2229;--line:#2c333d;--txt:#e8ecf1;--mut:#8b96a5;--acc:#e0a14e;--ok:#7fd99a;--no:#e78a7c}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+  header{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+  h1{font-size:18px;margin:0}
+  main{padding:18px 22px;max-width:1100px;margin:0 auto}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+  .stat b{display:block;font-size:20px;margin-top:4px}
+  .mut{color:var(--mut);font-size:12px}
+  table{width:100%;border-collapse:collapse}
+  th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+  .tag{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:700;background:#2a2f38}
+  .tag.fechado{background:#17301f;color:var(--ok)} .tag.perdido{background:#3a1f1c;color:var(--no)} .tag.orcamento{background:#3a2f17;color:var(--acc)}
+  form{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+  label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--mut)}
+  input,select,textarea{background:var(--bg);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:9px;font:inherit}
+  textarea{grid-column:1/-1;min-height:70px}
+  button{background:var(--acc);color:#1a1d23;border:0;border-radius:8px;padding:10px 16px;font-weight:700;cursor:pointer}
+  button.sec{background:none;color:var(--mut);border:1px solid var(--line)}
+  button.del{background:none;color:var(--no);padding:4px 8px;border:1px solid #5c2a26}
+  .login{max-width:360px;margin:60px auto}
+  .msg{color:var(--no);font-size:13px;min-height:18px}
+  .wrap{overflow-x:auto}
+  @media (max-width:640px){main{padding:12px}}
+</style>
+</head>
+<body>
+
+<div id="tela-login" class="login" style="display:none">
+  <div class="card">
+    <h1 style="margin-bottom:12px">Painel de Tráfego</h1>
+    <form id="form-login" style="grid-template-columns:1fr">
+      <label>E-mail <input id="login-email" type="email" required></label>
+      <label>Senha <input id="login-senha" type="password" required></label>
+      <button type="submit">Entrar</button>
+      <div id="login-msg" class="msg"></div>
+    </form>
+  </div>
+</div>
+
+<div id="tela-app" style="display:none">
+  <header>
+    <h1>📊 Painel de Tráfego · André Vitor Fotografia</h1>
+    <button class="sec" id="btn-sair">Sair</button>
+  </header>
+  <main>
+    <div class="cards" id="resumo-cards"></div>
+
+    <div class="card">
+      <h1 style="font-size:15px;margin-bottom:10px">Origem dos clientes</h1>
+      <div class="wrap" id="tabela-origem"></div>
+    </div>
+
+    <div class="card" id="bloco-novo" style="display:none">
+      <h1 style="font-size:15px;margin-bottom:10px">Novo lead</h1>
+      <form id="form-lead">
+        <label>Origem
+          <select name="origem" required>
+            <option value="instagram">📸 Instagram</option>
+            <option value="trafego-pago">💰 Tráfego Pago</option>
+            <option value="indicacao">🤝 Indicação</option>
+            <option value="ja-era-cliente">🔁 Já era cliente</option>
+            <option value="outro">Outro</option>
+          </select>
+        </label>
+        <label>Data do primeiro contato <input name="data" type="date" required></label>
+        <label>Status
+          <select name="status" required>
+            <option value="contato">💬 Contato</option>
+            <option value="orcamento">📋 Orçamento</option>
+            <option value="fechado">✅ Fechado</option>
+            <option value="perdido">❌ Perdido</option>
+          </select>
+        </label>
+        <label>Valor da festa (quando fechar) <input name="valor" type="number" step="0.01" min="0" placeholder="0,00"></label>
+        <label style="grid-column:1/-1">Observação <textarea name="obs" placeholder="Qualquer informação sobre esse trabalho"></textarea></label>
+        <div style="grid-column:1/-1"><button type="submit">Salvar lead</button> <span id="msg-lead" class="mut"></span></div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h1 style="font-size:15px;margin-bottom:10px">Leads</h1>
+      <div class="wrap" id="tabela-leads"></div>
+    </div>
+  </main>
+</div>
+
+<script>
+  // Firebase: o mesmo projeto do CRM. Só o nó trafego26 é liberado pra esta página.
+  const FB_CFG={apiKey:'AIzaSyC0K0T5hwySXMlFGfDAcjwLo73InsEfuEg',authDomain:'crm---2026.firebaseapp.com',
+    databaseURL:'https://crm---2026-default-rtdb.firebaseio.com',projectId:'crm---2026',
+    storageBucket:'crm---2026.firebasestorage.app',messagingSenderId:'274783220531',
+    appId:'1:274783220531:web:ee50e424b5a2af2bfc0446'};
+  // UID de quem alimenta (André) — só essa conta vê o formulário e pode lançar.
+  var UID_ANDRE='COLE_AQUI_O_UID_DO_ANDRE';
+
+  const ORIGENS={'instagram':'📸 Instagram','trafego-pago':'💰 Tráfego Pago','indicacao':'🤝 Indicação','ja-era-cliente':'🔁 Já era cliente','outro':'Outro'};
+  const STATUS={contato:'💬 Contato',orcamento:'📋 Orçamento',fechado:'✅ Fechado',perdido:'❌ Perdido'};
+  const BRL=v=>'R$ '+(+v||0).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const dataBR=d=>d?d.split('-').reverse().join('/'):'';
+
+  let app;
+  try{app=firebase.app('trafego')}catch(e){app=firebase.initializeApp(FB_CFG,'trafego')}
+  const auth=firebase.auth(app), db=firebase.database(app);
+  const ref=()=>db.ref('trafego26/leads');
+
+  function resumo(leads){
+    const arr=Object.values(leads||{});
+    const fechados=arr.filter(l=>l.status==='fechado');
+    const porOrigem={};
+    arr.forEach(l=>{
+      const k=l.origem||'outro';
+      const o=porOrigem[k]=porOrigem[k]||{leads:0,fechados:0,valor:0};
+      o.leads++;
+      if(l.status==='fechado'){o.fechados++;o.valor+=+l.valor||0;}
+    });
+    return{total:arr.length,fechados:fechados.length,taxa:arr.length?fechados.length/arr.length:0,
+      valor:fechados.reduce((s,l)=>s+(+l.valor||0),0),porOrigem};
+  }
+
+  function renderPainel(leads,isOwner){
+    const r=resumo(leads);
+    document.getElementById('resumo-cards').innerHTML=`
+      <div class="stat"><span class="mut">Leads</span><b>${r.total}</b></div>
+      <div class="stat"><span class="mut">Fechados</span><b>${r.fechados}</b></div>
+      <div class="stat"><span class="mut">Taxa de fechamento</span><b>${(r.taxa*100).toFixed(0)}%</b></div>
+      <div class="stat"><span class="mut">Valor fechado</span><b>${BRL(r.valor)}</b></div>`;
+
+    const linhasOrigem=Object.keys(ORIGENS).map(k=>{
+      const o=r.porOrigem[k]||{leads:0,fechados:0,valor:0};
+      const taxa=o.leads?Math.round(o.fechados/o.leads*100):0;
+      return`<tr><td>${ORIGENS[k]}</td><td>${o.leads}</td><td>${o.fechados}</td><td>${taxa}%</td><td>${BRL(o.valor)}</td></tr>`;
+    }).join('');
+    document.getElementById('tabela-origem').innerHTML=`<table>
+      <thead><tr><th>Origem</th><th>Leads</th><th>Fechados</th><th>Conversão</th><th>Valor fechado</th></tr></thead>
+      <tbody>${linhasOrigem}</tbody></table>`;
+
+    const lista=Object.entries(leads||{}).sort((a,b)=>(b[1].data||'').localeCompare(a[1].data||''));
+    const linhas=lista.map(([id,l])=>`<tr>
+        <td>${dataBR(l.data)}</td>
+        <td>${esc(ORIGENS[l.origem]||l.origem||'—')}</td>
+        <td><span class="tag ${esc(l.status)}">${esc(STATUS[l.status]||l.status)}</span></td>
+        <td>${l.valor?BRL(l.valor):'—'}</td>
+        <td>${esc(l.obs||'')}</td>
+        ${isOwner?`<td><button class="del" onclick="apagarLead('${esc(id)}')">×</button></td>`:''}
+      </tr>`).join('');
+    document.getElementById('tabela-leads').innerHTML=lista.length?`<table>
+      <thead><tr><th>Data</th><th>Origem</th><th>Status</th><th>Valor</th><th>Observação</th>${isOwner?'<th></th>':''}</tr></thead>
+      <tbody>${linhas}</tbody></table>`:'<div class="mut">Nenhum lead lançado ainda.</div>';
+  }
+
+  function apagarLead(id){
+    if(!confirm('Apagar este lead?'))return;
+    ref().child(id).remove();
+  }
+
+  document.getElementById('form-login').addEventListener('submit',async e=>{
+    e.preventDefault();
+    const msg=document.getElementById('login-msg');msg.textContent='';
+    try{await auth.signInWithEmailAndPassword(document.getElementById('login-email').value.trim(),document.getElementById('login-senha').value);}
+    catch(err){msg.textContent='Não consegui entrar. Confira e-mail e senha.';}
+  });
+  document.getElementById('btn-sair').addEventListener('click',()=>auth.signOut());
+
+  document.getElementById('form-lead').addEventListener('submit',e=>{
+    e.preventDefault();
+    const f=e.target;
+    const lead={origem:f.origem.value,data:f.data.value,status:f.status.value,
+      valor:+f.valor.value||0,obs:f.obs.value.trim(),criadoEm:Date.now()};
+    ref().push(lead).then(()=>{
+      f.reset();document.getElementById('msg-lead').textContent='Lead salvo ✓';
+      setTimeout(()=>document.getElementById('msg-lead').textContent='',2500);
+    }).catch(()=>{document.getElementById('msg-lead').textContent='Não consegui salvar. Tente de novo.';});
+  });
+
+  let parar=null;
+  auth.onAuthStateChanged(user=>{
+    const isOwner=!!user&&user.uid===UID_ANDRE;
+    document.getElementById('tela-login').style.display=user?'none':'block';
+    document.getElementById('tela-app').style.display=user?'block':'none';
+    document.getElementById('bloco-novo').style.display=isOwner?'block':'none';
+    if(parar){ref().off('value',parar);parar=null;}
+    if(!user)return;
+    parar=snap=>renderPainel(snap.val(),isOwner);
+    ref().on('value',parar,err=>{
+      document.getElementById('tabela-leads').innerHTML='<div class="mut">Sem permissão para ver os dados. Fale com o André.</div>';
+    });
+  });
+</script>
+</body>
+</html>
