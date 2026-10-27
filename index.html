@@ -4188,7 +4188,7 @@ function prCardHTML(c,cc){
   const isFreelaCol=_cat==='video';
   const isCopia=!!c.copiaDe;
   return `<div class="proj-card${planoDeepActive?' plano-deep':''}" draggable="true" data-id="${c.id}" style="--cc:${cc};${pendBg}" ondragstart="onDS(event,'${c.id}','pr')" ondragend="onDE2(event)" onclick="openPrModal('${c.id}',null,event)">
-    <div class="card-actions"><button class="cab del" onclick="qDel('pr','${c.id}',event)">🗑</button><button class="cab" onclick="openTransfer('pr','${c.id}',event)" title="Mover ou copiar para outro board">🔀</button><button class="cab">✏️</button></div>
+    <div class="card-actions"><button class="cab del" onclick="qDel('pr','${c.id}',event)">🗑</button><button class="cab" onclick="openTransfer('pr','${c.id}',event)" title="Mover ou copiar para outro board">🔀</button>${src&&_clienteDoCard(src)?`<button class="cab" onclick="event.stopPropagation();abrirFichaClienteDoCard('${src.id}')" title="Abrir ficha do cliente">👤</button>`:''}<button class="cab">✏️</button></div>
     ${isCopia?`<div style="display:inline-flex;align-items:center;gap:4px;font-size:9.5px;font-weight:700;color:#B1C0CF;background:#20252A;border:1px solid #566370;border-radius:20px;padding:2px 7px;margin-bottom:6px">🔗 Cópia</div>`:''}
     ${(planoBadge||pendBadge)?`<div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-bottom:6px">${planoBadge}${pendBadge}</div>`:''}
     <div class="pc-name">${esc(nome)}</div>
