@@ -2122,21 +2122,17 @@ input[type="date"]{cursor:pointer}
 
 <div id="view-indicacoes" class="view">
   <div class="pg-hdr">
-    <div><div class="pg-title">💛 Indicações</div><div class="pg-sub">Quem indica, fecha festa e merece mimo</div></div>
+    <div><div class="pg-title">💛 Indicações</div><div class="pg-sub">Caixa de fotos para quem indica · 5% para quem é indicado</div></div>
   </div>
-  <!-- Régua dos níveis -->
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px">
-    <div style="background:var(--surface);border:1.5px solid var(--border);border-left:4px solid #6BA3E0;border-radius:12px;padding:12px 14px">
-      <div style="font-size:13px;font-weight:800;color:#7FB0E6">💌 Indicou 1x</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5">Mensagem de agradecimento + cupom <strong>10%</strong> na próxima festa (transferível · 18 meses)</div>
-    </div>
+  <!-- Regras -->
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:18px">
     <div style="background:var(--surface);border:1.5px solid var(--border);border-left:4px solid #E0A14E;border-radius:12px;padding:12px 14px">
-      <div style="font-size:13px;font-weight:800;color:#EBB76E">🎁 Indica de vez em quando</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5">2–3 indicações no ano → + brinde médio: fotos impressas ou quadro 20x30</div>
+      <div style="font-size:13px;font-weight:800;color:#EBB76E">🎁 Quem indicou</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5">Uma caixa de fotos impressa para cada indicação que fechar a festa.</div>
     </div>
-    <div style="background:var(--surface);border:1.5px solid var(--border);border-left:4px solid #A98BE0;border-radius:12px;padding:12px 14px">
-      <div style="font-size:13px;font-weight:800;color:#B9A3E8">👑 Embaixadora</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5">4+ indicações no ano → rodízio mensal de brindes (caixa, quadro, mini ensaio)</div>
+    <div style="background:var(--surface);border:1.5px solid var(--border);border-left:4px solid #6BA3E0;border-radius:12px;padding:12px 14px">
+      <div style="font-size:13px;font-weight:800;color:#7FB0E6">🏷️ Indicado</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5">5% de desconto na festa, se ela fechar. Marque aqui quando já tiver dado.</div>
     </div>
   </div>
   <div id="indic-empty" style="display:none" class="empty">
@@ -11710,19 +11706,10 @@ function _statusIndicado(cl){
   if(INDIC_FECHADA_COLS.includes(card.coluna))return{txt:'festa fechada',emoji:'✅',cor:'#9FB5CB',fechada:true};
   return{txt:'em negociação',emoji:'⏳',cor:'#E0A14E',fechada:false};
 }
-function _nivelIndic(n){
-  if(n>=4)return{emoji:'👑',nome:'Embaixadora',cor:'#A98BE0',bg:'#1E1A2E'};
-  if(n>=2)return{emoji:'🎁',nome:'Indica sempre',cor:'#E0A14E',bg:'#2A2113'};
-  return{emoji:'💌',nome:'Indicou',cor:'#6BA3E0',bg:'#16202E'};
-}
-const _MESES_PT=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 function renderIndicacoes(){
   const list=document.getElementById('indic-list');
   const empty=document.getElementById('indic-empty');
   if(!list)return;
-  const ANO=365*24*60*60*1000;
-  const agora=Date.now();
-  // Agrupa indicados por quem indicou
   const porRef={};
   clients.filter(c=>c.origem==='indicacao'&&c.origemClienteId).forEach(c=>{
     (porRef[c.origemClienteId]=porRef[c.origemClienteId]||[]).push(c);
@@ -11730,55 +11717,50 @@ function renderIndicacoes(){
   const refIds=Object.keys(porRef);
   empty.style.display=refIds.length?'none':'block';
   if(!refIds.length){list.innerHTML='';return}
-  const ymAtual=new Date().toISOString().slice(0,7);
-  const mesNome=_MESES_PT[new Date().getMonth()];
   const linhas=refIds.map(refId=>{
     const ref=clients.find(c=>c.id===refId);
     const inds=porRef[refId];
-    const inds12m=inds.filter(c=>agora-(c.criadoEm||0)<ANO).length;
-    const fechadas=inds.filter(c=>_statusIndicado(c).fechada).length;
-    return{refId,ref,inds,inds12m,fechadas};
-  }).sort((a,b)=>b.inds12m-a.inds12m||b.inds.length-a.inds.length);
-  list.innerHTML=linhas.map(({refId,ref,inds,inds12m,fechadas})=>{
+    const fechados=inds.filter(c=>_statusIndicado(c).fechada);
+    const caixasPend=fechados.filter(c=>!c.indicCaixaEnviada).length;
+    const descPend=fechados.filter(c=>!c.indicDescontoDado).length;
+    return{refId,ref,inds,fechados,caixasPend,descPend};
+  }).sort((a,b)=>(b.caixasPend+b.descPend)-(a.caixasPend+a.descPend)||b.inds.length-a.inds.length);
+  list.innerHTML=linhas.map(({refId,ref,inds,fechados,caixasPend,descPend})=>{
     const nome=ref?ref.nome:'(cliente removido)';
-    const nivel=_nivelIndic(inds12m||inds.length);
-    const d=indicData[refId]||{};
-    const brindes=d.brindes||[];
-    const brindeMes=brindes.find(b=>b.ym===ymAtual);
-    const cupomUsado=d.cupom==='usado';
+    const marcar=(c,campo,val,rotulo)=>`<label style="display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:${val?'#9FB5CB':'#E0A14E'};cursor:pointer"><input type="checkbox" ${val?'checked':''} onchange="setIndicFlag('${c.id}','${campo}',this.checked)" style="width:15px;height:15px;cursor:pointer"> ${rotulo}</label>`;
     const indicadosHtml=inds.map(c=>{
       const st=_statusIndicado(c);
-      return`<span onclick="openClientDetail('${c.id}')" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);border-radius:99px;padding:4px 11px;font-size:11.5px;font-weight:600;color:var(--text);cursor:pointer">${esc(c.nome)} <span style="color:${st.cor};font-weight:700">${st.emoji} ${st.txt}</span></span>`;
+      const acoes=st.fechada
+        ?`${marcar(c,'indicDescontoDado',c.indicDescontoDado,'🏷️ 5% dado')}${marcar(c,'indicCaixaEnviada',c.indicCaixaEnviada,'🎁 Caixa enviada')}`
+        :`<span style="font-size:11px;color:var(--muted)">desconto e caixa aparecem quando a festa fechar</span>`;
+      return`<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:9px 0;border-bottom:1px solid var(--border)">
+        <span onclick="openClientDetail('${c.id}')" style="font-size:13px;font-weight:700;color:var(--text);cursor:pointer;text-decoration:underline dotted">${esc(c.nome)}</span>
+        <span style="font-size:11.5px;font-weight:700;color:${st.cor}">${st.emoji} ${st.txt}</span>
+        <span style="display:flex;gap:14px;flex-wrap:wrap;margin-left:auto">${acoes}</span>
+      </div>`;
     }).join('');
-    const histBrindes=brindes.length?`<div style="font-size:10.5px;color:var(--muted);margin-top:6px">🎁 Brindes dados: ${brindes.map(b=>{const[y,m]=b.ym.split('-');return`<strong>${_MESES_PT[parseInt(m)-1]}</strong>${b.desc?' ('+esc(b.desc)+')':''}`}).join(' · ')}</div>`:'';
-    return`<div style="background:var(--surface);border:1.5px solid var(--border);border-left:4px solid ${nivel.cor};border-radius:14px;padding:16px 18px">
-      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px">
-        <span style="font-size:13px;font-weight:800;padding:5px 13px;border-radius:99px;background:${nivel.bg};color:${nivel.cor};border:1px solid ${nivel.cor}55">${nivel.emoji} ${nivel.nome}</span>
-        <span style="font-size:16px;font-weight:800;color:var(--text);cursor:pointer" onclick="${ref?`openClientDetail('${refId}')`:''}">${esc(nome)}</span>
-        <span style="font-size:12px;color:var(--muted);font-weight:600">${inds.length} indicaç${inds.length!==1?'ões':'ão'}${inds12m!==inds.length?` (${inds12m} no último ano)`:''} · <strong style="color:#9FB5CB">${fechadas} festa${fechadas!==1?'s':''} fechada${fechadas!==1?'s':''}</strong></span>
+    const enderecoHtml=ref?(ref.endereco
+      ?`<div onclick="editEnderecoIndic('${refId}')" title="Clique para editar" style="font-size:11.5px;color:var(--muted);margin-top:10px;cursor:pointer;font-weight:600">📦 ${esc(ref.endereco)} ✏️</div>`
+      :`<div onclick="editEnderecoIndic('${refId}')" style="display:inline-block;font-size:11.5px;color:#E0A14E;background:#2A2113;border:1px dashed #4A3A1E;border-radius:8px;padding:5px 11px;margin-top:10px;cursor:pointer;font-weight:700">📦 Sem endereço pra envio — clique pra salvar</div>`):'';
+    const pend=caixasPend+descPend;
+    const pendHtml=pend
+      ?`<span style="font-size:11.5px;font-weight:800;color:#E0A14E;background:#2A2113;border-radius:99px;padding:4px 11px">${caixasPend?`🎁 ${caixasPend} caixa${caixasPend!==1?'s':''} a enviar`:''}${caixasPend&&descPend?' · ':''}${descPend?`🏷️ ${descPend} desconto${descPend!==1?'s':''} a dar`:''}</span>`
+      :`<span style="font-size:11.5px;font-weight:800;color:#9FB5CB;background:#1D2630;border-radius:99px;padding:4px 11px">✅ em dia</span>`;
+    return`<div style="background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:16px 18px">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px">
+        <span onclick="${ref?`openClientDetail('${refId}')`:''}" style="font-size:16px;font-weight:800;color:var(--text);cursor:pointer">${esc(nome)}</span>
+        <span style="font-size:12px;color:var(--muted);font-weight:600">${inds.length} indicaç${inds.length!==1?'ões':'ão'} · ${fechados.length} festa${fechados.length!==1?'s':''} fechada${fechados.length!==1?'s':''}</span>
+        ${pendHtml}
       </div>
-      <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px">${indicadosHtml}</div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
-        ${ref&&ref.telefone?`<button onclick="agradecerIndicacao('${refId}','dt-indic')" style="background:#16202E;color:#7FB0E6;border:1.5px solid #2c4a6b;border-radius:9px;padding:7px 14px;font:700 12px 'Montserrat',sans-serif;cursor:pointer" title="Mensagem de agradecimento com o cupom de 10%">💌 Agradecer + cupom 10%</button>`:''}
-        ${ref&&ref.telefone&&(inds12m||inds.length)>=2&&(inds12m||inds.length)<4?`<button onclick="agradecerIndicacao('${refId}','dt-indic-brinde')" style="background:#2A2113;color:#EBB76E;border:1.5px solid #4A3A1E;border-radius:9px;padding:7px 14px;font:700 12px 'Montserrat',sans-serif;cursor:pointer" title="Avisa do brinde e pede o endereço completo">🎁 Avisar brinde + pedir endereço</button>`:''}
-        ${ref&&ref.telefone&&(inds12m||inds.length)>=4?`<button onclick="agradecerIndicacao('${refId}','dt-indic-vip')" style="background:#1E1A2E;color:#B9A3E8;border:1.5px solid #3A2E58;border-radius:9px;padding:7px 14px;font:700 12px 'Montserrat',sans-serif;cursor:pointer" title="Mensagem VIP do brinde do mês, pedindo o endereço">👑 Brinde do mês + pedir endereço</button>`:''}
-        <button onclick="toggleCupomIndic('${refId}')" style="background:${cupomUsado?'#1A1F27':'#2A2113'};color:${cupomUsado?'#9AA4AE':'#EBB76E'};border:1.5px solid ${cupomUsado?'var(--border)':'#4A3A1E'};border-radius:9px;padding:7px 14px;font:700 12px 'Montserrat',sans-serif;cursor:pointer">${cupomUsado?`✅ Cupom 10% usado${d.cupomEm?' em '+new Date(d.cupomEm).toLocaleDateString('pt-BR'):''} · ↻ gerar novo`:'🎟️ Cupom 10% disponível · marcar como usado'}</button>
-        <button onclick="toggleBrindeMes('${refId}')" style="background:${brindeMes?'#1D2630':'#1E1A2E'};color:${brindeMes?'#9FB5CB':'#B9A3E8'};border:1.5px solid ${brindeMes?'#244A3A':'#3A2E58'};border-radius:9px;padding:7px 14px;font:700 12px 'Montserrat',sans-serif;cursor:pointer">${brindeMes?`✅ Brinde de ${mesNome} entregue${brindeMes.desc?': '+esc(brindeMes.desc):''}`:`🎁 Marcar brinde de ${mesNome}`}</button>
-      </div>
-      ${ref?(ref.endereco
-        ?`<div onclick="editEnderecoIndic('${refId}')" title="Clique para editar" style="font-size:11.5px;color:var(--muted);margin-top:9px;cursor:pointer;font-weight:600">📦 ${esc(ref.endereco)} ✏️</div>`
-        :`<div onclick="editEnderecoIndic('${refId}')" style="display:inline-block;font-size:11.5px;color:#E0A14E;background:#2A2113;border:1px dashed #4A3A1E;border-radius:8px;padding:5px 11px;margin-top:9px;cursor:pointer;font-weight:700">📦 Sem endereço pra envio — clique pra salvar quando ela responder</div>`):''}
-      ${histBrindes}
+      ${indicadosHtml}
+      ${enderecoHtml}
     </div>`;
   }).join('');
 }
-function agradecerIndicacao(clientId,tplId){
+function setIndicFlag(clientId,campo,val){
   const cl=clients.find(c=>c.id===clientId);if(!cl)return;
-  if(!cl.telefone){toast('⚠️ Cliente sem telefone cadastrado','orange');return}
-  tplSendCtx={card:{},client:cl};
-  const tid=tplId||'dt-indic';
-  activeTplId=templates.find(t=>t.id===tid)?tid:null;
-  renderTplSendModal();document.getElementById('mo-tpl-send').classList.remove('hidden');
+  if(val)cl[campo]=Date.now();else delete cl[campo];
+  cl.updatedAt=Date.now();savCl();renderIndicacoes();
 }
 function editEnderecoIndic(clientId){
   const cl=clients.find(c=>c.id===clientId);if(!cl)return;
@@ -11787,25 +11769,6 @@ function editEnderecoIndic(clientId){
   cl.endereco=novo.trim();cl.updatedAt=Date.now();
   savCl();renderIndicacoes();
   toast(cl.endereco?'📦 Endereço salvo!':'Endereço removido','green');
-}
-function toggleCupomIndic(refId){
-  const d=indicData[refId]||(indicData[refId]={});
-  if(d.cupom==='usado'){d.cupom='disponivel';d.cupomEm=null;toast('🎟️ Novo cupom de 10% gerado!','green');}
-  else{d.cupom='usado';d.cupomEm=Date.now();toast('✅ Cupom marcado como usado','green');}
-  savIndic();renderIndicacoes();
-}
-function toggleBrindeMes(refId){
-  const d=indicData[refId]||(indicData[refId]={});
-  d.brindes=d.brindes||[];
-  const ym=new Date().toISOString().slice(0,7);
-  const i=d.brindes.findIndex(b=>b.ym===ym);
-  if(i!==-1){d.brindes.splice(i,1);toast('Brinde do mês desmarcado','');}
-  else{
-    const desc=(prompt('Qual foi o brinde? (opcional)\nEx: Caixa Gepeto, fotos impressas, quadro 20x30...')||'').trim();
-    d.brindes.push({ym,desc});
-    toast('🎁 Brinde registrado!','green');
-  }
-  savIndic();renderIndicacoes();
 }
 let _dashConvMes=null,_dashConvAno=null;
 function renderDashConversao(){
