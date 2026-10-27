@@ -11762,10 +11762,17 @@ function renderIndicacoes(){
 }
 function zerarDadosIndicacoes(){
   if(!confirm('Apagar os dados desta aba?\n\nSão apagados: caixas enviadas, descontos dados, brindes e cupons.\n\nOs clientes e os endereços NÃO são apagados.'))return;
-  indicData={};
-  clients.forEach(c=>{delete c.indicDescontoDado;delete c.indicCaixaEnviada;});
-  savIndic();savCl();renderIndicacoes();
-  toast('🧹 Dados da aba Indicações zerados','green');
+  try{
+    let brindes=0,cupons=0,marcacoes=0;
+    Object.values(indicData||{}).forEach(d=>{brindes+=(d.brindes||[]).length;if(d.cupom)cupons++;});
+    clients.forEach(c=>{if(c.indicDescontoDado!==undefined)marcacoes++;if(c.indicCaixaEnviada!==undefined)marcacoes++;});
+    indicData={};
+    clients.forEach(c=>{delete c.indicDescontoDado;delete c.indicCaixaEnviada;});
+    savIndic();savCl();renderIndicacoes();
+    alert(`Dados da aba zerados:\n• ${brindes} brinde(s)\n• ${cupons} cupom(ns)\n• ${marcacoes} marcação(ões)\n\nNenhum contato foi apagado.`);
+  }catch(e){
+    alert('Não consegui zerar. Erro: '+(e&&e.message||e));
+  }
 }
 function setIndicFlag(clientId,campo,val){
   const cl=clients.find(c=>c.id===clientId);if(!cl)return;
