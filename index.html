@@ -4024,12 +4024,8 @@ function opCardHTML(c,cc){
   const contractBadge=c.contrato?.token?`<span class="pend-badge ${c.contrato.status==='accepted'?'ok':'warn'}">${c.contrato.status==='accepted'?'✅ Contrato assinado':'📄 Aguardando aceite'}</span>`:'';
   let liqBadge='';
   if((c.tipoExecucao||'proprio')!=='freelancer'&&(c.tipoExecucao||'proprio')!=='sou-freela'&&(c.gastosItens||[]).length>0){
-    const _es=calcEmpresaShare(c);
-    const _ge=(c.gastosItens||[]).filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
-    const _liq=Math.max(0,_es-_ge);
-    const _as=calcAndreShare(c);
-    const _gp=(c.gastosItens||[]).filter(g=>g.tipo==='pessoal').reduce((s,g)=>s+(g.val||0),0);
-    const _aliq=Math.max(0,_as-_gp);
+    const _liq=calcEmpresaShare(c);
+    const _aliq=calcAndreShare(c);
     liqBadge=`<span class="pend-badge ok" style="background:#13251c;color:#7fd99a" title="Valor líquido da Empresa, após os gastos do evento">🟢 Empresa: ${fmtMoney(_liq)}</span> <span class="pend-badge ok" style="background:#132a45;color:#60a5fa" title="Valor líquido do André, após os gastos do evento">🔵 André: ${fmtMoney(_aliq)}</span>`;
   }
   const isNewLead = (c.origem === 'landpage' || c._novoAuto) && c.coluna === 'novo-contato';
@@ -5533,29 +5529,11 @@ function syncAllDistrib(){
   if(currentTab==='financeiro')renderPessAll();
   */
 }
+// André: o que sobra do total (já com desconto) depois dos custos do pacote e da parte da Empresa.
+// Freela contratada: também desconta o cachê. Transporte fica fora da divisão.
 function calcAndreShare(data){
-  // Freela: André líquido = valorTotal (plano) − cachê da freela por evento
-  if((data.tipoExecucao||'proprio')==='freelancer'){
-    const frl=freelancers.find(f=>f.id===data.freelancerId);
-    const vFreela=data.valorFreelancer||(frl?.valorFreela||0);
-    return parseFloat(Math.max(0,_totalComDesconto(data)-vFreela).toFixed(2));
-  }
-  // Planos com "cores" (Memórias/Movimento/Histórias) reservam parte do
-  // valor bruto pro custo físico (álbum etc.) — essa parte não é líquido
-  // de ninguém, então sai da sobra do André antes de dividir. Mesma conta
-  // de calcDistribuicao() (live, na ficha), só que a partir do card salvo.
-  const t=data.valorTotal||0;
-  const dAnd=_descontoAndre(data); // parte do desconto à vista que sai do André
-  const vc=_vcDoCard(data);
-  if(vc>0){
-    const gastosAlbum=(data.gastosItens||[]).filter(g=>g.tipo==='album').reduce((s,g)=>s+(g.val||0),0);
-    const gastosEmp=(data.gastosItens||[]).filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
-    const sobra=Math.max(0,t-vc-gastosAlbum-gastosEmp);
-    return parseFloat(Math.max(0,vc*0.6+sobra-dAnd).toFixed(2));
-  }
-  // Sem plano com cores: o que sobra depois da Empresa (gastos dela) e do desconto dela
-  const empShare=calcEmpresaShare(data);
-  return parseFloat(Math.max(0,t-empShare-dAnd).toFixed(2));
+  const cache=(data.tipoExecucao||'proprio')==='freelancer'?(data.valorFreelancer||(freelancers.find(f=>f.id===data.freelancerId)?.valorFreela||0)):0;
+  return parseFloat(Math.max(0,_totalComDesconto(data)-calcEmpresaShare(data)-_custosPacoteDoCard(data)-cache).toFixed(2));
 }
 function recalcAllCards(){
   let changed=0;
@@ -5599,8 +5577,7 @@ function syncFreelancerToAndre(card){
   let vAndre=0;
   if(tipoExec==='freelancer'){
     // Freelancer: André = Total - Cachê Freelancer
-    const vFreela=card.valorFreelancer||0;
-    vAndre=Math.max(0,_totalComDesconto(card)-vFreela);
+    vAndre=calcAndreShare(card);
   } else {
     // Próprio: André recebe o que sobra depois da Empresa (40% do Plano Cores) e dos custos do pacote
     vAndre=calcAndreShare(card);
@@ -5631,46 +5608,17 @@ function syncAllFreelancersToAndre(){
   opCards.filter(c=>FIN_COLS.includes(c.coluna)&&(c.valorAndre||0)>0).forEach(c=>syncFreelancerToAndre(c));
   savePessData();
 }
-// Desconto à vista da ficha, lido dos campos abertos (o valor ainda não foi salvo)
-function _descontoAvistaFicha(){
-  const marcado=document.getElementById('f-avistaDesconto')?.checked;
-  const avista=_migraFormaPag(document.getElementById('f-formaPag')?.value||'avista')==='avista';
-  const total=parseFloat(document.getElementById('f-valorTotal')?.value)||0;
-  return marcado&&avista&&total>0?parseFloat((total*0.05).toFixed(2)):0;
-}
 function calcDistribuicao(){
   // Nova lógica: separa custos de álbum da divisão empresa/andré
   // Empresa: 40% × valorCores + gastos empresa (pass-through)
   // André: 60% × valorCores + (valorTotal - valorCores - custosAlbum - custosEmpresa)
-  const _selIds=getSelectedPacIds();
-  const _selPacs=_selIds.map(id=>packages.find(p=>p.id===id)).filter(Boolean);
-  const _totalCoresD=_valorCoresPacs(_selPacs);
-  const _isHcD=_totalCoresD>0;
-  if(_isHcD){
-    const _totalD=parseFloat(document.getElementById('f-valorPlano')?.value)||0;
-    const _gastosEmpD=gastosItensTemp.filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
-    const _gastosAlbumD=gastosItensTemp.filter(g=>g.tipo==='album').reduce((s,g)=>s+(g.val||0),0);
-    // NOVO: Empresa recebe apenas 40% do Plano Cores + gastos de eventos separados (SEM álbum)
-    const _empProfitD=parseFloat((_totalCoresD*0.4).toFixed(2));
-    const _empBrutoD=parseFloat((_empProfitD+_gastosEmpD).toFixed(2));
-    // André: 60% do Plano Cores + Sobra (Total - Plano Cores - Álbum - gastos evento)
-    const _andProfitD=parseFloat((_totalCoresD*0.6).toFixed(2));
-    const _sobraD=parseFloat(Math.max(0,_totalD-_totalCoresD-_gastosAlbumD-_gastosEmpD).toFixed(2));
-    const _andD=parseFloat((_andProfitD+_sobraD).toFixed(2));
-    const _feD=document.getElementById('f-valorEmpresa');if(_feD)_feD.value=_empBrutoD||'';
-    const _faD=document.getElementById('f-valorAndre');if(_faD)_faD.value=_andD||'';
-  }
-  let empShare=parseFloat(document.getElementById('f-valorEmpresa')?.value)||0;
-  let andShare=parseFloat(document.getElementById('f-valorAndre')?.value)||0;
-  // Desconto à vista (ficha): 40% sai da Empresa (limitado aos 40% do Plano Cores); o resto sai do André
-  const _descFicha=_descontoAvistaFicha();
-  if(_descFicha>0){
-    const _freelaFicha=['freelancer','sou-freela'].includes(document.getElementById('f-execucao')?.value);
-    const _dEmpFicha=_freelaFicha?0:parseFloat(Math.min(_descFicha*0.4,_totalCoresD*0.4).toFixed(2));
-    empShare=Math.max(0,empShare-_dEmpFicha);
-    andShare=Math.max(0,andShare-(_descFicha-_dEmpFicha));
-  }
-  const t=empShare+andShare;
+  // Empresa e André: mesma conta do Financeiro. Custos do pacote (memórias, movimento, cinegrafista) saem antes
+  // da divisão; o cinegrafista escolhido no campo entra sempre que estiver escolhido. Transporte fica fora.
+  _sincronizaCinegrafista();
+  const _fichaCard=_cardDaFicha();
+  const empShare=calcEmpresaShare(_fichaCard);
+  const andShare=calcAndreShare(_fichaCard);
+  const t=_totalComDesconto(_fichaCard);
   const r=parseFloat(document.getElementById('f-valorReserva').value)||0;
   const rest=parseFloat(document.getElementById('f-valorRestante').value)||0;
   const sec=document.getElementById('sec-distribuicao');if(!sec)return;
@@ -5686,9 +5634,8 @@ function calcDistribuicao(){
   const _isSF=document.getElementById('f-execucao')?.value==='sou-freela';
   const _isFrl=document.getElementById('f-execucao')?.value==='freelancer';
   const _hideEmp=_isSF||_isFrl;
-  const _vFrCachê=_isFrl?(parseFloat(document.getElementById('f-valorFreelancer')?.value)||0):0;
-  document.getElementById('dist-emp-liq').textContent=fm(empShare-gastosEmp);
-  document.getElementById('dist-and-liq').textContent=_isFrl?fm(Math.max(0,andShare-_vFrCachê)):fm(andShare-gastosPes);
+  document.getElementById('dist-emp-liq').textContent=fm(empShare);
+  document.getElementById('dist-and-liq').textContent=fm(andShare);
   if(hdr)hdr.textContent=_isSF?'📸 Freela · Só André recebe':_isFrl?'🤝 Freela contratada · Só André recebe':'⚖️ Distribuição · Empresa + André';
   // Freela (sou-freela ou contratei): oculta tudo da empresa, expande card do André
   const _empCard=document.getElementById('dist-emp-card');
@@ -5735,8 +5682,8 @@ function calcDistribuicao(){
   // (Empresa: f-valorReserva · André: f-valorAndrePago), comparados com o
   // líquido de cada lado — não mais um rateio proporcional do valor da
   // Empresa, que mostrava pro André um "A receber" no valor bruto do plano.
-  const _empLiqD=Math.max(0,empShare-gastosEmp);
-  const _andLiqD=_isFrl?Math.max(0,andShare-_vFrCachê):Math.max(0,andShare-gastosPes);
+  const _empLiqD=empShare;
+  const _andLiqD=andShare;
   const _andPagoD=parseFloat(document.getElementById('f-valorAndrePago')?.value)||0;
   document.getElementById('dist-emp-rec').textContent=r>0?fm(r):'—';
   document.getElementById('dist-and-rec').textContent=_andPagoD>0?fm(_andPagoD):'—';
@@ -5764,7 +5711,7 @@ function calcDistribuicao(){
   if(baseRow&&baseTxt&&t>0){
     if(_isFrl){
       baseRow.style.display='';
-      baseTxt.textContent=`📐 Plano: ${fm(andShare)} − Cachê freela: ${fm(_vFrCachê)} = André recebe: ${fm(Math.max(0,andShare-_vFrCachê))}`;
+      baseTxt.textContent=`📐 Total cliente: ${fm(t)} → André recebe: ${fm(andShare)}`;
     } else {
       baseRow.style.display=_isSF?'none':'';
       if(!_isSF)baseTxt.textContent=`📐 Total cliente: ${fm(t)} → Empresa: ${fm(empShare)} · André: ${fm(andShare)}`;
@@ -5787,17 +5734,12 @@ function autoStatusPag(){
   // derivar o status do campo Empresa forçava "Pendente" pra sempre —
   // nesses casos o dropdown fica manual, como no À Vista.
   if(forma==='cartao'&&(document.getElementById('f-execucao')?.value||'proprio')==='proprio'){
-    const empShare=parseFloat(document.getElementById('f-valorEmpresa')?.value)||0;
-    const andShare=parseFloat(document.getElementById('f-valorAndre')?.value)||0;
-    const gastosEmp=gastosItensTemp.filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
-    const gastosPes=gastosItensTemp.filter(g=>g.tipo==='pessoal').reduce((s,g)=>s+(g.val||0),0);
-    const _isFrl=document.getElementById('f-execucao')?.value==='freelancer';
-    const _vFrCachê=_isFrl?(parseFloat(document.getElementById('f-valorFreelancer')?.value)||0):0;
+    const _cardF=_cardDaFicha();
     // Mesma conta do _empLiqDaFesta/_andreLiqDaFesta (líquido de cada lado,
     // já descontando gasto/cachê) — os campos "Valor Pago" guardam progresso
     // rumo a esse líquido, não ao valor bruto do pacote.
-    const empLiq=Math.max(0,empShare-gastosEmp);
-    const andLiq=_isFrl?Math.max(0,andShare-_vFrCachê):Math.max(0,andShare-gastosPes);
+    const empLiq=calcEmpresaShare(_cardF);
+    const andLiq=calcAndreShare(_cardF);
     const empPago=parseFloat(document.getElementById('f-valorReserva')?.value)||0;
     const andPago=parseFloat(document.getElementById('f-valorAndrePago')?.value)||0;
     // "Status do Pagamento" e o campo oculto de restante continuam só do
@@ -6013,13 +5955,16 @@ function saveOpCard(){
   // À Vista + "Pago Total" = os dois lados recebidos por inteiro. Garante os
   // valores no save mesmo que ela não tenha mexido no dropdown nesta sessão.
   if((document.getElementById('f-formaPag')?.value||'avista')==='avista'&&document.getElementById('f-statusPag')?.value==='pago')_preencheValoresAvistaPeloStatus('pago');
+  _sincronizaCinegrafista();
   const oldCard=editingOpId?opCards.find(c=>c.id===editingOpId):null;
   const oldCol=oldCard?.coluna;
-  const data={id:editingOpId||uid(),coluna:newCol,somenteProjeto:oldCard?.somenteProjeto||opFromProj||false,titulo:document.getElementById('f-titulo').value.trim(),nomePais,telefone:document.getElementById('f-tel').value.trim(),nomeCrianca:document.getElementById('f-nomeCrianca').value.trim(),idade:document.getElementById('f-idade').value.trim(),nomeCrianca2:document.getElementById('f-nomeCrianca2').value.trim(),idade2:document.getElementById('f-idade2').value.trim(),dataEvento:document.getElementById('f-data').value,horario:document.getElementById('f-horario').value,horarioFim:document.getElementById('f-horarioFim').value,local:document.getElementById('f-local').value.trim(),tipo:document.getElementById('f-tipo').value,pacoteId:(getSelectedPacIds()[0]||''),pacoteIds:getSelectedPacIds(),pacoteCustom:document.getElementById('f-pacoteCustom').value.trim(),tipoExecucao:document.getElementById('f-execucao').value||'proprio',freelancerId:document.getElementById('f-freelancerId').value||'',parceiroId:(document.getElementById('f-execucao').value==='sou-freela'?document.getElementById('f-op-parceiroId')?.value||'':''),filmmakerNome:(()=>{const s=document.getElementById('f-filmakerId');if(!s)return '';const v=s.value||'';if(v==='__outro__'){return (document.getElementById('f-filmakerCustom')?.value||'').trim();}return v;})(),filmmakerCusto:(()=>{const _fids=getSelectedPacIds();const fNome=document.getElementById('f-filmakerId')?.value||'';const allFmOpts=_fids.flatMap(id=>{const p=packages.find(pk=>pk.id===id);return p?.filmmakerOptions||[];});const opt=allFmOpts.find(f=>f.nome===fNome);return opt?opt.valor:0;})(),valorEmpresa:parseFloat(document.getElementById('f-valorEmpresa')?.value)||0,valorAndre:parseFloat(document.getElementById('f-valorAndre')?.value)||0,valorFreelancer:parseFloat(document.getElementById('f-valorFreelancer')?.value)||0,valorTotal:(parseFloat(document.getElementById('f-valorEmpresa')?.value)||0)+(parseFloat(document.getElementById('f-valorAndre')?.value)||0),valorCoresJob:0,valorReserva:parseFloat(document.getElementById('f-valorReserva').value)||0,dataReserva:document.getElementById('f-dataReserva').value,valorRestante:parseFloat(document.getElementById('f-valorRestante').value)||0,dataRestante:document.getElementById('f-dataRestante').value,statusPag:document.getElementById('f-statusPag').value,gastos:gastosItensTemp.reduce((s,g)=>s+(g.val||0),0),gastosItens:[...gastosItensTemp],formaPag:document.getElementById('f-formaPag').value,avistaDesconto:document.getElementById('f-avistaDesconto')?.checked||false,nParcelas:parseInt(document.getElementById('f-nParcelas').value)||1,parcelasItens:[...parcelasItensTemp],galeria:document.getElementById('f-galeria').value.trim(),galeriaClienteId:document.getElementById('f-galeriaClienteId')?.value.trim()||'',obs:oldCard?.obs||'',motivo:document.getElementById('f-motivo').value,detalhe:document.getElementById('f-detalhe').value.trim(),pendObs:document.getElementById('f-pend-obs')?.value.trim()||'',pendencias:[...pendenciasTemp],pagoEmpresa:document.getElementById('f-pagoEmpresa')?.checked||false,pagoAndre:document.getElementById('f-pagoAndre')?.checked||false,followupDate:document.getElementById('f-followup').value||'',albumGuardado:_albumGuardado,contrato:oldCard?.contrato||null,criadoEm:oldCard?.criadoEm||Date.now(),updatedAt:Date.now()};
+  const data={id:editingOpId||uid(),coluna:newCol,somenteProjeto:oldCard?.somenteProjeto||opFromProj||false,titulo:document.getElementById('f-titulo').value.trim(),nomePais,telefone:document.getElementById('f-tel').value.trim(),nomeCrianca:document.getElementById('f-nomeCrianca').value.trim(),idade:document.getElementById('f-idade').value.trim(),nomeCrianca2:document.getElementById('f-nomeCrianca2').value.trim(),idade2:document.getElementById('f-idade2').value.trim(),dataEvento:document.getElementById('f-data').value,horario:document.getElementById('f-horario').value,horarioFim:document.getElementById('f-horarioFim').value,local:document.getElementById('f-local').value.trim(),tipo:document.getElementById('f-tipo').value,pacoteId:(getSelectedPacIds()[0]||''),pacoteIds:getSelectedPacIds(),pacoteCustom:document.getElementById('f-pacoteCustom').value.trim(),tipoExecucao:document.getElementById('f-execucao').value||'proprio',freelancerId:document.getElementById('f-freelancerId').value||'',parceiroId:(document.getElementById('f-execucao').value==='sou-freela'?document.getElementById('f-op-parceiroId')?.value||'':''),filmmakerNome:(()=>{const s=document.getElementById('f-filmakerId');if(!s)return '';const v=s.value||'';if(v==='__outro__'){return (document.getElementById('f-filmakerCustom')?.value||'').trim();}return v;})(),filmmakerCusto:(()=>{const _fids=getSelectedPacIds();const fNome=document.getElementById('f-filmakerId')?.value||'';const allFmOpts=_fids.flatMap(id=>{const p=packages.find(pk=>pk.id===id);return p?.filmmakerOptions||[];});const opt=allFmOpts.find(f=>f.nome===fNome);return opt?opt.valor:0;})(),valorEmpresa:parseFloat(document.getElementById('f-valorEmpresa')?.value)||0,valorAndre:parseFloat(document.getElementById('f-valorAndre')?.value)||0,valorFreelancer:parseFloat(document.getElementById('f-valorFreelancer')?.value)||0,valorTotal:(parseFloat(document.getElementById('f-valorEmpresa')?.value)||0)+(parseFloat(document.getElementById('f-valorAndre')?.value)||0),valorCoresJob:0,valorReserva:parseFloat(document.getElementById('f-valorReserva').value)||0,dataReserva:document.getElementById('f-dataReserva').value,valorRestante:parseFloat(document.getElementById('f-valorRestante').value)||0,dataRestante:document.getElementById('f-dataRestante').value,statusPag:document.getElementById('f-statusPag').value,gastos:gastosItensTemp.filter(g=>g.tipo!=='album').reduce((s,g)=>s+(g.val||0),0),gastosItens:[...gastosItensTemp],formaPag:document.getElementById('f-formaPag').value,avistaDesconto:document.getElementById('f-avistaDesconto')?.checked||false,nParcelas:parseInt(document.getElementById('f-nParcelas').value)||1,parcelasItens:[...parcelasItensTemp],galeria:document.getElementById('f-galeria').value.trim(),galeriaClienteId:document.getElementById('f-galeriaClienteId')?.value.trim()||'',obs:oldCard?.obs||'',motivo:document.getElementById('f-motivo').value,detalhe:document.getElementById('f-detalhe').value.trim(),pendObs:document.getElementById('f-pend-obs')?.value.trim()||'',pendencias:[...pendenciasTemp],pagoEmpresa:document.getElementById('f-pagoEmpresa')?.checked||false,pagoAndre:document.getElementById('f-pagoAndre')?.checked||false,followupDate:document.getElementById('f-followup').value||'',albumGuardado:_albumGuardado,contrato:oldCard?.contrato||null,criadoEm:oldCard?.criadoEm||Date.now(),updatedAt:Date.now()};
   // O valor digitado manualmente é o total real cobrado do cliente.
   // Sem preenchimento, mantém o total calculado a partir dos pacotes.
   const _valorPlanoInformado=parseFloat(document.getElementById('f-valorPlano')?.value)||0;
   if(_valorPlanoInformado>0)data.valorTotal=_valorPlanoInformado;
+  data.valorEmpresa=calcEmpresaShare(data);
+  data.valorAndre=calcAndreShare(data);
   // Carimba quando o link da galeria foi enviado pela 1ª vez, pra disparar
   // o lembrete de follow-up 5 dias depois (perguntar se baixou/gostou).
   data.galeriaEnviadaEm=(data.galeria&&!oldCard?.galeria)?Date.now():(oldCard?.galeriaEnviadaEm||'');
@@ -7374,14 +7319,46 @@ function _descontoEmpresa(card){
   if((card.tipoExecucao||'proprio')==='freelancer'||(card.tipoExecucao||'proprio')==='sou-freela')return 0;
   return parseFloat(Math.min(_descontoAvista(card)*0.4,_vcDoCard(card)*0.4).toFixed(2));
 }
-function _descontoAndre(card){return parseFloat((_descontoAvista(card)-_descontoEmpresa(card)).toFixed(2));}
+// Estado atual da ficha como um cartão (mesma conta do Financeiro, antes de salvar)
+function _cardDaFicha(){
+  return {
+    valorTotal:parseFloat(document.getElementById('f-valorPlano')?.value)||parseFloat(document.getElementById('f-valorTotal')?.value)||0,
+    avistaDesconto:document.getElementById('f-avistaDesconto')?.checked||false,
+    formaPag:document.getElementById('f-formaPag')?.value||'avista',
+    tipoExecucao:document.getElementById('f-execucao')?.value||'proprio',
+    freelancerId:document.getElementById('f-freelancerId')?.value||'',
+    valorFreelancer:parseFloat(document.getElementById('f-valorFreelancer')?.value)||0,
+    pacoteIds:getSelectedPacIds(),
+    valorCoresJob:0,
+    gastosItens:gastosItensTemp,
+  };
+}
+// O cinegrafista escolhido no campo entra nos custos do pacote sempre que estiver escolhido.
+// Com um único cinegrafista cadastrado nos pacotes da festa, ele entra sozinho (como antes).
+function _sincronizaCinegrafista(){
+  const pacs=_pacotesComComponentes(getSelectedPacIds());
+  const sel=document.getElementById('f-filmakerId');
+  let nome=sel?.value||'';
+  if(nome==='__outro__')nome=(document.getElementById('f-filmakerCustom')?.value||'').trim();
+  const movOpts=pacs.filter(p=>p.tipoPlano==='movimento'||p.tipoPlano==='historias').flatMap(p=>p.filmmakerOptions||[]);
+  if(!nome&&movOpts.length===1){
+    nome=movOpts[0].nome;
+    if(sel?.tagName==='SELECT'&&[...sel.options].some(o=>o.value===nome))sel.value=nome;
+  }
+  const escolhido=pacs.flatMap(p=>p.filmmakerOptions||[]).find(f=>f.nome===nome);
+  const antes=JSON.stringify(gastosItensTemp.filter(g=>g._filmmaker).map(g=>[g.desc,g.val]));
+  gastosItensTemp=gastosItensTemp.filter(g=>!g._filmmaker);
+  if(escolhido&&escolhido.valor>0)gastosItensTemp.push({id:uid(),desc:'Cinegrafista — '+escolhido.nome,val:escolhido.valor,tipo:'album',_filmmaker:true});
+  if(antes!==JSON.stringify(gastosItensTemp.filter(g=>g._filmmaker).map(g=>[g.desc,g.val])))renderGastosItens();
+}
+// Custos do pacote (álbum, vídeo, cinegrafista): saem do total antes da divisão. Não são gasto da empresa nem do André.
+function _custosPacoteDoCard(card){
+  return (card.gastosItens||[]).filter(g=>g.tipo==='album').reduce((s,g)=>s+(+g.val||0),0);
+}
+// Empresa: 40% do Plano Cores, menos a parte dela no desconto à vista. Transporte fica fora da divisão.
 function calcEmpresaShare(c){
   if((c.tipoExecucao||'proprio')==='freelancer'||(c.tipoExecucao||'proprio')==='sou-freela')return 0;
-  // Empresa: 40% do Plano Cores (menos a parte dela no desconto à vista); o resto do lucro é do André.
-  // empBruto = lucro + gastos pass-through da empresa, assim empLíquido = lucro
-  const empProfit=parseFloat((_vcDoCard(c)*0.4-_descontoEmpresa(c)).toFixed(2));
-  const gastosEmp=(c.gastosItens||[]).filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
-  return parseFloat((empProfit+gastosEmp).toFixed(2));
+  return parseFloat(Math.max(0,_vcDoCard(c)*0.4-_descontoEmpresa(c)).toFixed(2));
 }
 // Subtítulo da festa nas tabelas de Festas — igual nos dois Financeiros:
 // título do projeto (lido do card na hora, não gravado); sem título, o tipo
@@ -7395,7 +7372,7 @@ function _getFinFestas(mes){
     const vPago=+c.valorReserva||0;
     const gastosEmp=(c.gastosItens||[]).filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(+g.val||0),0);
     const gastosAlbum=(c.gastosItens||[]).filter(g=>g.tipo==='album').reduce((s,g)=>s+(g.val||0),0);
-    const empLiq=parseFloat((empShare-gastosEmp).toFixed(2));
+    const empLiq=parseFloat(empShare.toFixed(2));
     const empFalta=Math.max(0,parseFloat((empLiq-vPago).toFixed(2)));
     // Status: Quitado se valor pago >= valor total
     const localSt=vPago>=empLiq&&empLiq>0?'pago':vPago>0?'sinal':'pendente';
@@ -7646,7 +7623,7 @@ function renderFinResumo(){
   const totalBruto=fc.reduce((s,c)=>s+(c.valorTotal||0),0);
   const totalGastos=fc.reduce((s,c)=>s+(c.gastos||0),0);
   // Reservas e A Receber baseados em empLiq (líquido real da empresa)
-  const _empLiqCalc=c=>{const es=calcEmpresaShare(c);const ge=(c.gastosItens||[]).filter(g=>(g.tipo||'empresa')==='empresa').reduce((ss,g)=>ss+(g.val||0),0);return Math.max(0,es-ge);};
+  const _empLiqCalc=c=>calcEmpresaShare(c);
   const reservas=fc.reduce((s,c)=>{const liq=_empLiqCalc(c);const vp=c.valorReserva||0;return s+Math.min(vp,liq);},0);
   const aReceber=fc.reduce((s,c)=>{const liq=_empLiqCalc(c);const vp=c.valorReserva||0;return s+Math.max(0,liq-vp);},0);
   const statsEl=document.getElementById('fin-stats');
@@ -8010,9 +7987,7 @@ function quickChangeStatus(cardId){
 // empLiq/andLiq — quanto cabe de líquido a cada lado, pra saber se um
 // pagamento já "quita" aquele lado especificamente.
 function _empLiqDaFesta(card){
-  const es=calcEmpresaShare(card);
-  const ge=(card.gastosItens||[]).filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
-  return Math.max(0,es-ge);
+  return calcEmpresaShare(card); // transporte fica fora da divisão
 }
 // Mesma ideia do _empLiqDaFesta, só que do lado do André: a parte dele
 // (calcAndreShare) também precisa descontar os gastos pessoais daquela
@@ -8021,9 +7996,7 @@ function _empLiqDaFesta(card){
 // aparece como "Falta pagar" no Financeiro Pessoal > Festas (que já
 // desconta esse gasto).
 function _andreLiqDaFesta(card){
-  const as=calcAndreShare(card);
-  const gp=(card.gastosItens||[]).filter(g=>g.tipo==='pessoal').reduce((s,g)=>s+(g.val||0),0);
-  return Math.max(0,as-gp);
+  return calcAndreShare(card); // transporte fica fora da divisão
 }
 // Quanto já foi registrado como "pago" no Financeiro Pessoal (Festas) pra
 // essa mesma festa — usado só pra mostrar o total combinado (Empresa +
@@ -8306,7 +8279,7 @@ function quickEditPagPess(mes,idx){
   if(card){quickEditPag(card.id,'andre');return;}
   const existing=document.getElementById('qep-overlay');if(existing)existing.remove();
   const gastosPes=_pessGastosDaFesta(entrada);
-  window._qepTotalPessSolo=Math.max(0,(entrada.v||0)-gastosPes);
+  window._qepTotalPessSolo=Math.max(0,entrada.v||0);
   const div=document.createElement('div');
   div.id='qep-overlay';
   div.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0.35)';
@@ -8353,7 +8326,7 @@ function saveQuickPagPess(mes,idx){
   const inp=document.getElementById('qep-input');
   const pago=parseFloat(inp?.value)||0;
   const gastosPes=_pessGastosDaFesta(entrada);
-  const liq=Math.max(0,(entrada.v||0)-gastosPes);
+  const liq=Math.max(0,entrada.v||0);
   if(liq>0&&pago>liq*1.3){
     openCfm('Confirma esse valor?',`O líquido nesta festa é ${fmtMoney(liq)}, mas você digitou ${fmtMoney(pago)}. Tem certeza que é esse o valor pago?`,()=>_commitQuickPagPess(mes,idx,pago));
     return;
@@ -8386,7 +8359,7 @@ function savePessRest(mes,idx){
     // lado Empresa.
     const entrada=pessFD[mes][idx];
     const gastosPes=_pessGastosDaFesta(entrada);
-    const andLiq=Math.max(0,(entrada.v||0)-gastosPes);
+    const andLiq=Math.max(0,entrada.v||0);
     const novoPago=Math.max(0,parseFloat((andLiq-val).toFixed(2)));
     _initPessVG(mes);
     pessVG[mes]=(+pessVG[mes]||0)+(novoPago-(entrada.pago||0));
@@ -9235,7 +9208,7 @@ function _calcPessAReceber(mes){
   const F=pessFD[mes]||[];
   return F.reduce((s,f)=>{
     const gp=_pessGastosDaFesta(f);
-    const liq=Math.max(0,f.v-gp);
+    const liq=Math.max(0,f.v);
     // O valor já recebido é o campo "pago" da própria entrada.
     const vPago=f.pago||0;
     return s+Math.max(0,liq-vPago);
@@ -9295,7 +9268,7 @@ function renderPessResumo(){
   const aReceberCur=_calcPessAReceber(curMes);
   const pessLiqMes=(pessFD[curMes]||[]).reduce((s,f)=>{
     const gp=_pessGastosDaFesta(f);
-    return s+Math.max(0,f.v-gp);
+    return s+Math.max(0,f.v);
   },0);
   const disponivel=aReceberCur-cCur.pendG-cCur.pendD+cCur.vg;
   const dOk=disponivel>300,dNo=disponivel<0;
@@ -9433,7 +9406,7 @@ function renderPessEntradas(){
     const gastosPes=_pessGastosDaFesta(f);
     const _vPagoPess=op?(op.valorReserva??0):(f.pago||0);
     const _andShare=f.v;
-    const _andLiq=Math.max(0,_andShare-gastosPes);
+    const _andLiq=Math.max(0,_andShare);
     const _andFalta=Math.max(0,parseFloat((_andLiq-_vPagoPess).toFixed(2)));
     // FALTA PAGAR = VALOR - VALOR PAGO (sempre, em ambos os casos)
     const rest=_andFalta;
@@ -9466,7 +9439,7 @@ function renderPessEntradas(){
     
     // Campos editáveis
     const brutoCell = `<span style="color:var(--muted);font-weight:700;cursor:pointer;text-decoration:underline dotted" title="Clique para editar o valor bruto (antes do desconto do gasto pessoal)" onclick="editPessValor('${pessCurF}',${realIdx},this)">${fmtMoney(f.v)}</span>`;
-    const valorCell = `<span style="color:var(--success);font-weight:700">${fmtMoney(Math.max(0,f.v-gastosPes))}</span>`;
+    const valorCell = `<span style="color:var(--success);font-weight:700">${fmtMoney(Math.max(0,f.v))}</span>`;
     const pagoBtnHtml = op 
       ? `<span style="color:#7D95AE;font-weight:700;cursor:pointer;text-decoration:underline dotted" title="Clique para editar" onclick="event.stopPropagation();inlineEditReservaPess('${op.id}')">${_vPagoPess>0?fmtMoney(_vPagoPess):'— editar'}</span>`
       : `<span style="color:#7D95AE;font-weight:700;cursor:pointer;text-decoration:underline dotted" title="Clique para editar" onclick="event.stopPropagation();quickEditPagPess('${pessCurF}',${realIdx})">${f.pago>0?fmtMoney(f.pago):'— editar'}</span>`;
@@ -9488,13 +9461,13 @@ function renderPessEntradas(){
   }).join('');
   const tot=F.reduce((s,f)=>{
     const _gp=_pessGastosDaFesta(f);
-    return s+Math.max(0,f.v-_gp);
+    return s+Math.max(0,f.v);
   },0);
   const totPaid=F.reduce((s,f)=>s+(f.pago||0),0);
   const totRest=F.reduce((s,f)=>{
     const _gp=_pessGastosDaFesta(f);
     const _vPago=f.pago||0;
-    const _liq=Math.max(0,f.v-_gp);
+    const _liq=Math.max(0,f.v);
     return s+Math.max(0,_liq-_vPago);
   },0);
   const totCusto=F.reduce((s,f)=>s+_pessGastosDaFesta(f),0);
@@ -10920,7 +10893,7 @@ function renderHistMes(){
     // líquido = bruto - gastos pessoais de cada festa
     liquido=festas.reduce((s,f)=>{
       const gp=_pessGastosDaFesta(f);
-      return s+Math.max(0,f.v-gp);
+      return s+Math.max(0,f.v);
     },0);
     // transporte = gastos diários do mês com cat = __transporte__
     transporte=(pessGD[m]||[]).filter(g=>g.cat==='__transporte__').reduce((s,g)=>s+(g.v||0),0);
