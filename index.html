@@ -7018,7 +7018,7 @@ function onFilmmakerChange(){
   // Remove cinegrafista anterior, adiciona o novo
   gastosItensTemp=gastosItensTemp.filter(g=>!g._filmmaker);
   if(fOpt&&fOpt.valor>0){
-    gastosItensTemp.push({id:uid(),desc:'Cinegrafista — '+fNome,val:fOpt.valor,tipo:'empresa',_filmmaker:true});
+    gastosItensTemp.push({id:uid(),desc:'Cinegrafista — '+fNome,val:fOpt.valor,tipo:'album',_filmmaker:true});
     renderGastosItens();
   }
   calcDistribuicao();
@@ -7119,7 +7119,8 @@ function onPacotesChange(fromClick){
   // Hospedagem etc.) — só substitui os itens que vieram de pacote antes.
   const custosPlano=_pacotesComComponentes(ids).flatMap(p=>(p.custosFixos||[]).map(c=>{
     // Determina o tipo baseado no plano: Memórias = album, Movimento = empresa
-    const tipoCusto=p.tipoPlano==='memorias'||p.tipoPlano==='historias'?'album':'empresa';
+    // Custos de pacote (álbum, vídeo, cinegrafista) são do cliente, não gasto da empresa
+    const tipoCusto=p.tipoPlano==='memorias'||p.tipoPlano==='movimento'||p.tipoPlano==='historias'?'album':'empresa';
     return {id:uid(),desc:c.desc,val:c.valor,tipo:tipoCusto,_fromPacote:true};
   }));
   gastosItensTemp=[...gastosItensTemp.filter(g=>!g._fromPacote),...custosPlano];
@@ -7132,7 +7133,7 @@ function onPacotesChange(fromClick){
     const sel=document.getElementById('f-filmakerId');
     if(sel)sel.value=fm.nome;
     gastosItensTemp=gastosItensTemp.filter(g=>!g._filmmaker);
-    gastosItensTemp.push({id:uid(),desc:'Cinegrafista — '+fm.nome,val:fm.valor,tipo:'empresa',_filmmaker:true});
+    gastosItensTemp.push({id:uid(),desc:'Cinegrafista — '+fm.nome,val:fm.valor,tipo:'album',_filmmaker:true});
   }
 
   renderGastosItens();
@@ -12516,7 +12517,8 @@ function _toNum(v){
 function _normalizaNumerosOp(){
   (opCards||[]).forEach(c=>{
     ['valorTotal','valorReserva','valorRestante','valorEmpresa','valorAndre','valorFreelancer','gastos'].forEach(k=>{if(c[k]!==undefined)c[k]=_toNum(c[k]);});
-    (c.gastosItens||[]).forEach(g=>{g.val=_toNum(g.val);});
+    // Custos de pacote salvos antes como "empresa" (Edição e cinegrafista do Movimento) viram custo de álbum
+    (c.gastosItens||[]).forEach(g=>{g.val=_toNum(g.val);if((g._fromPacote||g._filmmaker)&&g.tipo==='empresa')g.tipo='album';});
     (c.parcelasItens||[]).forEach(p=>{p.valor=_toNum(p.valor);});
   });
 }
