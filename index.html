@@ -2709,9 +2709,10 @@ input[type="date"]{cursor:pointer}
         <div id="p-valor-cores-wrap" class="fg full" style="display:none">
           <label>📷 Valor do Plano Cores (base para os 40% da empresa)</label>
           <div style="display:flex;align-items:center;gap:10px">
-            <div class="mw" style="max-width:160px"><input type="number" id="p-valorCores" placeholder="Ex: 1200" step="0.01" min="0" style="font-size:15px;font-weight:700"></div>
+            <div class="mw" style="max-width:160px"><input type="number" id="p-valorCores" placeholder="Ex: 1200" step="0.01" min="0" style="font-size:15px;font-weight:700" oninput="_atualizaAvisoCores()"></div>
             <span style="font-size:12px;color:var(--muted)">Empresa receberá sempre 40% deste valor. Vazio = usa o Plano Cores que o pacote compõe</span>
           </div>
+          <div id="p-cores-aviso" style="display:none;font-size:12px;color:#7FB0E6;margin-top:6px;font-weight:600"></div>
         </div>
         <div id="p-custos-memorias-wrap" class="fg full" style="display:none">
           <label>💸 Custos Fixos — Memórias</label>
@@ -6125,7 +6126,7 @@ function renderPac(){
     }
     return'';
   }
-  document.getElementById('pac-grid').innerHTML=packages.map(p=>`<div class="pac-card" style="border-top:4px solid ${p.cor||'#2C7A7B'}"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="width:10px;height:10px;border-radius:50%;background:${p.cor||'#2C7A7B'};display:inline-block;flex-shrink:0"></span><div class="pac-name" style="margin-bottom:0">${esc(p.nome)}</div></div>${p.preco?`<div class="pac-price">${fmtMoney(p.preco)}</div>`:''}${p.duracao?`<div style="font-size:12px;color:var(--muted);margin-bottom:6px">⏱ ${esc(p.duracao)}</div>`:''}${custosBadge(p)}${p.compoe?.length?`<div style="font-size:11px;color:var(--muted);margin-bottom:6px">🧩 Compõe: ${p.compoe.map(id=>esc(packages.find(x=>x.id===id)?.nome||'(apagado)')).join(' + ')}</div>`:''}${p.desc?`<div class="pac-desc">${esc(p.desc)}</div>`:''}${p.inclui?`<div class="pac-inclui">${esc(p.inclui).split('\n').map(l=>'• '+l.trim()).filter(l=>l.length>2).join('\n')}</div>`:''}<div class="pac-actions"><button class="btn btn-g btn-sm" onclick="openPacModal('${p.id}')">✏️ Editar</button><button class="btn btn-d btn-sm" onclick="qDelPac('${p.id}')">🗑️ Excluir</button></div></div>`).join('')+`<div class="pac-add-card" onclick="openPacModal(null)"><div class="pac-add-icon">📦</div><div class="pac-add-label">Adicionar novo pacote</div></div>`;
+  document.getElementById('pac-grid').innerHTML=packages.map(p=>`<div class="pac-card" style="border-top:4px solid ${p.cor||'#2C7A7B'}"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="width:10px;height:10px;border-radius:50%;background:${p.cor||'#2C7A7B'};display:inline-block;flex-shrink:0"></span><div class="pac-name" style="margin-bottom:0">${esc(p.nome)}</div></div>${p.preco?`<div class="pac-price">${fmtMoney(p.preco)}</div>`:''}${p.duracao?`<div style="font-size:12px;color:var(--muted);margin-bottom:6px">⏱ ${esc(p.duracao)}</div>`:''}${custosBadge(p)}${p.compoe?.length?`<div style="font-size:11px;color:var(--muted);margin-bottom:6px">🧩 Compõe: ${p.compoe.map(id=>esc(packages.find(x=>x.id===id)?.nome||'(apagado)')).join(' + ')}</div>`:''}${(p.tipoPlano&&p.tipoPlano!=='padrao'&&_valorCoresPacs([p])>0)?`<div style="font-size:11px;color:var(--muted);margin-bottom:6px">📷 Plano Cores: ${fmtMoney(_valorCoresPacs([p]))}</div>`:''}${p.desc?`<div class="pac-desc">${esc(p.desc)}</div>`:''}${p.inclui?`<div class="pac-inclui">${esc(p.inclui).split('\n').map(l=>'• '+l.trim()).filter(l=>l.length>2).join('\n')}</div>`:''}<div class="pac-actions"><button class="btn btn-g btn-sm" onclick="openPacModal('${p.id}')">✏️ Editar</button><button class="btn btn-d btn-sm" onclick="qDelPac('${p.id}')">🗑️ Excluir</button></div></div>`).join('')+`<div class="pac-add-card" onclick="openPacModal(null)"><div class="pac-add-icon">📦</div><div class="pac-add-label">Adicionar novo pacote</div></div>`;
 }
 function openPacModal(pacId){
   editingPacId=pacId;const pac=pacId?packages.find(p=>p.id===pacId):null;
@@ -6910,6 +6911,15 @@ function _pacotesComComponentes(ids){
   ids.forEach(visita);
   return achados;
 }
+// Aviso no modal: com o campo de cores vazio, o pacote usa o Plano Cores que ele compõe
+function _atualizaAvisoCores(){
+  const aviso=document.getElementById('p-cores-aviso');if(!aviso)return;
+  const digitado=parseFloat(document.getElementById('p-valorCores')?.value)||0;
+  const compostos=[...document.querySelectorAll('#p-compoe-list input:checked')].map(c=>packages.find(p=>p.id===c.value)).filter(Boolean);
+  const valor=!digitado&&compostos.length?_valorCoresPacs(compostos):0;
+  aviso.style.display=valor>0?'':'none';
+  aviso.textContent=valor>0?`Usando o Plano Cores composto: ${fmtMoney(valor)}. Digite um valor acima para substituir.`:'';
+}
 function renderCompoeChecks(sel){
   const box=document.getElementById('p-compoe-list');if(!box)return;
   const outros=packages.filter(p=>p.id!==editingPacId);
@@ -6937,6 +6947,7 @@ function onTipoPlanoChange(){
     document.getElementById('p-custos-memorias-wrap').style.display='none';
     document.getElementById('p-custos-movimento-wrap').style.display='none';
   }
+  _atualizaAvisoCores();
 }
 // ── Adicionar linha de cinegrafista no modal de pacote ──
 function addCustoMemoriasRow(desc,valor){
