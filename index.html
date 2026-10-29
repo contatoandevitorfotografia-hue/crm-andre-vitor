@@ -5879,6 +5879,8 @@ function _preencheValoresAvistaPeloStatus(status){
     tipoExecucao:document.getElementById('f-execucao')?.value||'proprio',
     pacoteIds:getSelectedPacIds(),
     valorCoresJob:0,
+    avistaDesconto:document.getElementById('f-avistaDesconto')?.checked||false,
+    formaPag:document.getElementById('f-formaPag')?.value||'avista',
     gastosItens:gastosItensTemp,
     freelancerId:document.getElementById('f-freelancerId')?.value||'',
     valorFreelancer:parseFloat(document.getElementById('f-valorFreelancer')?.value)||0,
