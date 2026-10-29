@@ -3988,9 +3988,16 @@ function buildOpCol(col,cs){
   <button class="col-add" onclick="openOpModal(null,'${col.id}')">＋ Adicionar</button>`;
   return div;
 }
+// Quadro: com os 5% marcados na ficha (à vista), mostra o valor já descontado.
+// Só exibição; o valorTotal salvo e o financeiro não mudam.
+function _valorQuadroOp(c){
+  const total=+c.valorTotal||0;
+  if(!c.avistaDesconto||_migraFormaPag(c.formaPag)!=='avista')return total;
+  return total-parseFloat((total*0.05).toFixed(2));
+}
 function opCardHTML(c,cc){
   const dateStr=c.dataEvento?fmtDate(c.dataEvento):'';
-  const valor=c.valorTotal?fmtMoney(c.valorTotal):'';
+  const valor=c.valorTotal?fmtMoney(_valorQuadroOp(c)):'';
   // Mesma conta do card de Projetos (_pagamentoDaFesta): Total = valor do
   // trabalho, Pago pela ótica da cliente, quitado quando os dois lados
   // (Empresa + André) atingiram o líquido deles.
