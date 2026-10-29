@@ -3999,11 +3999,6 @@ function _descontoAvista(card){
   return parseFloat(((+card.valorTotal||0)*0.05).toFixed(2));
 }
 function _totalComDesconto(card){return (+card.valorTotal||0)-_descontoAvista(card);}
-// Parte do André no desconto: o que sobra depois da Empresa (que só cai junto quando é 40% do plano)
-function _descontoAndre(card){
-  const dEmp=calcEmpresaShare({...card,avistaDesconto:false})-calcEmpresaShare(card);
-  return parseFloat((_descontoAvista(card)-dEmp).toFixed(2));
-}
 function opCardHTML(c,cc){
   const dateStr=c.dataEvento?fmtDate(c.dataEvento):'';
   const valor=c.valorTotal?fmtMoney(_totalComDesconto(c)):'';
@@ -4952,17 +4947,10 @@ function openOpModal(cardId,defaultCol,event,fromProj){
     document.getElementById('f-valorPlano').value=card.valorTotal||'';
     document.getElementById('f-valorPlano').dataset.auto='0';
     // Carrega empresa/André — migra do modelo antigo se necessário
-    let _vEmp=0,_vAnd=0;
-    if(card.valorEmpresa!==undefined){
-      _vEmp=card.valorEmpresa||0;_vAnd=card.valorAndre||0;
-    } else {
-      const _pac2=card.pacoteId?packages.find(p=>p.id===card.pacoteId):null;
-      const _hasCores2=_pac2&&(_pac2.tipoPlano==='memorias'||_pac2.tipoPlano==='movimento'||_pac2.tipoPlano==='historias');
-      const _vc2=card.valorCoresJob||(_hasCores2&&_pac2?_pac2.valorCores:0)||0;
-      const _base2=_hasCores2&&_vc2>0?_vc2:(card.valorTotal||0);
-      _vEmp=parseFloat((_base2*0.4).toFixed(2));
-      _vAnd=parseFloat(((card.valorTotal||0)-_vEmp).toFixed(2));
-    }
+    // Empresa e André pela regra atual (40% do Plano Cores); valores salvos antes são recalculados.
+    // Sem o desconto: a ficha aplica o desconto à vista por cima.
+    const _vEmp=calcEmpresaShare(card);
+    const _vAnd=calcAndreShare({...card,avistaDesconto:false});
     document.getElementById('f-valorEmpresa').value=_vEmp||'';
     document.getElementById('f-valorAndre').value=_vAnd||'';
 
@@ -5454,8 +5442,11 @@ function onValorPlanoChange(){
     gastosItensTemp=[]; // sem gastos extras — cachê já netado via valorFreelancer
     renderGastosItens();
   } else {
-    emp=total>0?parseFloat((total*0.4).toFixed(2)):0;
-    and=total>0?parseFloat((total*0.6).toFixed(2)):0;
+    // Empresa: 40% do Plano Cores + gastos da empresa; o resto é do André
+    const _vcSel=_valorCoresPacs(getSelectedPacIds().map(id=>packages.find(p=>p.id===id)).filter(Boolean));
+    const _gEmp=gastosItensTemp.filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
+    emp=parseFloat((_vcSel*0.4+_gEmp).toFixed(2));
+    and=total>0?parseFloat(Math.max(0,total-emp).toFixed(2)):0;
   }
   const _fe=document.getElementById('f-valorEmpresa');if(_fe)_fe.value=emp||'';
   const _fa=document.getElementById('f-valorAndre');if(_fa)_fa.value=and||'';
@@ -5555,7 +5546,7 @@ function calcAndreShare(data){
   const t=_totalComDesconto(data);
   const _ids=data.pacoteIds||(data.pacoteId?[data.pacoteId]:[]);
   const _pacs=_ids.map(id=>packages.find(p=>p.id===id)).filter(Boolean);
-  const vc=data.valorCoresJob||Math.max(0,..._pacs.filter(p=>p.tipoPlano==='memorias'||p.tipoPlano==='movimento'||p.tipoPlano==='historias').map(p=>p.valorCores||0));
+  const vc=data.valorCoresJob||_valorCoresPacs(_pacs);
   if(vc>0){
     const gastosAlbum=(data.gastosItens||[]).filter(g=>g.tipo==='album').reduce((s,g)=>s+(g.val||0),0);
     const gastosEmp=(data.gastosItens||[]).filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
@@ -5611,8 +5602,8 @@ function syncFreelancerToAndre(card){
     const vFreela=card.valorFreelancer||0;
     vAndre=Math.max(0,_totalComDesconto(card)-vFreela);
   } else {
-    // Próprio: André recebe a parte dele (depois dos gastos empresa e do desconto à vista)
-    vAndre=Math.max(0,(card.valorAndre||0)-_descontoAndre(card));
+    // Próprio: André recebe o que sobra depois da Empresa (40% do Plano Cores) e dos custos do pacote
+    vAndre=calcAndreShare(card);
   }
   
   // Adiciona à seção pessoal do André (apenas se tem valor)
@@ -5653,7 +5644,7 @@ function calcDistribuicao(){
   // André: 60% × valorCores + (valorTotal - valorCores - custosAlbum - custosEmpresa)
   const _selIds=getSelectedPacIds();
   const _selPacs=_selIds.map(id=>packages.find(p=>p.id===id)).filter(Boolean);
-  const _totalCoresD=Math.max(0,..._selPacs.filter(p=>p.tipoPlano==='memorias'||p.tipoPlano==='movimento'||p.tipoPlano==='historias').map(p=>p.valorCores||0));
+  const _totalCoresD=_valorCoresPacs(_selPacs);
   const _isHcD=_totalCoresD>0;
   if(_isHcD){
     const _totalD=parseFloat(document.getElementById('f-valorPlano')?.value)||0;
@@ -5669,16 +5660,11 @@ function calcDistribuicao(){
     const _feD=document.getElementById('f-valorEmpresa');if(_feD)_feD.value=_empBrutoD||'';
     const _faD=document.getElementById('f-valorAndre');if(_faD)_faD.value=_andD||'';
   }
-  let empShare=parseFloat(document.getElementById('f-valorEmpresa')?.value)||0;
+  const empShare=parseFloat(document.getElementById('f-valorEmpresa')?.value)||0;
   let andShare=parseFloat(document.getElementById('f-valorAndre')?.value)||0;
-  // Desconto à vista (ficha): sai da Empresa só quando ela é 40% do plano; o resto sai do André
+  // Desconto à vista (ficha): a Empresa fica com 40% do Plano Cores, então o desconto sai todo do André
   const _descFicha=_descontoAvistaFicha();
-  if(_descFicha>0){
-    const _semEmpFicha=_isHcD||['freelancer','sou-freela'].includes(document.getElementById('f-execucao')?.value);
-    const _dEmpFicha=_semEmpFicha?0:parseFloat((_descFicha*0.4).toFixed(2));
-    empShare=Math.max(0,empShare-_dEmpFicha);
-    andShare=Math.max(0,andShare-(_descFicha-_dEmpFicha));
-  }
+  if(_descFicha>0)andShare=Math.max(0,andShare-_descFicha);
   const t=empShare+andShare;
   const r=parseFloat(document.getElementById('f-valorReserva').value)||0;
   const rest=parseFloat(document.getElementById('f-valorRestante').value)||0;
@@ -7110,8 +7096,7 @@ function onPacotesChange(fromClick){
   }
 
   // valorCores: soma dos valorCores de pacotes hasCores
-  const totalCores=Math.max(0,...pacs.filter(p=>p.tipoPlano==='memorias'||p.tipoPlano==='movimento'||p.tipoPlano==='historias').map(p=>p.valorCores||0));
-  const hasAnyCores=totalCores>0;
+  const totalCores=_valorCoresPacs(pacs);
 
   // Junta custosFixos de todos os pacotes
   // IMPORTANTE: Custos fixos de Memórias devem ser tipo 'album', não 'empresa'
@@ -7140,18 +7125,12 @@ function onPacotesChange(fromClick){
 
   // Distribuição
   const finalTotal=parseFloat(document.getElementById('f-valorPlano')?.value)||totalPacs;
-  if(hasAnyCores){
-    const gastosEmp=gastosItensTemp.filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
-    const empBruto=parseFloat((totalCores*0.4+gastosEmp).toFixed(2));
-    const andVal=parseFloat(Math.max(0,finalTotal-empBruto).toFixed(2));
-    const feD=document.getElementById('f-valorEmpresa');if(feD)feD.value=empBruto||'';
-    const faD=document.getElementById('f-valorAndre');if(faD)faD.value=andVal||'';
-  } else {
-    const empVal=parseFloat((finalTotal*0.4).toFixed(2));
-    const andVal=parseFloat((finalTotal*0.6).toFixed(2));
-    const feD=document.getElementById('f-valorEmpresa');if(feD)feD.value=empVal||'';
-    const faD=document.getElementById('f-valorAndre');if(faD)faD.value=andVal||'';
-  }
+  // Empresa: 40% do Plano Cores + gastos da empresa; o resto é do André
+  const gastosEmp=gastosItensTemp.filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
+  const empBruto=parseFloat((totalCores*0.4+gastosEmp).toFixed(2));
+  const andVal=parseFloat(Math.max(0,finalTotal-empBruto).toFixed(2));
+  const feD=document.getElementById('f-valorEmpresa');if(feD)feD.value=empBruto||'';
+  const faD=document.getElementById('f-valorAndre');if(faD)faD.value=andVal||'';
   document.getElementById('f-valorTotal').value=finalTotal||'';
   calcRestante();
   setTimeout(calcDistribuicao,50);
@@ -7353,21 +7332,25 @@ function _finCurMes(){
   return n;
 }
 function _getMesFin(ds){if(!ds)return null;const d=new Date(ds+'T12:00:00');return MESES_FIN[d.getMonth()];}
+// Valor do Plano Cores dos pacotes: o Padrão (Plano Cores) vale o próprio preço;
+// Memórias, Movimento e Histórias usam o "Valor do Plano Cores" informado.
+function _valorCoresPacs(pacs){
+  return Math.max(0,...pacs.map(p=>{
+    if(!p.tipoPlano||p.tipoPlano==='padrao')return p.preco||0;
+    if(p.tipoPlano==='memorias'||p.tipoPlano==='movimento'||p.tipoPlano==='historias')return p.valorCores||0;
+    return 0;
+  }));
+}
 function calcEmpresaShare(c){
   if((c.tipoExecucao||'proprio')==='freelancer'||(c.tipoExecucao||'proprio')==='sou-freela')return 0;
-  const t=_totalComDesconto(c);
   const ids=c.pacoteIds||(c.pacoteId?[c.pacoteId]:[]);
   const pacs=ids.map(id=>packages.find(p=>p.id===id)).filter(Boolean);
-  const vc=c.valorCoresJob||Math.max(0,...pacs.filter(p=>p.tipoPlano==='memorias'||p.tipoPlano==='movimento'||p.tipoPlano==='historias').map(p=>p.valorCores||0));
-  const hasCores=vc>0;
-  if(hasCores){
-    // empBruto = lucro (40%×cores) + gastos pass-through da empresa
-    // assim empLíquido = empBruto − gastosEmp = 40%×cores
-    const empProfit=parseFloat((vc*0.4).toFixed(2));
-    const gastosEmp=(c.gastosItens||[]).filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
-    return parseFloat((empProfit+gastosEmp).toFixed(2));
-  }
-  return parseFloat((t*0.4).toFixed(2));
+  const vc=c.valorCoresJob||_valorCoresPacs(pacs);
+  // Empresa: sempre 40% do Plano Cores, em qualquer plano; o resto do lucro é do André.
+  // empBruto = 40%×cores + gastos pass-through da empresa, assim empLíquido = 40%×cores
+  const empProfit=parseFloat((vc*0.4).toFixed(2));
+  const gastosEmp=(c.gastosItens||[]).filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
+  return parseFloat((empProfit+gastosEmp).toFixed(2));
 }
 // Subtítulo da festa nas tabelas de Festas — igual nos dois Financeiros:
 // título do projeto (lido do card na hora, não gravado); sem título, o tipo
