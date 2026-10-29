@@ -7314,11 +7314,6 @@ function _vcDoCard(card){
   const pacs=(card.pacoteIds||(card.pacoteId?[card.pacoteId]:[])).map(id=>packages.find(p=>p.id===id)).filter(Boolean);
   return card.valorCoresJob||_valorCoresPacs(pacs);
 }
-// Desconto à vista dividido: 40% sai da Empresa (limitado aos 40% do Plano Cores); o resto sai do André
-function _descontoEmpresa(card){
-  if((card.tipoExecucao||'proprio')==='freelancer'||(card.tipoExecucao||'proprio')==='sou-freela')return 0;
-  return parseFloat(Math.min(_descontoAvista(card)*0.4,_vcDoCard(card)*0.4).toFixed(2));
-}
 // Estado atual da ficha como um cartão (mesma conta do Financeiro, antes de salvar)
 function _cardDaFicha(){
   return {
@@ -7355,10 +7350,10 @@ function _sincronizaCinegrafista(){
 function _custosPacoteDoCard(card){
   return (card.gastosItens||[]).filter(g=>g.tipo==='album').reduce((s,g)=>s+(+g.val||0),0);
 }
-// Empresa: 40% do Plano Cores, menos a parte dela no desconto à vista. Transporte fica fora da divisão.
+// Empresa: sempre 40% do Plano Cores (o desconto à vista não mexe na parte dela). Transporte fica fora da divisão.
 function calcEmpresaShare(c){
   if((c.tipoExecucao||'proprio')==='freelancer'||(c.tipoExecucao||'proprio')==='sou-freela')return 0;
-  return parseFloat(Math.max(0,_vcDoCard(c)*0.4-_descontoEmpresa(c)).toFixed(2));
+  return parseFloat((_vcDoCard(c)*0.4).toFixed(2));
 }
 // Subtítulo da festa nas tabelas de Festas — igual nos dois Financeiros:
 // título do projeto (lido do card na hora, não gravado); sem título, o tipo
