@@ -4315,7 +4315,7 @@ function _lembreteTransporteConfirmado(opId){
     </div>
     <div style="font-size:12px;color:#6b7280;margin-bottom:14px">🎉 Festa de <strong>${esc(op.nomePais||op.titulo||'Cliente')}</strong> confirmada! Não esquece de separar ${fmtMoney(valorTransp)} do transporte dessa festa.</div>
     <div style="display:flex;gap:10px">
-      <button onclick="document.getElementById('transp-lembrete-overlay').remove()" style="flex:1;padding:11px;border:1.5px solid #e5e7eb;background:#f9fafb;border-radius:9px;font-size:14px;cursor:pointer;font-weight:500">Depois</button>
+      <button onclick="_adiarTransporteLembrete('${op.id}')" style="flex:1;padding:11px;border:1.5px solid #e5e7eb;background:#f9fafb;border-radius:9px;font-size:14px;cursor:pointer;font-weight:500">Depois</button>
       <button onclick="_separarTransporteLembrete(${valorTransp})" style="flex:2;padding:11px;background:#22c55e;color:#fff;border:none;border-radius:9px;font-size:15px;font-weight:700;cursor:pointer">✅ Já separei</button>
     </div>
   </div>`;
@@ -4327,6 +4327,21 @@ function _separarTransporteLembrete(valor){
   saveFinData();renderFinResumo();
   toast('🚌 Transporte separado!','green');
   const ov=document.getElementById('transp-lembrete-overlay');if(ov)ov.remove();
+}
+// "Depois" no lembrete de transporte vira pendência de cliente, com o nome
+// da cliente, pra não depender de lembrar sozinho. Não duplica se a festa
+// já tiver uma pendência de transporte em aberto.
+function _adiarTransporteLembrete(opId){
+  const ov=document.getElementById('transp-lembrete-overlay');if(ov)ov.remove();
+  const op=opCards.find(c=>c.id===opId);if(!op)return;
+  if(!pendencias.some(p=>p._transpOpId===opId&&p.status!=='feito')){
+    const nome=op.nomePais||op.titulo||'Cliente';
+    pendencias.unshift({id:uid(),texto:`Reservar valor do transporte da festa do ${nome}`,clienteNome:nome,
+      prazo:'',hora:'',status:'pendente',criadoEm:Date.now(),
+      rec:{ativa:false,tipo:'semanal',dias:[],diaMes:null},_transpOpId:opId});
+    savPen();renderPendencias();renderDashListas();
+  }
+  toast('📌 Reservar o transporte está em Pendências de clientes','');
 }
 function marcarFreelaFinalizado(id){
   const card=prCards.find(c=>c.id===id);if(!card)return;
@@ -7899,7 +7914,7 @@ function delFinFesta(cardId){
   MESES_FIN.forEach(m=>{
     if(finDD[m])finDD[m]=finDD[m].filter(e=>e._opId!==cardId);
   });
-  pendencias=pendencias.filter(p=>p._parcelaOpId!==cardId);savPen();
+  pendencias=pendencias.filter(p=>p._parcelaOpId!==cardId&&p._transpOpId!==cardId);savPen();
   savOp();saveFinData();
   renderOp();renderFin();renderPendencias();
   toast('🗑️ Removido da Empresa','');
@@ -11421,7 +11436,7 @@ function closeMo(id){document.getElementById(id).classList.add('hidden')}
 function moOverlay(e,id){if(e.target===document.getElementById(id))closeMo(id)}
 function confirmDel(type){
   openCfm('Excluir?','Esta ação não pode ser desfeita.',()=>{
-    if(type==='op'){const delId=editingOpId;opCards=opCards.filter(c=>c.id!==delId);MESES_FIN.forEach(m=>{if(pessFD[m])pessFD[m]=pessFD[m].filter(e=>e._opId!==delId&&e._opFrlId!==delId)});pendencias=pendencias.filter(p=>p._parcelaOpId!==delId);savPen();savOp();savePessData();renderOp();renderPr();renderFin();renderAgenda();renderPendencias();closeMo('mo-op')}
+    if(type==='op'){const delId=editingOpId;opCards=opCards.filter(c=>c.id!==delId);MESES_FIN.forEach(m=>{if(pessFD[m])pessFD[m]=pessFD[m].filter(e=>e._opId!==delId&&e._opFrlId!==delId)});pendencias=pendencias.filter(p=>p._parcelaOpId!==delId&&p._transpOpId!==delId);savPen();savOp();savePessData();renderOp();renderPr();renderFin();renderAgenda();renderPendencias();closeMo('mo-op')}
     else if(type==='pr'){prCards=prCards.filter(c=>c.id!==editingPrId);savPr();renderPr();renderAgenda();closeMo('mo-pr')}
     else if(type==='alb'){const delId=editingAlbId;albCards=albCards.filter(c=>c.id!==delId);pendencias=pendencias.filter(p=>p._albCardId!==delId);savPen();savAlb();renderAlb();renderPendencias();closeMo('mo-alb')}
     else if(type==='pac'){packages=packages.filter(p=>p.id!==editingPacId);savPac();renderPac();closeMo('mo-pac')}
