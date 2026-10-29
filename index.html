@@ -4949,7 +4949,7 @@ function openOpModal(cardId,defaultCol,event,fromProj){
     // Carrega empresa/André — migra do modelo antigo se necessário
     // Empresa e André pela regra atual (40% do Plano Cores); valores salvos antes são recalculados.
     // Sem o desconto: a ficha aplica o desconto à vista por cima.
-    const _vEmp=calcEmpresaShare(card);
+    const _vEmp=calcEmpresaShare({...card,avistaDesconto:false});
     const _vAnd=calcAndreShare({...card,avistaDesconto:false});
     document.getElementById('f-valorEmpresa').value=_vEmp||'';
     document.getElementById('f-valorAndre').value=_vAnd||'';
@@ -5543,19 +5543,18 @@ function calcAndreShare(data){
   // valor bruto pro custo físico (álbum etc.) — essa parte não é líquido
   // de ninguém, então sai da sobra do André antes de dividir. Mesma conta
   // de calcDistribuicao() (live, na ficha), só que a partir do card salvo.
-  const t=_totalComDesconto(data);
-  const _ids=data.pacoteIds||(data.pacoteId?[data.pacoteId]:[]);
-  const _pacs=_ids.map(id=>packages.find(p=>p.id===id)).filter(Boolean);
-  const vc=data.valorCoresJob||_valorCoresPacs(_pacs);
+  const t=data.valorTotal||0;
+  const dAnd=_descontoAndre(data); // parte do desconto à vista que sai do André
+  const vc=_vcDoCard(data);
   if(vc>0){
     const gastosAlbum=(data.gastosItens||[]).filter(g=>g.tipo==='album').reduce((s,g)=>s+(g.val||0),0);
     const gastosEmp=(data.gastosItens||[]).filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
     const sobra=Math.max(0,t-vc-gastosAlbum-gastosEmp);
-    return parseFloat((vc*0.6+sobra).toFixed(2));
+    return parseFloat(Math.max(0,vc*0.6+sobra-dAnd).toFixed(2));
   }
-  // Sem plano com cores: sempre recalcula via calcEmpresaShare pra garantir valores corretos
+  // Sem plano com cores: o que sobra depois da Empresa (gastos dela) e do desconto dela
   const empShare=calcEmpresaShare(data);
-  return parseFloat(Math.max(0,t-empShare).toFixed(2));
+  return parseFloat(Math.max(0,t-empShare-dAnd).toFixed(2));
 }
 function recalcAllCards(){
   let changed=0;
@@ -5660,11 +5659,16 @@ function calcDistribuicao(){
     const _feD=document.getElementById('f-valorEmpresa');if(_feD)_feD.value=_empBrutoD||'';
     const _faD=document.getElementById('f-valorAndre');if(_faD)_faD.value=_andD||'';
   }
-  const empShare=parseFloat(document.getElementById('f-valorEmpresa')?.value)||0;
+  let empShare=parseFloat(document.getElementById('f-valorEmpresa')?.value)||0;
   let andShare=parseFloat(document.getElementById('f-valorAndre')?.value)||0;
-  // Desconto à vista (ficha): a Empresa fica com 40% do Plano Cores, então o desconto sai todo do André
+  // Desconto à vista (ficha): 40% sai da Empresa (limitado aos 40% do Plano Cores); o resto sai do André
   const _descFicha=_descontoAvistaFicha();
-  if(_descFicha>0)andShare=Math.max(0,andShare-_descFicha);
+  if(_descFicha>0){
+    const _freelaFicha=['freelancer','sou-freela'].includes(document.getElementById('f-execucao')?.value);
+    const _dEmpFicha=_freelaFicha?0:parseFloat(Math.min(_descFicha*0.4,_totalCoresD*0.4).toFixed(2));
+    empShare=Math.max(0,empShare-_dEmpFicha);
+    andShare=Math.max(0,andShare-(_descFicha-_dEmpFicha));
+  }
   const t=empShare+andShare;
   const r=parseFloat(document.getElementById('f-valorReserva').value)||0;
   const rest=parseFloat(document.getElementById('f-valorRestante').value)||0;
@@ -7341,14 +7345,22 @@ function _valorCoresPacs(pacs){
     return 0;
   }));
 }
+// Valor do Plano Cores de um cartão (o valor informado na festa tem prioridade)
+function _vcDoCard(card){
+  const pacs=(card.pacoteIds||(card.pacoteId?[card.pacoteId]:[])).map(id=>packages.find(p=>p.id===id)).filter(Boolean);
+  return card.valorCoresJob||_valorCoresPacs(pacs);
+}
+// Desconto à vista dividido: 40% sai da Empresa (limitado aos 40% do Plano Cores); o resto sai do André
+function _descontoEmpresa(card){
+  if((card.tipoExecucao||'proprio')==='freelancer'||(card.tipoExecucao||'proprio')==='sou-freela')return 0;
+  return parseFloat(Math.min(_descontoAvista(card)*0.4,_vcDoCard(card)*0.4).toFixed(2));
+}
+function _descontoAndre(card){return parseFloat((_descontoAvista(card)-_descontoEmpresa(card)).toFixed(2));}
 function calcEmpresaShare(c){
   if((c.tipoExecucao||'proprio')==='freelancer'||(c.tipoExecucao||'proprio')==='sou-freela')return 0;
-  const ids=c.pacoteIds||(c.pacoteId?[c.pacoteId]:[]);
-  const pacs=ids.map(id=>packages.find(p=>p.id===id)).filter(Boolean);
-  const vc=c.valorCoresJob||_valorCoresPacs(pacs);
-  // Empresa: sempre 40% do Plano Cores, em qualquer plano; o resto do lucro é do André.
-  // empBruto = 40%×cores + gastos pass-through da empresa, assim empLíquido = 40%×cores
-  const empProfit=parseFloat((vc*0.4).toFixed(2));
+  // Empresa: 40% do Plano Cores (menos a parte dela no desconto à vista); o resto do lucro é do André.
+  // empBruto = lucro + gastos pass-through da empresa, assim empLíquido = lucro
+  const empProfit=parseFloat((_vcDoCard(c)*0.4-_descontoEmpresa(c)).toFixed(2));
   const gastosEmp=(c.gastosItens||[]).filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
   return parseFloat((empProfit+gastosEmp).toFixed(2));
 }
