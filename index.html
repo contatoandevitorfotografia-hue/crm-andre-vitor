@@ -7350,10 +7350,17 @@ function _sincronizaCinegrafista(){
 function _custosPacoteDoCard(card){
   return (card.gastosItens||[]).filter(g=>g.tipo==='album').reduce((s,g)=>s+(+g.val||0),0);
 }
-// Empresa: sempre 40% do Plano Cores (o desconto à vista não mexe na parte dela). Transporte fica fora da divisão.
+// O desconto à vista sai também da Empresa: o mesmo percentual sobre a parte dela (40% do Plano Cores)
+function _descontoEmpresa(card){
+  const total=+card.valorTotal||0;
+  const d=_descontoAvista(card);
+  if(!d||total<=0)return 0;
+  return parseFloat((_vcDoCard(card)*0.4*(d/total)).toFixed(2));
+}
+// Empresa: 40% do Plano Cores, menos o desconto à vista sobre essa parte. Transporte fica fora da divisão.
 function calcEmpresaShare(c){
   if((c.tipoExecucao||'proprio')==='freelancer'||(c.tipoExecucao||'proprio')==='sou-freela')return 0;
-  return parseFloat((_vcDoCard(c)*0.4).toFixed(2));
+  return parseFloat(Math.max(0,_vcDoCard(c)*0.4-_descontoEmpresa(c)).toFixed(2));
 }
 // Subtítulo da festa nas tabelas de Festas — igual nos dois Financeiros:
 // título do projeto (lido do card na hora, não gravado); sem título, o tipo
