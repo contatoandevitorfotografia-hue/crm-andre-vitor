@@ -8030,6 +8030,8 @@ function _pessoalPagoDaFesta(card){
 // (status "pago" = tudo); a parte do André é tratada à parte.
 function _pagamentoDaFesta(card,forceFrl,andPagoOverride){
   const total=_totalComDesconto(card);
+  // "Pago Total" = festa paga por inteiro, em qualquer tipo. Outros status mostram o que foi registrado.
+  if(card.statusPag==='pago'&&total>0)return {total,pago:total,falta:0,quitado:true};
   const isFrl=forceFrl||((card.tipoExecucao==='freelancer'||!!card.freelancerId)&&card.tipoExecucao!=='sou-freela');
   const empPago=+(card.valorReserva)||0;
   let pago,quitado;
