@@ -6112,16 +6112,19 @@ function savePrCard(){
 function renderPac(){
   function custosBadge(p){
     if(!p.tipoPlano||p.tipoPlano==='padrao')return'';
-    const cf=p.custosFixos||[];const total=cf.reduce((s,c)=>s+(c.valor||0),0);
+    // Pacote composto mostra os custos de todos os pacotes que ele compõe (mesma regra da festa)
+    const incl=_pacotesComComponentes([p.id]);
+    const cf=incl.flatMap(x=>x.custosFixos||[]);const fmsAll=incl.flatMap(x=>x.filmmakerOptions||[]);
+    const total=cf.reduce((s,c)=>s+(c.valor||0),0);
     if(p.tipoPlano==='historias'){
-      const fms=p.filmmakerOptions||[];
+      const fms=fmsAll;
       return`<div style="font-size:11px;background:#2e1a18;border:1px solid #5c2a26;border-radius:6px;padding:5px 8px;margin-bottom:6px;color:#e78a7c"><strong>✨ Histórias</strong> · Custos fixos: ${fmtMoney(total)}${fms.length?'<br>'+fms.map(f=>'🎥 '+f.nome+' R$'+f.valor.toFixed(2).replace('.',',')).join(' · '):''}</div>`;
     }
     if(p.tipoPlano==='memorias'){
       return`<div style="font-size:11px;background:#2e1a18;border:1px solid #5c2a26;border-radius:6px;padding:5px 8px;margin-bottom:6px;color:#e78a7c"><strong>📚 Memórias</strong> · Custos fixos: ${fmtMoney(total)}<br><span style="opacity:.8">${cf.map(c=>c.desc+' R$'+c.valor.toFixed(2).replace('.',',')).join(' · ')}</span></div>`;
     }
     if(p.tipoPlano==='movimento'){
-      const fms=p.filmmakerOptions||[];
+      const fms=fmsAll;
       return`<div style="font-size:11px;background:#2e1a18;border:1px solid #5c2a26;border-radius:6px;padding:5px 8px;margin-bottom:6px;color:#e78a7c"><strong>🎥 Movimento</strong> · Edição: R$${(cf.find(c=>c.desc==='Edição')?.valor||0).toFixed(2).replace('.',',')}${fms.length?'<br>'+fms.map(f=>'🎥 '+f.nome+' R$'+f.valor.toFixed(2).replace('.',',')).join(' · '):''}</div>`;
     }
     return'';
