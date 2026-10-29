@@ -7330,16 +7330,19 @@ function _cardDaFicha(){
 }
 // O cinegrafista escolhido no campo entra nos custos do pacote sempre que estiver escolhido.
 // Com um único cinegrafista cadastrado nos pacotes da festa, ele entra sozinho (como antes).
+// Ao abrir a ficha, o campo é redesenhado e os pacotes marcados ainda não estão prontos:
+// nesse intervalo não mexe no que já está lançado, e o campo vazio vale o cinegrafista lançado.
 function _sincronizaCinegrafista(){
-  const pacs=_pacotesComComponentes(getSelectedPacIds());
+  const ids=getSelectedPacIds();
+  if(!ids.length)return;
+  const pacs=_pacotesComComponentes(ids);
   const sel=document.getElementById('f-filmakerId');
   let nome=sel?.value||'';
   if(nome==='__outro__')nome=(document.getElementById('f-filmakerCustom')?.value||'').trim();
+  if(!nome){const lancado=gastosItensTemp.find(g=>g._filmmaker);if(lancado)nome=(lancado.desc||'').split('—')[1]?.trim()||'';}
   const movOpts=pacs.filter(p=>p.tipoPlano==='movimento'||p.tipoPlano==='historias').flatMap(p=>p.filmmakerOptions||[]);
-  if(!nome&&movOpts.length===1){
-    nome=movOpts[0].nome;
-    if(sel?.tagName==='SELECT'&&[...sel.options].some(o=>o.value===nome))sel.value=nome;
-  }
+  if(!nome&&movOpts.length===1)nome=movOpts[0].nome;
+  if(sel?.tagName==='SELECT'&&nome&&[...sel.options].some(o=>o.value===nome))sel.value=nome;
   const escolhido=pacs.flatMap(p=>p.filmmakerOptions||[]).find(f=>f.nome===nome);
   const antes=JSON.stringify(gastosItensTemp.filter(g=>g._filmmaker).map(g=>[g.desc,g.val]));
   gastosItensTemp=gastosItensTemp.filter(g=>!g._filmmaker);
