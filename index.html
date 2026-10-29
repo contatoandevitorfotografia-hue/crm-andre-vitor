@@ -2702,6 +2702,10 @@ input[type="date"]{cursor:pointer}
             <option value="historias">✨ Plano Histórias (fotos + álbum + vídeo)</option>
           </select>
         </div>
+        <div class="fg full">
+          <label>🧩 Compõe estes pacotes (os gastos fixos deles entram junto)</label>
+          <div id="p-compoe-list" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+        </div>
         <div id="p-valor-cores-wrap" class="fg full" style="display:none">
           <label>📷 Valor do Plano Cores (base para os 40% da empresa)</label>
           <div style="display:flex;align-items:center;gap:10px">
@@ -6122,7 +6126,7 @@ function renderPac(){
     }
     return'';
   }
-  document.getElementById('pac-grid').innerHTML=packages.map(p=>`<div class="pac-card" style="border-top:4px solid ${p.cor||'#2C7A7B'}"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="width:10px;height:10px;border-radius:50%;background:${p.cor||'#2C7A7B'};display:inline-block;flex-shrink:0"></span><div class="pac-name" style="margin-bottom:0">${esc(p.nome)}</div></div>${p.preco?`<div class="pac-price">${fmtMoney(p.preco)}</div>`:''}${p.duracao?`<div style="font-size:12px;color:var(--muted);margin-bottom:6px">⏱ ${esc(p.duracao)}</div>`:''}${custosBadge(p)}${p.desc?`<div class="pac-desc">${esc(p.desc)}</div>`:''}${p.inclui?`<div class="pac-inclui">${esc(p.inclui).split('\n').map(l=>'• '+l.trim()).filter(l=>l.length>2).join('\n')}</div>`:''}<div class="pac-actions"><button class="btn btn-g btn-sm" onclick="openPacModal('${p.id}')">✏️ Editar</button><button class="btn btn-d btn-sm" onclick="qDelPac('${p.id}')">🗑️ Excluir</button></div></div>`).join('')+`<div class="pac-add-card" onclick="openPacModal(null)"><div class="pac-add-icon">📦</div><div class="pac-add-label">Adicionar novo pacote</div></div>`;
+  document.getElementById('pac-grid').innerHTML=packages.map(p=>`<div class="pac-card" style="border-top:4px solid ${p.cor||'#2C7A7B'}"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="width:10px;height:10px;border-radius:50%;background:${p.cor||'#2C7A7B'};display:inline-block;flex-shrink:0"></span><div class="pac-name" style="margin-bottom:0">${esc(p.nome)}</div></div>${p.preco?`<div class="pac-price">${fmtMoney(p.preco)}</div>`:''}${p.duracao?`<div style="font-size:12px;color:var(--muted);margin-bottom:6px">⏱ ${esc(p.duracao)}</div>`:''}${custosBadge(p)}${p.compoe?.length?`<div style="font-size:11px;color:var(--muted);margin-bottom:6px">🧩 Compõe: ${p.compoe.map(id=>esc(packages.find(x=>x.id===id)?.nome||'(apagado)')).join(' + ')}</div>`:''}${p.desc?`<div class="pac-desc">${esc(p.desc)}</div>`:''}${p.inclui?`<div class="pac-inclui">${esc(p.inclui).split('\n').map(l=>'• '+l.trim()).filter(l=>l.length>2).join('\n')}</div>`:''}<div class="pac-actions"><button class="btn btn-g btn-sm" onclick="openPacModal('${p.id}')">✏️ Editar</button><button class="btn btn-d btn-sm" onclick="qDelPac('${p.id}')">🗑️ Excluir</button></div></div>`).join('')+`<div class="pac-add-card" onclick="openPacModal(null)"><div class="pac-add-icon">📦</div><div class="pac-add-label">Adicionar novo pacote</div></div>`;
 }
 function openPacModal(pacId){
   editingPacId=pacId;const pac=pacId?packages.find(p=>p.id===pacId):null;
@@ -6140,6 +6144,7 @@ function openPacModal(pacId){
   const tipoPlano=pac?.tipoPlano||'padrao';
   document.getElementById('p-tipoPlano').value=tipoPlano;
   document.getElementById('p-valorCores').value=pac?.valorCores||'';
+  renderCompoeChecks(pac?.compoe||[]);
   const cfList=pac?.custosFixos||[];
   document.getElementById('p-cf-edicao').value=cfList.find(c=>c.desc==='Edição')?.valor??250;
   document.getElementById('p-custos-memorias-rows').innerHTML='';
@@ -6183,8 +6188,11 @@ function savePac(){
       if(n)filmmakerOptions.push({nome:n,valor:v});
     });
   }
+  const compoe=[...document.querySelectorAll('#p-compoe-list input:checked')].map(c=>c.value).filter(id=>id!==editingPacId);
+  if(compoe.length){custosFixos=[];filmmakerOptions=[];}
   const valorCores=parseFloat(document.getElementById('p-valorCores').value)||0;
   const data={id:editingPacId||uid(),nome,preco:parseFloat(document.getElementById('p-preco').value)||0,duracao:document.getElementById('p-duracao').value.trim(),cor:document.getElementById('p-cor').value||'#6BA3E0',desc:document.getElementById('p-desc').value.trim(),inclui:document.getElementById('p-inclui').value.trim(),tipoPlano,valorCores,custosFixos,filmmakerOptions,criadoEm:editingPacId?packages.find(p=>p.id===editingPacId)?.criadoEm||Date.now():Date.now()};
+  data.compoe=compoe;
   if(editingPacId){const i=packages.findIndex(p=>p.id===editingPacId);if(i!==-1)packages[i]=data;else packages.push(data)}else packages.push(data);
   savPac();closeMo('mo-pac');try{renderPac();}catch(err){console.error(err);}toast('📦 Pacote salvo!','green');
 }
@@ -6887,9 +6895,28 @@ function fillFrlSelect(selectedId){
   const sel=document.getElementById('f-freelancerId');if(!sel)return;
   sel.innerHTML=`<option value="">Selecione...</option>`+freelancers.map(f=>`<option value="${f.id}"${f.id===selectedId?' selected':''}>${esc(f.nome)}</option>`).join('');
 }
+// Pacote composto: "compoe" lista os pacotes que ele inclui (ex.: Histórias = Cores + Movimento + Memórias).
+// Os gastos fixos de todos entram na festa, sem repetir um pacote. O preço continua sendo só o dele.
+function _pacotesComComponentes(ids){
+  const achados=[];const vistos=new Set();
+  const visita=id=>{
+    if(vistos.has(id))return;
+    const p=packages.find(pk=>pk.id===id);
+    if(!p)return;
+    vistos.add(id);achados.push(p);
+    (p.compoe||[]).forEach(visita);
+  };
+  ids.forEach(visita);
+  return achados;
+}
+function renderCompoeChecks(sel){
+  const box=document.getElementById('p-compoe-list');if(!box)return;
+  const outros=packages.filter(p=>p.id!==editingPacId);
+  box.innerHTML=outros.length?outros.map(p=>`<label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;background:#1b2330;border:1px solid var(--border);border-radius:20px;padding:4px 10px"><input type="checkbox" value="${p.id}"${sel.includes(p.id)?' checked':''} onchange="onTipoPlanoChange()"> ${esc(p.nome)}</label>`).join(''):'<span style="font-size:12px;color:var(--muted)">Cadastre outros pacotes para poder compor.</span>';
+}
 function isMovimento(){
   const ids=getSelectedPacIds();
-  const pacs=ids.map(id=>packages.find(p=>p.id===id)).filter(Boolean);
+  const pacs=_pacotesComComponentes(ids);
   if(pacs.some(p=>p.tipoPlano==='movimento'||p.tipoPlano==='historias'||p.nome.toLowerCase().includes('movimento')))return true;
   const pacId=ids[0]||'';
   const custom=document.getElementById('f-pacoteCustom').value.toLowerCase();
@@ -6903,6 +6930,11 @@ function onTipoPlanoChange(){
   document.getElementById('p-valor-cores-wrap').style.display=hasCores?'':'none';
   document.getElementById('p-custos-memorias-wrap').style.display=tipo==='memorias'||tipo==='historias'?'':'none';
   document.getElementById('p-custos-movimento-wrap').style.display=tipo==='movimento'||tipo==='historias'?'':'none';
+  // Pacote composto não tem custos próprios: eles vêm dos pacotes que ele compõe
+  if(document.querySelector('#p-compoe-list input:checked')){
+    document.getElementById('p-custos-memorias-wrap').style.display='none';
+    document.getElementById('p-custos-movimento-wrap').style.display='none';
+  }
 }
 // ── Adicionar linha de cinegrafista no modal de pacote ──
 function addCustoMemoriasRow(desc,valor){
@@ -6926,7 +6958,7 @@ function fillFilmmakerSelect(pacIds, selectedNome){
   const slot=document.getElementById('f-filmakerId-slot');
   if(!wrap||!slot)return;
   const ids=Array.isArray(pacIds)?pacIds:(pacIds?[pacIds]:[]);
-  const pacs=ids.map(id=>packages.find(pk=>pk.id===id)).filter(Boolean);
+  const pacs=_pacotesComComponentes(ids);
   const isMov=pacs.some(p=>{
     const nm=(p.nome||'').toLowerCase();
     return p.tipoPlano==='movimento'||p.tipoPlano==='historias'
@@ -6963,7 +6995,7 @@ function onFilmmakerCustomInput(){
 }
 function onFilmmakerChange(){
   const _fids=getSelectedPacIds();
-  const allFilmOpts=_fids.flatMap(id=>{const p=packages.find(pk=>pk.id===id);return p?.filmmakerOptions||[];});
+  const allFilmOpts=_pacotesComComponentes(_fids).flatMap(p=>p.filmmakerOptions||[]);
   const selEl=document.getElementById('f-filmakerId');
   let rawVal=selEl?.value||'';
   const customEl=document.getElementById('f-filmakerCustom');
@@ -7073,7 +7105,7 @@ function onPacotesChange(fromClick){
   // IMPORTANTE: Custos fixos de Memórias devem ser tipo 'album', não 'empresa'
   // Não mexe em nada que já estava em Gastos (transporte cadastrado na mão,
   // Hospedagem etc.) — só substitui os itens que vieram de pacote antes.
-  const custosPlano=pacs.flatMap(p=>(p.custosFixos||[]).map(c=>{
+  const custosPlano=_pacotesComComponentes(ids).flatMap(p=>(p.custosFixos||[]).map(c=>{
     // Determina o tipo baseado no plano: Memórias = album, Movimento = empresa
     const tipoCusto=p.tipoPlano==='memorias'||p.tipoPlano==='historias'?'album':'empresa';
     return {id:uid(),desc:c.desc,val:c.valor,tipo:tipoCusto,_fromPacote:true};
@@ -7081,7 +7113,7 @@ function onPacotesChange(fromClick){
   gastosItensTemp=[...gastosItensTemp.filter(g=>!g._fromPacote),...custosPlano];
 
   // Auto-seleciona cinegrafista se só houver um cadastrado entre todos os planos movimento
-  const movPacs=pacs.filter(p=>p.tipoPlano==='movimento'||p.tipoPlano==='historias');
+  const movPacs=_pacotesComComponentes(ids).filter(p=>p.tipoPlano==='movimento'||p.tipoPlano==='historias');
   const allFilmmakers=movPacs.flatMap(p=>p.filmmakerOptions||[]);
   if(allFilmmakers.length===1){
     const fm=allFilmmakers[0];
