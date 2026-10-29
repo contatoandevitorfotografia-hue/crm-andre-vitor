@@ -6109,13 +6109,15 @@ function renderPac(){
     // Pacote composto mostra os custos de todos os pacotes que ele compõe (mesma regra da festa)
     const incl=_pacotesComComponentes([p.id]);
     const cf=incl.flatMap(x=>x.custosFixos||[]);const fmsAll=incl.flatMap(x=>x.filmmakerOptions||[]);
-    const total=cf.reduce((s,c)=>s+(c.valor||0),0)+fmsAll.reduce((s,f)=>s+(+f.valor||0),0);
+    const total=cf.reduce((s,c)=>s+(c.valor||0),0);
+    // Um cinegrafista por festa: o total sai uma vez para cada cinegrafista, nunca somando todos
+    const custosTxt=fmsAll.length?'Custos fixos '+fmsAll.map(f=>`com ${esc(f.nome)}: ${fmtMoney(total+(+f.valor||0))}`).join(' · '):`Custos fixos: ${fmtMoney(total)}`;
     if(compostoBadge){
-      return`<div style="font-size:11px;background:#2e1a18;border:1px solid #5c2a26;border-radius:6px;padding:5px 8px;margin-bottom:6px;color:#e78a7c"><strong>🧩 Composto</strong> · Custos fixos: ${fmtMoney(total)}<br><span style="opacity:.8">${cf.map(c=>esc(c.desc)+' R$'+(+c.valor||0).toFixed(2).replace('.',',')).join(' · ')}${fmsAll.length?'<br>'+fmsAll.map(f=>'🎥 '+esc(f.nome)+' R$'+(+f.valor||0).toFixed(2).replace('.',',')).join(' · '):''}</span></div>`;
+      return`<div style="font-size:11px;background:#2e1a18;border:1px solid #5c2a26;border-radius:6px;padding:5px 8px;margin-bottom:6px;color:#e78a7c"><strong>🧩 Composto</strong> · ${custosTxt}<br><span style="opacity:.8">${cf.map(c=>esc(c.desc)+' R$'+(+c.valor||0).toFixed(2).replace('.',',')).join(' · ')}${fmsAll.length?'<br>'+fmsAll.map(f=>'🎥 '+esc(f.nome)+' R$'+(+f.valor||0).toFixed(2).replace('.',',')).join(' · '):''}</span></div>`;
     }
     if(p.tipoPlano==='historias'){
       const fms=fmsAll;
-      return`<div style="font-size:11px;background:#2e1a18;border:1px solid #5c2a26;border-radius:6px;padding:5px 8px;margin-bottom:6px;color:#e78a7c"><strong>✨ Histórias</strong> · Custos fixos: ${fmtMoney(total)}${fms.length?'<br>'+fms.map(f=>'🎥 '+f.nome+' R$'+f.valor.toFixed(2).replace('.',',')).join(' · '):''}</div>`;
+      return`<div style="font-size:11px;background:#2e1a18;border:1px solid #5c2a26;border-radius:6px;padding:5px 8px;margin-bottom:6px;color:#e78a7c"><strong>✨ Histórias</strong> · ${custosTxt}${fms.length?'<br>'+fms.map(f=>'🎥 '+f.nome+' R$'+f.valor.toFixed(2).replace('.',',')).join(' · '):''}</div>`;
     }
     if(p.tipoPlano==='memorias'){
       return`<div style="font-size:11px;background:#2e1a18;border:1px solid #5c2a26;border-radius:6px;padding:5px 8px;margin-bottom:6px;color:#e78a7c"><strong>📚 Memórias</strong> · Custos fixos: ${fmtMoney(total)}<br><span style="opacity:.8">${cf.map(c=>c.desc+' R$'+c.valor.toFixed(2).replace('.',',')).join(' · ')}</span></div>`;
