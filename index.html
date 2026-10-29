@@ -4181,14 +4181,19 @@ function prCardHTML(c,cc){
   // tudo; senão o que estiver registrado/parcelas recebidas).
   const _isFrlCard=freelaTipo==='contratei';
   const {pago:pagoTotal,quitado:_quitadoPr}=_pagamentoDaFesta(src||c,_isFrlCard);
-  // Total e Falta mostram o valor com o desconto à vista (só exibição)
+  // Total, Pago e Falta mostram o valor com o desconto à vista (só exibição).
+  // Com desconto, quitado = pagou o valor descontado.
+  const _totalCheioPr=+(src||c).valorTotal||0;
   const _totalQuadroPr=_valorQuadroOp(src||c);
-  const _faltaQuadroPr=Math.max(0,_totalQuadroPr-pagoTotal);
+  const _comDescPr=_totalQuadroPr<_totalCheioPr;
+  const _pagoQuadroPr=_comDescPr?Math.min(pagoTotal,_totalQuadroPr):pagoTotal;
+  const _quitadoQuadroPr=_quitadoPr||(_comDescPr&&_totalQuadroPr>0&&pagoTotal>=_totalQuadroPr-0.009);
+  const _faltaQuadroPr=Math.max(0,_totalQuadroPr-_pagoQuadroPr);
   const _andLiqFr=_isFrlCard?_andreLiqDaFesta(src||c):0;
   const _andRecebeuFr=_isFrlCard&&_andLiqFr>0&&_pessoalPagoDaFesta(src||c)>=_andLiqFr-0.009;
   let pagCls='pag-pendente';
-  if(_quitadoPr)pagCls='pag-pago';
-  else if(pagoTotal>0)pagCls='pag-sinal';
+  if(_quitadoQuadroPr)pagCls='pag-pago';
+  else if(_pagoQuadroPr>0)pagCls='pag-sinal';
   const planoDeepActive=_pi&&!isPend&&freelaTipo!=='contratei'&&freelaTipo!=='sou-freela';
   const planoBg=_pi?`background:${_pi.deepBg};border:1px solid transparent;--ptext:${_pi.deepText};`:'';
   const pendBg=isPend?'background:#241e12;border:1.5px solid #c8972a;':freelaTipo==='contratei'?'background:#202A34;border:1.5px solid #71869A;':freelaTipo==='sou-freela'?'background:#241715;border:1.5px solid #b05a45;':planoBg;
@@ -4211,7 +4216,7 @@ function prCardHTML(c,cc){
     </div>
     ${valor?`<div class="pc-pills">
       <span class="pc-pill valor">💼 Total: ${fmtMoney(_totalQuadroPr)}</span>
-      <span class="pc-pill ${pagCls}">💰 Pago: ${fmtMoney(pagoTotal)}</span>
+      <span class="pc-pill ${pagCls}">💰 Pago: ${fmtMoney(_pagoQuadroPr)}</span>
       ${_faltaQuadroPr>0?`<span class="pc-pill pag-pendente">⏳ Falta: ${fmtMoney(_faltaQuadroPr)}</span>`:pagCls==='pag-pago'?`<span class="pc-pill pag-pago">✅ Quitado</span>`:''}
       ${_andLiqFr>0?(_andRecebeuFr?`<span class="pc-pill pag-pago">👤 André: ✅ recebeu ${fmtMoney(_andLiqFr)}</span>`:`<span class="pc-pill pag-sinal">👤 André: ⏳ a receber ${fmtMoney(_andLiqFr)}</span>`):''}
     </div>`:''}
