@@ -2710,7 +2710,7 @@ input[type="date"]{cursor:pointer}
           <label>📷 Valor do Plano Cores (base para os 40% da empresa)</label>
           <div style="display:flex;align-items:center;gap:10px">
             <div class="mw" style="max-width:160px"><input type="number" id="p-valorCores" placeholder="Ex: 1200" step="0.01" min="0" style="font-size:15px;font-weight:700"></div>
-            <span style="font-size:12px;color:var(--muted)">Empresa receberá sempre 40% deste valor</span>
+            <span style="font-size:12px;color:var(--muted)">Empresa receberá sempre 40% deste valor. Vazio = usa o Plano Cores que o pacote compõe</span>
           </div>
         </div>
         <div id="p-custos-memorias-wrap" class="fg full" style="display:none">
@@ -7338,8 +7338,14 @@ function _finCurMes(){
 function _getMesFin(ds){if(!ds)return null;const d=new Date(ds+'T12:00:00');return MESES_FIN[d.getMonth()];}
 // Valor do Plano Cores dos pacotes: o Padrão (Plano Cores) vale o próprio preço;
 // Memórias, Movimento e Histórias usam o "Valor do Plano Cores" informado.
-function _valorCoresPacs(pacs){
+// Pacote composto sem esse valor usa o Plano Cores dos pacotes que ele compõe.
+function _valorCoresPacs(pacs,_vistos=new Set()){
   return Math.max(0,...pacs.map(p=>{
+    if(_vistos.has(p.id))return 0;
+    _vistos.add(p.id);
+    if((p.compoe||[]).length&&!p.valorCores){
+      return _valorCoresPacs((p.compoe||[]).map(id=>packages.find(x=>x.id===id)).filter(Boolean),_vistos);
+    }
     if(!p.tipoPlano||p.tipoPlano==='padrao')return p.preco||0;
     if(p.tipoPlano==='memorias'||p.tipoPlano==='movimento'||p.tipoPlano==='historias')return p.valorCores||0;
     return 0;
