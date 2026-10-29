@@ -6111,11 +6111,15 @@ function savePrCard(){
 }
 function renderPac(){
   function custosBadge(p){
-    if(!p.tipoPlano||p.tipoPlano==='padrao')return'';
+    const compostoBadge=(p.compoe||[]).length>0;
+    if(!compostoBadge&&(!p.tipoPlano||p.tipoPlano==='padrao'))return'';
     // Pacote composto mostra os custos de todos os pacotes que ele compõe (mesma regra da festa)
     const incl=_pacotesComComponentes([p.id]);
     const cf=incl.flatMap(x=>x.custosFixos||[]);const fmsAll=incl.flatMap(x=>x.filmmakerOptions||[]);
-    const total=cf.reduce((s,c)=>s+(c.valor||0),0);
+    const total=cf.reduce((s,c)=>s+(c.valor||0),0)+fmsAll.reduce((s,f)=>s+(+f.valor||0),0);
+    if(compostoBadge){
+      return`<div style="font-size:11px;background:#2e1a18;border:1px solid #5c2a26;border-radius:6px;padding:5px 8px;margin-bottom:6px;color:#e78a7c"><strong>🧩 Composto</strong> · Custos fixos: ${fmtMoney(total)}<br><span style="opacity:.8">${cf.map(c=>esc(c.desc)+' R$'+(+c.valor||0).toFixed(2).replace('.',',')).join(' · ')}${fmsAll.length?'<br>'+fmsAll.map(f=>'🎥 '+esc(f.nome)+' R$'+(+f.valor||0).toFixed(2).replace('.',',')).join(' · '):''}</span></div>`;
+    }
     if(p.tipoPlano==='historias'){
       const fms=fmsAll;
       return`<div style="font-size:11px;background:#2e1a18;border:1px solid #5c2a26;border-radius:6px;padding:5px 8px;margin-bottom:6px;color:#e78a7c"><strong>✨ Histórias</strong> · Custos fixos: ${fmtMoney(total)}${fms.length?'<br>'+fms.map(f=>'🎥 '+f.nome+' R$'+f.valor.toFixed(2).replace('.',',')).join(' · '):''}</div>`;
@@ -6196,6 +6200,8 @@ function savePac(){
   const valorCores=parseFloat(document.getElementById('p-valorCores').value)||0;
   const data={id:editingPacId||uid(),nome,preco:parseFloat(document.getElementById('p-preco').value)||0,duracao:document.getElementById('p-duracao').value.trim(),cor:document.getElementById('p-cor').value||'#6BA3E0',desc:document.getElementById('p-desc').value.trim(),inclui:document.getElementById('p-inclui').value.trim(),tipoPlano,valorCores,custosFixos,filmmakerOptions,criadoEm:editingPacId?packages.find(p=>p.id===editingPacId)?.criadoEm||Date.now():Date.now()};
   data.compoe=compoe;
+  // Pacote composto precisa do Valor do Plano Cores (base dos 40% da empresa): sem tipo, vira Histórias
+  if(compoe.length&&data.tipoPlano==='padrao')data.tipoPlano='historias';
   if(editingPacId){const i=packages.findIndex(p=>p.id===editingPacId);if(i!==-1)packages[i]=data;else packages.push(data)}else packages.push(data);
   savPac();closeMo('mo-pac');try{renderPac();}catch(err){console.error(err);}toast('📦 Pacote salvo!','green');
 }
@@ -6930,7 +6936,8 @@ function isMovimento(){
 function onTipoPlanoChange(){
   const tipo=document.getElementById('p-tipoPlano').value;
   const hasCores=tipo==='memorias'||tipo==='movimento'||tipo==='historias';
-  document.getElementById('p-valor-cores-wrap').style.display=hasCores?'':'none';
+  const temCompoe=!!document.querySelector('#p-compoe-list input:checked');
+  document.getElementById('p-valor-cores-wrap').style.display=hasCores||temCompoe?'':'none';
   document.getElementById('p-custos-memorias-wrap').style.display=tipo==='memorias'||tipo==='historias'?'':'none';
   document.getElementById('p-custos-movimento-wrap').style.display=tipo==='movimento'||tipo==='historias'?'':'none';
   // Pacote composto não tem custos próprios: eles vêm dos pacotes que ele compõe
