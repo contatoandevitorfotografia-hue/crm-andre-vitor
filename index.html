@@ -2153,6 +2153,8 @@ input[type="date"]{cursor:pointer}
     <button class="btn btn-p" onclick="openClientModal(null)">＋ Novo Cliente</button>
   </div>
   <div class="tag-filter-bar" id="tag-filter-bar"></div>
+  <div class="tag-filter-bar" id="local-filter-bar" style="display:none"></div>
+  <div id="local-festas-panel" style="padding:0 26px 14px"></div>
   <div class="cl-wrap">
     <div class="cl-toolbar">
       <div class="srch-wrap"><input class="srch-inp" id="srch-cl" placeholder="Buscar por nome, telefone ou email..." oninput="renderClientes()"></div>
@@ -2239,7 +2241,7 @@ input[type="date"]{cursor:pointer}
         </div>
         <div class="g2">
           <div class="fg"><label>Local da Festa</label>
-            <input type="text" id="f-local" placeholder="Salão, espaço, endereço...">
+            <div id="f-local-slot"><select id="f-local"><option value="">Selecione o local...</option></select></div>
           </div>
           <div class="fg"><label>Tipo de Serviço</label>
             <select id="f-tipo"><option value="">Selecione...</option><option>Aniversário infantil</option><option>Ensaio Newborn</option><option>Ensaio Gestante</option><option>Ensaio Família</option><option>Batizado</option><option>Formatura</option><option>Casamento</option><option>Outro</option></select>
@@ -3325,6 +3327,8 @@ let editingOpId=null,editingPrId=null,editingAlbId=null,editingPacId=null,editin
 let dragId=null,dragBoard=null,cfmCb=null,agYear,agMonth,currentTab='dashboard',selectedTag=null,clTipoFiltro='todos';
 let tplSendCtx=null,activeTplId=null;
 let pendenciasTemp=[];
+const LOCAIS_SUGERIDOS=['Buffet Engenho'];
+let selectedLocal=null;
 let gastosItensTemp=[];
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
 function load(){
@@ -3978,6 +3982,7 @@ function renderOp(){
     board.appendChild(buildOpCol(col,cs));
   });
   board.appendChild(_colAddGhostEl('op'));
+  renderLocaisFestas();
 }
 const OP_HDR_COLOR='#3A434F'; // cor única do cabeçalho das colunas de Oportunidades
 function buildOpCol(col,cs){
@@ -4849,6 +4854,7 @@ function focusPacChips(){
 }
 function fillPacSelect(){ renderPacChips(); }
 function clearOpForm(){
+  _preencheLocalSelect('');
   ['f-titulo','f-nomePais','f-tel','f-nomeCrianca','f-idade','f-nomeCrianca2','f-idade2','f-data','f-horario','f-horarioFim','f-local','f-tipo','f-pacoteCustom','f-galeria','f-galeriaClienteId','f-motivo','f-detalhe','f-pend-obs'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});
   const _obsNotesW=document.getElementById('f-obs-cl-notes');if(_obsNotesW)_obsNotesW.style.display='none';
   document.getElementById('btn-abrir-galeria').style.display='none';
@@ -4952,7 +4958,7 @@ function openOpModal(cardId,defaultCol,event,fromProj){
     document.getElementById('f-data').value=card.dataEvento||'';
     document.getElementById('f-horario').value=card.horario||'';
     document.getElementById('f-horarioFim').value=card.horarioFim||'';
-    document.getElementById('f-local').value=card.local||'';
+    _preencheLocalSelect(card.local||'');
     document.getElementById('f-tipo').value=card.tipo||'';
     document.getElementById('f-pacoteCustom').value=card.pacoteCustom||'';
     document.getElementById('f-valorTotal').value=card.valorTotal||'';
@@ -5883,7 +5889,7 @@ function copyClientMsg(){
   const titulo=document.getElementById('f-titulo')?.value||'';
   const data=document.getElementById('f-data')?.value||'';
   const hora=document.getElementById('f-horario')?.value||'';
-  const local=document.getElementById('f-local')?.value||'';
+  const local=_localDoFormulario();
   const tipo=document.getElementById('f-tipo')?.value||'';
   const total=parseFloat(document.getElementById('f-valorTotal')?.value)||0;
   const reserva=parseFloat(document.getElementById('f-valorReserva')?.value)||0;
@@ -5973,7 +5979,7 @@ function saveOpCard(){
   _sincronizaCinegrafista();
   const oldCard=editingOpId?opCards.find(c=>c.id===editingOpId):null;
   const oldCol=oldCard?.coluna;
-  const data={id:editingOpId||uid(),coluna:newCol,somenteProjeto:oldCard?.somenteProjeto||opFromProj||false,titulo:document.getElementById('f-titulo').value.trim(),nomePais,telefone:document.getElementById('f-tel').value.trim(),nomeCrianca:document.getElementById('f-nomeCrianca').value.trim(),idade:document.getElementById('f-idade').value.trim(),nomeCrianca2:document.getElementById('f-nomeCrianca2').value.trim(),idade2:document.getElementById('f-idade2').value.trim(),dataEvento:document.getElementById('f-data').value,horario:document.getElementById('f-horario').value,horarioFim:document.getElementById('f-horarioFim').value,local:document.getElementById('f-local').value.trim(),tipo:document.getElementById('f-tipo').value,pacoteId:(getSelectedPacIds()[0]||''),pacoteIds:getSelectedPacIds(),pacoteCustom:document.getElementById('f-pacoteCustom').value.trim(),tipoExecucao:document.getElementById('f-execucao').value||'proprio',freelancerId:document.getElementById('f-freelancerId').value||'',parceiroId:(document.getElementById('f-execucao').value==='sou-freela'?document.getElementById('f-op-parceiroId')?.value||'':''),filmmakerNome:(()=>{const s=document.getElementById('f-filmakerId');if(!s)return '';const v=s.value||'';if(v==='__outro__'){return (document.getElementById('f-filmakerCustom')?.value||'').trim();}return v;})(),filmmakerCusto:(()=>{const _fids=getSelectedPacIds();const fNome=document.getElementById('f-filmakerId')?.value||'';const allFmOpts=_fids.flatMap(id=>{const p=packages.find(pk=>pk.id===id);return p?.filmmakerOptions||[];});const opt=allFmOpts.find(f=>f.nome===fNome);return opt?opt.valor:0;})(),valorEmpresa:parseFloat(document.getElementById('f-valorEmpresa')?.value)||0,valorAndre:parseFloat(document.getElementById('f-valorAndre')?.value)||0,valorFreelancer:parseFloat(document.getElementById('f-valorFreelancer')?.value)||0,valorTotal:(parseFloat(document.getElementById('f-valorEmpresa')?.value)||0)+(parseFloat(document.getElementById('f-valorAndre')?.value)||0),valorCoresJob:0,valorReserva:parseFloat(document.getElementById('f-valorReserva').value)||0,dataReserva:document.getElementById('f-dataReserva').value,valorRestante:parseFloat(document.getElementById('f-valorRestante').value)||0,dataRestante:document.getElementById('f-dataRestante').value,statusPag:document.getElementById('f-statusPag').value,gastos:gastosItensTemp.filter(g=>g.tipo!=='album').reduce((s,g)=>s+(g.val||0),0),gastosItens:[...gastosItensTemp],formaPag:document.getElementById('f-formaPag').value,avistaDesconto:document.getElementById('f-avistaDesconto')?.checked||false,nParcelas:parseInt(document.getElementById('f-nParcelas').value)||1,parcelasItens:[...parcelasItensTemp],galeria:document.getElementById('f-galeria').value.trim(),galeriaClienteId:document.getElementById('f-galeriaClienteId')?.value.trim()||'',obs:oldCard?.obs||'',motivo:document.getElementById('f-motivo').value,detalhe:document.getElementById('f-detalhe').value.trim(),pendObs:document.getElementById('f-pend-obs')?.value.trim()||'',pendencias:[...pendenciasTemp],pagoEmpresa:document.getElementById('f-pagoEmpresa')?.checked||false,pagoAndre:document.getElementById('f-pagoAndre')?.checked||false,followupDate:document.getElementById('f-followup').value||'',albumGuardado:_albumGuardado,contrato:oldCard?.contrato||null,criadoEm:oldCard?.criadoEm||Date.now(),updatedAt:Date.now()};
+  const data={id:editingOpId||uid(),coluna:newCol,somenteProjeto:oldCard?.somenteProjeto||opFromProj||false,titulo:document.getElementById('f-titulo').value.trim(),nomePais,telefone:document.getElementById('f-tel').value.trim(),nomeCrianca:document.getElementById('f-nomeCrianca').value.trim(),idade:document.getElementById('f-idade').value.trim(),nomeCrianca2:document.getElementById('f-nomeCrianca2').value.trim(),idade2:document.getElementById('f-idade2').value.trim(),dataEvento:document.getElementById('f-data').value,horario:document.getElementById('f-horario').value,horarioFim:document.getElementById('f-horarioFim').value,local:_localDoFormulario(),tipo:document.getElementById('f-tipo').value,pacoteId:(getSelectedPacIds()[0]||''),pacoteIds:getSelectedPacIds(),pacoteCustom:document.getElementById('f-pacoteCustom').value.trim(),tipoExecucao:document.getElementById('f-execucao').value||'proprio',freelancerId:document.getElementById('f-freelancerId').value||'',parceiroId:(document.getElementById('f-execucao').value==='sou-freela'?document.getElementById('f-op-parceiroId')?.value||'':''),filmmakerNome:(()=>{const s=document.getElementById('f-filmakerId');if(!s)return '';const v=s.value||'';if(v==='__outro__'){return (document.getElementById('f-filmakerCustom')?.value||'').trim();}return v;})(),filmmakerCusto:(()=>{const _fids=getSelectedPacIds();const fNome=document.getElementById('f-filmakerId')?.value||'';const allFmOpts=_fids.flatMap(id=>{const p=packages.find(pk=>pk.id===id);return p?.filmmakerOptions||[];});const opt=allFmOpts.find(f=>f.nome===fNome);return opt?opt.valor:0;})(),valorEmpresa:parseFloat(document.getElementById('f-valorEmpresa')?.value)||0,valorAndre:parseFloat(document.getElementById('f-valorAndre')?.value)||0,valorFreelancer:parseFloat(document.getElementById('f-valorFreelancer')?.value)||0,valorTotal:(parseFloat(document.getElementById('f-valorEmpresa')?.value)||0)+(parseFloat(document.getElementById('f-valorAndre')?.value)||0),valorCoresJob:0,valorReserva:parseFloat(document.getElementById('f-valorReserva').value)||0,dataReserva:document.getElementById('f-dataReserva').value,valorRestante:parseFloat(document.getElementById('f-valorRestante').value)||0,dataRestante:document.getElementById('f-dataRestante').value,statusPag:document.getElementById('f-statusPag').value,gastos:gastosItensTemp.filter(g=>g.tipo!=='album').reduce((s,g)=>s+(g.val||0),0),gastosItens:[...gastosItensTemp],formaPag:document.getElementById('f-formaPag').value,avistaDesconto:document.getElementById('f-avistaDesconto')?.checked||false,nParcelas:parseInt(document.getElementById('f-nParcelas').value)||1,parcelasItens:[...parcelasItensTemp],galeria:document.getElementById('f-galeria').value.trim(),galeriaClienteId:document.getElementById('f-galeriaClienteId')?.value.trim()||'',obs:oldCard?.obs||'',motivo:document.getElementById('f-motivo').value,detalhe:document.getElementById('f-detalhe').value.trim(),pendObs:document.getElementById('f-pend-obs')?.value.trim()||'',pendencias:[...pendenciasTemp],pagoEmpresa:document.getElementById('f-pagoEmpresa')?.checked||false,pagoAndre:document.getElementById('f-pagoAndre')?.checked||false,followupDate:document.getElementById('f-followup').value||'',albumGuardado:_albumGuardado,contrato:oldCard?.contrato||null,criadoEm:oldCard?.criadoEm||Date.now(),updatedAt:Date.now()};
   // O valor digitado manualmente é o total real cobrado do cliente.
   // Sem preenchimento, mantém o total calculado a partir dos pacotes.
   const _valorPlanoInformado=parseFloat(document.getElementById('f-valorPlano')?.value)||0;
@@ -11519,6 +11525,7 @@ function setClTipo(t){
   document.getElementById('mo-cl-title').textContent=isP?'🤝 Novo Parceiro':'👤 Novo Cliente';
 }
 function renderClientes(){
+  renderLocaisFestas();
   const q=_norm(document.getElementById('srch-cl')?.value||'');
   let list=[...clients].sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
   if(clTipoFiltro!=='todos')list=list.filter(c=>(c.tipo||'cliente')===clTipoFiltro);
@@ -11593,6 +11600,82 @@ function _clienteDoCard(card){
 function abrirFichaClienteDoCard(cardId){
   const cl=_clienteDoCard(opCards.find(c=>c.id===cardId));
   if(cl)openClientDetail(cl.id);
+}
+// ── Festas por local ──
+// Os locais vêm das próprias festas (mais os sugeridos). A comparação ignora
+// maiúsculas, acentos e espaços sobrando: "buffet engenho " é o mesmo local.
+function _chaveLocal(s){return _norm(s).replace(/\s+/g,' ').trim()}
+function _listaLocais(){
+  const mapa=new Map();
+  [...LOCAIS_SUGERIDOS,...opCards.map(c=>c.local)].forEach(l=>{
+    const nome=(l||'').trim();const k=_chaveLocal(nome);
+    if(k&&!mapa.has(k))mapa.set(k,nome);
+  });
+  return [...mapa.values()].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+}
+function _localCanonico(bruto){
+  const nome=(bruto||'').trim();const k=_chaveLocal(nome);
+  return _listaLocais().find(l=>_chaveLocal(l)===k)||nome;
+}
+function _preencheLocalSelect(valor){
+  const slot=document.getElementById('f-local-slot');if(!slot)return;
+  const locais=_listaLocais();
+  const atual=_localCanonico(valor);
+  const outro=!!atual&&!locais.includes(atual);
+  slot.innerHTML=`<select id="f-local" onchange="onLocalChange()"><option value="">Selecione o local...</option>`+
+    locais.map(l=>`<option value="${esc(l)}"${l===atual?' selected':''}>${esc(l)}</option>`).join('')+
+    `<option value="__outro__"${outro?' selected':''}>✏️ Outro (digitar local)…</option></select>`+
+    `<input type="text" id="f-localCustom" placeholder="Digite o local da festa" oninput="onLocalChange()" style="margin-top:8px;width:100%;display:${outro?'block':'none'}" value="${outro?esc(atual):''}">`;
+}
+function onLocalChange(){
+  const sel=document.getElementById('f-local');const custom=document.getElementById('f-localCustom');
+  if(custom)custom.style.display=sel?.value==='__outro__'?'block':'none';
+}
+function _localDoFormulario(){
+  const sel=document.getElementById('f-local');if(!sel)return'';
+  const bruto=sel.value==='__outro__'?(document.getElementById('f-localCustom')?.value||''):sel.value;
+  return _localCanonico(bruto);
+}
+function filterByLocal(k){selectedLocal=selectedLocal===k?null:k;renderLocaisFestas()}
+function renderLocaisFestas(){
+  const bar=document.getElementById('local-filter-bar');const painel=document.getElementById('local-festas-panel');if(!bar||!painel)return;
+  const grupos=new Map();
+  opCards.forEach(c=>{const k=_chaveLocal(c.local)||'__sem_local__';if(!grupos.has(k))grupos.set(k,[]);grupos.get(k).push(c)});
+  if(!grupos.size){bar.style.display='none';painel.innerHTML='';return}
+  const locais=_listaLocais();
+  const rotulo=k=>k==='__sem_local__'?'Sem local':(locais.find(l=>_chaveLocal(l)===k)||k);
+  const chaves=[...grupos.keys()].filter(k=>k!=='__sem_local__').sort((a,b)=>rotulo(a).localeCompare(rotulo(b),'pt-BR'));
+  if(grupos.has('__sem_local__'))chaves.push('__sem_local__');
+  bar.style.display='flex';
+  bar.innerHTML=`<span style="font-size:11px;font-weight:600;color:var(--muted);align-self:center">Festas por local:</span>`+
+    chaves.map(k=>`<button class="tag-pill${selectedLocal===k?' active':''}" data-k="${esc(k)}" onclick="filterByLocal(this.dataset.k)">${esc(rotulo(k))} · ${grupos.get(k).length}</button>`).join('');
+  if(!selectedLocal||!grupos.has(selectedLocal)){painel.innerHTML='';return}
+  const festas=[...grupos.get(selectedLocal)].sort((a,b)=>(b.dataEvento||'').localeCompare(a.dataEvento||''));
+  painel.innerHTML=`<div class="fin-card"><div class="fin-hdr"><h3>📍 ${esc(rotulo(selectedLocal))}</h3><span class="fin-sub">${festas.length} festa${festas.length!==1?'s':''} · <a href="#" onclick="event.preventDefault();filterByLocal(null)" style="color:var(--primary);font-weight:700">fechar</a></span></div><div style="padding:12px 16px">${festas.map(_linhaFestaLocal).join('')}</div></div>`;
+}
+function _linhaFestaLocal(ev){
+  const col=OP_COLS.find(c=>c.id===ev.coluna);const cor=col?.color||'#a98be0';
+  let cadastro;
+  if(_clienteDoCard(ev))cadastro=`<span style="font-size:12px;font-weight:700;color:var(--success-dark)">✅ Cadastrada</span> <button class="btn btn-g btn-sm" onclick="abrirFichaClienteDoCard('${ev.id}')">Ver cadastro</button>`;
+  else if(ev.telefone)cadastro=`<span style="font-size:12px;font-weight:700;color:#d97706">⚠️ Sem cadastro</span> <button class="btn btn-p btn-sm" onclick="criarClienteDaFesta('${ev.id}')">＋ Criar cadastro</button>`;
+  else cadastro=`<span style="font-size:12px;font-weight:700;color:#d97706">⚠️ Sem telefone</span> <button class="btn btn-g btn-sm" onclick="openOpModal('${ev.id}',null)">Abrir festa</button>`;
+  return `<div class="hist-item" style="--cc:${cor};cursor:default"><div class="hist-top"><div>
+      <div class="hist-date">📅 ${ev.dataEvento?fmtDate(ev.dataEvento):'Sem data'}</div>
+      <div class="hist-event">${esc(ev.nomePais||'Sem nome')}</div>
+      <div class="hist-meta">${esc(ev.titulo||_nomesCriancas(ev))}${ev.telefone?' · 📱 '+esc(ev.telefone):''}</div>
+    </div><div class="hist-right">
+      <span class="hist-phase" style="background:${cor}22;color:${cor}">${col?.emoji||''} ${esc(col?.name||ev.coluna||'')}</span>
+      <div style="margin-top:6px">${cadastro}</div>
+    </div></div></div>`;
+}
+function criarClienteDaFesta(opId){
+  const ev=opCards.find(c=>c.id===opId);if(!ev)return;
+  const nome=(ev.nomePais||'').trim();
+  const homonimo=nome?clients.find(c=>_norm(c.nome)===_norm(nome)):null;
+  if(homonimo){toast('👤 Já existe um cadastro com esse nome — confira o telefone','orange');openClientDetail(homonimo.id);return}
+  openClientModal(null);
+  document.getElementById('cl-nome').value=nome;
+  document.getElementById('cl-tel').value=ev.telefone||'';
 }
 function openClientDetail(clientId){
   viewingClId=clientId;const cl=clients.find(c=>c.id===clientId);if(!cl)return;
