@@ -2153,8 +2153,6 @@ input[type="date"]{cursor:pointer}
     <button class="btn btn-p" onclick="openClientModal(null)">＋ Novo Cliente</button>
   </div>
   <div class="tag-filter-bar" id="tag-filter-bar"></div>
-  <div class="tag-filter-bar" id="local-filter-bar" style="display:none"></div>
-  <div id="local-festas-panel" style="padding:0 26px 14px"></div>
   <div id="tags-gerenciar" style="padding:0 26px 14px"></div>
   <div class="cl-wrap">
     <div class="cl-toolbar">
@@ -3329,7 +3327,7 @@ let dragId=null,dragBoard=null,cfmCb=null,agYear,agMonth,currentTab='dashboard',
 let tplSendCtx=null,activeTplId=null;
 let pendenciasTemp=[];
 const LOCAIS_SUGERIDOS=['Buffet Engenho'];
-let selectedLocal=null,gerenciarTagsAberto=false;
+let gerenciarTagsAberto=false;
 let gastosItensTemp=[];
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
 function load(){
@@ -3983,7 +3981,6 @@ function renderOp(){
     board.appendChild(buildOpCol(col,cs));
   });
   board.appendChild(_colAddGhostEl('op'));
-  renderLocaisFestas();
 }
 const OP_HDR_COLOR='#3A434F'; // cor única do cabeçalho das colunas de Oportunidades
 function buildOpCol(col,cs){
@@ -11526,7 +11523,6 @@ function setClTipo(t){
   document.getElementById('mo-cl-title').textContent=isP?'🤝 Novo Parceiro':'👤 Novo Cliente';
 }
 function renderClientes(){
-  renderLocaisFestas();
   renderGerenciarTags();
   const q=_norm(document.getElementById('srch-cl')?.value||'');
   let list=[...clients].sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
@@ -11638,47 +11634,6 @@ function _localDoFormulario(){
   const sel=document.getElementById('f-local');if(!sel)return'';
   const bruto=sel.value==='__outro__'?(document.getElementById('f-localCustom')?.value||''):sel.value;
   return _localCanonico(bruto);
-}
-function filterByLocal(k){selectedLocal=selectedLocal===k?null:k;renderLocaisFestas()}
-function renderLocaisFestas(){
-  const bar=document.getElementById('local-filter-bar');const painel=document.getElementById('local-festas-panel');if(!bar||!painel)return;
-  const grupos=new Map();
-  opCards.forEach(c=>{const k=_chaveLocal(c.local)||'__sem_local__';if(!grupos.has(k))grupos.set(k,[]);grupos.get(k).push(c)});
-  if(!grupos.size){bar.style.display='none';painel.innerHTML='';return}
-  const locais=_listaLocais();
-  const rotulo=k=>k==='__sem_local__'?'Sem local':(locais.find(l=>_chaveLocal(l)===k)||k);
-  const chaves=[...grupos.keys()].filter(k=>k!=='__sem_local__').sort((a,b)=>rotulo(a).localeCompare(rotulo(b),'pt-BR'));
-  if(grupos.has('__sem_local__'))chaves.push('__sem_local__');
-  bar.style.display='flex';
-  bar.innerHTML=`<span style="font-size:11px;font-weight:600;color:var(--muted);align-self:center">Festas por local:</span>`+
-    chaves.map(k=>`<button class="tag-pill${selectedLocal===k?' active':''}" data-k="${esc(k)}" onclick="filterByLocal(this.dataset.k)">${esc(rotulo(k))} · ${grupos.get(k).length}</button>`).join('');
-  if(!selectedLocal||!grupos.has(selectedLocal)){painel.innerHTML='';return}
-  const festas=[...grupos.get(selectedLocal)].sort((a,b)=>(b.dataEvento||'').localeCompare(a.dataEvento||''));
-  painel.innerHTML=`<div class="fin-card"><div class="fin-hdr"><h3>📍 ${esc(rotulo(selectedLocal))}</h3><span class="fin-sub">${festas.length} festa${festas.length!==1?'s':''} · <a href="#" onclick="event.preventDefault();filterByLocal(null)" style="color:var(--primary);font-weight:700">fechar</a></span></div><div style="padding:12px 16px">${festas.map(_linhaFestaLocal).join('')}</div></div>`;
-}
-function _linhaFestaLocal(ev){
-  const col=OP_COLS.find(c=>c.id===ev.coluna);const cor=col?.color||'#a98be0';
-  let cadastro;
-  if(_clienteDoCard(ev))cadastro=`<span style="font-size:12px;font-weight:700;color:var(--success-dark)">✅ Cadastrada</span> <button class="btn btn-g btn-sm" onclick="abrirFichaClienteDoCard('${ev.id}')">Ver cadastro</button>`;
-  else if(ev.telefone)cadastro=`<span style="font-size:12px;font-weight:700;color:#d97706">⚠️ Sem cadastro</span> <button class="btn btn-p btn-sm" onclick="criarClienteDaFesta('${ev.id}')">＋ Criar cadastro</button>`;
-  else cadastro=`<span style="font-size:12px;font-weight:700;color:#d97706">⚠️ Sem telefone</span> <button class="btn btn-g btn-sm" onclick="openOpModal('${ev.id}',null)">Abrir festa</button>`;
-  return `<div class="hist-item" style="--cc:${cor};cursor:default"><div class="hist-top"><div>
-      <div class="hist-date">📅 ${ev.dataEvento?fmtDate(ev.dataEvento):'Sem data'}</div>
-      <div class="hist-event">${esc(ev.nomePais||'Sem nome')}</div>
-      <div class="hist-meta">${esc(ev.titulo||_nomesCriancas(ev))}${ev.telefone?' · 📱 '+esc(ev.telefone):''}</div>
-    </div><div class="hist-right">
-      <span class="hist-phase" style="background:${cor}22;color:${cor}">${col?.emoji||''} ${esc(col?.name||ev.coluna||'')}</span>
-      <div style="margin-top:6px">${cadastro}</div>
-    </div></div></div>`;
-}
-function criarClienteDaFesta(opId){
-  const ev=opCards.find(c=>c.id===opId);if(!ev)return;
-  const nome=(ev.nomePais||'').trim();
-  const homonimo=nome?clients.find(c=>_norm(c.nome)===_norm(nome)):null;
-  if(homonimo){toast('👤 Já existe um cadastro com esse nome — confira o telefone','orange');openClientDetail(homonimo.id);return}
-  openClientModal(null);
-  document.getElementById('cl-nome').value=nome;
-  document.getElementById('cl-tel').value=ev.telefone||'';
 }
 // ── Hashtags dos clientes ──
 // Ao digitar # no cadastro, sugere as que já existem com a quantidade de festas
