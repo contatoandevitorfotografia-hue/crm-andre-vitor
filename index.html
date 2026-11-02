@@ -2155,6 +2155,7 @@ input[type="date"]{cursor:pointer}
   <div class="tag-filter-bar" id="tag-filter-bar"></div>
   <div class="tag-filter-bar" id="local-filter-bar" style="display:none"></div>
   <div id="local-festas-panel" style="padding:0 26px 14px"></div>
+  <div id="tags-gerenciar" style="padding:0 26px 14px"></div>
   <div class="cl-wrap">
     <div class="cl-toolbar">
       <div class="srch-wrap"><input class="srch-inp" id="srch-cl" placeholder="Buscar por nome, telefone ou email..." oninput="renderClientes()"></div>
@@ -2800,7 +2801,7 @@ input[type="date"]{cursor:pointer}
             style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font:13px 'Inter',sans-serif;outline:none">
           <div id="cl-origem-ref-dropdown" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;box-shadow:var(--sh-lg);z-index:50;max-height:220px;overflow-y:auto"></div>
         </div>
-        <div class="fg full"><label>🏷️ Tags / Locais</label><input type="text" id="cl-tags" placeholder="Ex: #buffetengenho #salaofesta #aniversario (separadas por espaço)"></div>
+        <div class="fg full" style="position:relative"><label>🏷️ Tags / Locais</label><input type="text" id="cl-tags" autocomplete="off" placeholder="Ex: #buffetengenho #salaofesta #aniversario (separadas por espaço)" oninput="sugereTagsCliente()" onfocus="sugereTagsCliente()" onblur="setTimeout(hideTagSugestoes,200)"><div id="cl-tags-sug" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;box-shadow:var(--sh-lg);z-index:50;max-height:220px;overflow-y:auto"></div></div>
         <div class="fg full"><label>Observações</label><textarea id="cl-obs" placeholder="Informações adicionais sobre o cliente..."></textarea></div>
       </div></div>
     </div>
@@ -3328,7 +3329,7 @@ let dragId=null,dragBoard=null,cfmCb=null,agYear,agMonth,currentTab='dashboard',
 let tplSendCtx=null,activeTplId=null;
 let pendenciasTemp=[];
 const LOCAIS_SUGERIDOS=['Buffet Engenho'];
-let selectedLocal=null;
+let selectedLocal=null,gerenciarTagsAberto=false;
 let gastosItensTemp=[];
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
 function load(){
@@ -11526,6 +11527,7 @@ function setClTipo(t){
 }
 function renderClientes(){
   renderLocaisFestas();
+  renderGerenciarTags();
   const q=_norm(document.getElementById('srch-cl')?.value||'');
   let list=[...clients].sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
   if(clTipoFiltro!=='todos')list=list.filter(c=>(c.tipo||'cliente')===clTipoFiltro);
@@ -11539,7 +11541,8 @@ function renderClientes(){
       bar.style.display='flex';
       bar.innerHTML=`<span style="font-size:11px;font-weight:600;color:var(--muted);align-self:center">Filtrar:</span>`
         +(selectedTag?`<button class="tag-pill tag-pill-all active" onclick="filterByTag(null)">✕ Todos</button>`:'')
-        +allTags.map(t=>`<button class="tag-pill${selectedTag===t?' active':''}" onclick="filterByTag('${t}')">${esc(t)}</button>`).join('');
+        +allTags.map(t=>`<button class="tag-pill${selectedTag===t?' active':''}" onclick="filterByTag('${t}')">${esc(t)}</button>`).join('')
+        +`<button class="tag-pill" onclick="toggleGerenciarTags()" style="margin-left:auto">⚙️ Gerenciar</button>`;
     }else{bar.style.display='none'}
   }
   if(!clients.length){grid.style.display='none';empty.style.display='block';return}
@@ -11676,6 +11679,66 @@ function criarClienteDaFesta(opId){
   openClientModal(null);
   document.getElementById('cl-nome').value=nome;
   document.getElementById('cl-tel').value=ev.telefone||'';
+}
+// ── Hashtags dos clientes ──
+// Ao digitar # no cadastro, sugere as que já existem com a quantidade de festas
+// das clientes que a têm. A tela "Gerenciar" exclui uma # ou todas, com confirmação.
+function _contagemDaTag(tag){
+  const comTag=clients.filter(c=>getClientTags(c).includes(tag));
+  const tels=new Set(comTag.map(c=>(c.telefone||'').replace(/\D/g,'')).filter(Boolean));
+  const festas=opCards.filter(op=>tels.has((op.telefone||'').replace(/\D/g,''))).length;
+  return {clientes:comTag.length,festas};
+}
+function sugereTagsCliente(){
+  const inp=document.getElementById('cl-tags');const drop=document.getElementById('cl-tags-sug');if(!inp||!drop)return;
+  const m=inp.value.match(/#([\wÀ-ɏ]*)$/);
+  if(!m){drop.style.display='none';return}
+  const parcial=m[1].toLowerCase();
+  const jaDigitadas=getClientTags({tags:inp.value.replace(/#[\wÀ-ɏ]*$/,'')});
+  const opcoes=getAllTags()
+    .filter(t=>!jaDigitadas.includes(t)&&t.slice(1).includes(parcial))
+    .map(t=>({t,festas:_contagemDaTag(t).festas}))
+    .sort((a,b)=>b.festas-a.festas||a.t.localeCompare(b.t))
+    .slice(0,8);
+  if(!opcoes.length){drop.style.display='none';return}
+  drop.innerHTML=opcoes.map(o=>`<div onclick="escolheTagSugerida('${o.t}')" style="padding:9px 14px;cursor:pointer;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;gap:10px;font-size:13px" onmouseover="this.style.background='#f5f3ff'" onmouseout="this.style.background=''"><span style="font-weight:700;color:var(--primary)">${esc(o.t)}</span><span style="color:var(--muted);font-size:12px">${o.festas} festa${o.festas!==1?'s':''}</span></div>`).join('');
+  drop.style.display='block';
+}
+function escolheTagSugerida(tag){
+  const inp=document.getElementById('cl-tags');
+  inp.value=inp.value.replace(/#[\wÀ-ɏ]*$/,tag)+' ';
+  hideTagSugestoes();inp.focus();
+}
+function hideTagSugestoes(){const d=document.getElementById('cl-tags-sug');if(d)d.style.display='none'}
+// Tira só a # pedida do texto do cliente; o resto (ex.: "Indicada pela Carla") fica
+function _tiraTagDoTexto(texto,tag){
+  return (texto||'').replace(/#[\wÀ-ɏ]+/g,m=>m.toLowerCase()===tag?'':m).replace(/[ \t]{2,}/g,' ').trim();
+}
+function excluirTagsDeTodos(tags){
+  let afetados=0;
+  clients.forEach(c=>{
+    const antes=c.tags||'';
+    const depois=tags.reduce((txt,t)=>_tiraTagDoTexto(txt,t),antes);
+    if(depois!==antes){c.tags=depois;c.updatedAt=Date.now();afetados++}
+  });
+  if(tags.includes(selectedTag))selectedTag=null;
+  savCl();renderClientes();
+  toast(`🗑️ ${tags.length>1?tags.length+' hashtags excluídas':'Hashtag excluída'} de ${afetados} cliente${afetados!==1?'s':''}`,'');
+}
+function toggleGerenciarTags(){gerenciarTagsAberto=!gerenciarTagsAberto;renderGerenciarTags()}
+function renderGerenciarTags(){
+  const el=document.getElementById('tags-gerenciar');if(!el)return;
+  const tags=getAllTags();
+  if(!gerenciarTagsAberto||!tags.length){el.innerHTML='';return}
+  const linhas=tags.map(t=>{const n=_contagemDaTag(t);return `<div class="hist-item" style="--cc:#a98be0;cursor:default;display:flex;justify-content:space-between;align-items:center;gap:10px"><div><div class="hist-event">${esc(t)}</div><div class="hist-meta">${n.clientes} cliente${n.clientes!==1?'s':''} · ${n.festas} festa${n.festas!==1?'s':''}</div></div><button class="btn btn-g btn-sm" onclick="excluirUmaTag('${t}')">Excluir</button></div>`}).join('');
+  el.innerHTML=`<div class="fin-card"><div class="fin-hdr"><h3>🏷️ Hashtags dos clientes</h3><span class="fin-sub"><a href="#" onclick="event.preventDefault();excluirTodasTags()" style="color:#dc2626;font-weight:700">Excluir todas</a> · <a href="#" onclick="event.preventDefault();toggleGerenciarTags()" style="color:var(--primary);font-weight:700">fechar</a></span></div><div style="padding:12px 16px">${linhas}</div></div>`;
+}
+function excluirUmaTag(tag){
+  openCfm(`Excluir ${tag}?`,'Essa hashtag sai de todos os clientes que a têm. Os clientes continuam cadastrados. Esta ação não pode ser desfeita.',()=>excluirTagsDeTodos([tag]));
+}
+function excluirTodasTags(){
+  const tags=getAllTags();if(!tags.length)return;
+  openCfm('Excluir todas as hashtags?',`${tags.length} hashtag${tags.length!==1?'s':''} saem de todos os clientes. Os clientes continuam cadastrados. Esta ação não pode ser desfeita.`,()=>excluirTagsDeTodos(tags));
 }
 function openClientDetail(clientId){
   viewingClId=clientId;const cl=clients.find(c=>c.id===clientId);if(!cl)return;
