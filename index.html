@@ -3332,6 +3332,7 @@ let gastosItensTemp=[];
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
 function load(){
   try{opCards=JSON.parse(localStorage.getItem('crm_op_v4')||'[]')}catch{opCards=[]}
+  if(_apagaMeuFuturoDasFestas()>0)localStorage.setItem('crm_op_v4',JSON.stringify(opCards));
   _normalizaNumerosOp();
   _backfillGastoAlbumTipoErrado();
   try{opCardsPess=JSON.parse(localStorage.getItem('crm_op_pess_v4')||'[]')}catch{opCardsPess=[]}
@@ -3463,6 +3464,13 @@ window.addEventListener('pagehide',_flushDadosFirebase);
 window.addEventListener('beforeunload',_flushDadosFirebase);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')_flushDadosFirebase()});
 function savTemplates(){localStorage.setItem('crm_tpl_v1',JSON.stringify(templates));_saveDadosFirebase()}
+// Limpeza do campo "Meu futuro", que saiu do app: tira o campo das festas que
+// ainda o têm salvo. Devolve quantas festas foram limpas.
+function _apagaMeuFuturoDasFestas(){
+  let n=0;
+  opCards.forEach(c=>{if('meuFuturo' in c){delete c.meuFuturo;n++}});
+  return n;
+}
 function savOp(){_normalizaNumerosOp();localStorage.setItem('crm_op_v4',JSON.stringify(opCards));_saveDadosFirebase()}
 function savOpPess(){localStorage.setItem('crm_op_pess_v4',JSON.stringify(opCardsPess));_saveDadosFirebase()}
 function savPr(){localStorage.setItem('crm_pr_v4',JSON.stringify(prCards));_saveDadosFirebase()}
@@ -9168,7 +9176,7 @@ function initFinFirebase(){
       }
       const _fresh=Date.now()-_dadosSaveTs>2000;
       if(!_fresh)return; // dados que acabamos de salvar — ignora
-      if(data.op&&Array.isArray(data.op)){opCards=data.op;_normalizaNumerosOp();_backfillGastoAlbumTipoErrado();localStorage.setItem('crm_op_v4',JSON.stringify(opCards));}
+      if(data.op&&Array.isArray(data.op)){opCards=data.op;_normalizaNumerosOp();_backfillGastoAlbumTipoErrado();localStorage.setItem('crm_op_v4',JSON.stringify(opCards));if(_apagaMeuFuturoDasFestas()>0){localStorage.setItem('crm_op_v4',JSON.stringify(opCards));_saveDadosFirebase();}}
       if(data.pr&&Array.isArray(data.pr)){prCards=data.pr;_backfillCoresRuidoFinalizados();localStorage.setItem('crm_pr_v4',JSON.stringify(prCards));}
       if(data.pac&&Array.isArray(data.pac)){packages=data.pac;localStorage.setItem('crm_pac_v4',JSON.stringify(packages));}
       if(data.cl&&Array.isArray(data.cl)){clients=data.cl;localStorage.setItem('crm_cl_v4',JSON.stringify(clients));}
@@ -11622,9 +11630,12 @@ function _localCanonico(bruto){
   const nome=(bruto||'').trim();const k=_chaveLocal(nome);
   return _listaLocais().find(l=>_chaveLocal(l)===k)||nome;
 }
+// Na ficha, a lista mostra só Buffets e Espaços. Endereços e outros lugares
+// continuam salvos nas festas antigas; aparecem como "Outro", sem sumir.
+function _locaisDaFicha(){return _listaLocais().filter(l=>{const n=_norm(l);return n.includes('buffet')||n.includes('espaco')})}
 function _preencheLocalSelect(valor){
   const slot=document.getElementById('f-local-slot');if(!slot)return;
-  const locais=_listaLocais();
+  const locais=_locaisDaFicha();
   const atual=_localCanonico(valor);
   const outro=!!atual&&!locais.includes(atual);
   slot.innerHTML=`<select id="f-local" onchange="onLocalChange()"><option value="">Selecione o local...</option>`+
