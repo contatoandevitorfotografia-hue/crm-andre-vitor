@@ -2223,12 +2223,12 @@ input[type="date"]{cursor:pointer}
       <div class="fs">
         <div class="fs-title">🎈 Crianças</div>
         <div class="g2">
-          <div class="fg"><label>Nome da Criança 1</label><input type="text" id="f-nomeCrianca" placeholder="Ex: Sofia"></div>
-          <div class="fg"><label>Idade / Aniversário 1</label><select id="f-idade" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--r-sm);font:13px 'Montserrat',sans-serif;color:var(--text);background:var(--surface);outline:none"><option value="">Selecione...</option><option>1 aninho</option><option>2 anos</option><option>3 anos</option><option>4 anos</option><option>5 anos</option><option>6 anos</option><option>7 anos</option><option>8 anos</option><option>9 anos</option><option>10 anos</option><option>11 anos</option><option>12 anos</option><option>13 anos</option></select></div>
+          <div class="fg"><label id="f-lbl-crianca1">Nome da Criança 1</label><input type="text" id="f-nomeCrianca" placeholder="Ex: Sofia"></div>
+          <div class="fg" id="f-wrap-idade1"><label>Idade / Aniversário 1</label><select id="f-idade" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--r-sm);font:13px 'Montserrat',sans-serif;color:var(--text);background:var(--surface);outline:none"><option value="">Selecione...</option><option>1 aninho</option><option>2 anos</option><option>3 anos</option><option>4 anos</option><option>5 anos</option><option>6 anos</option><option>7 anos</option><option>8 anos</option><option>9 anos</option><option>10 anos</option><option>11 anos</option><option>12 anos</option><option>13 anos</option></select></div>
         </div>
         <div class="g2" style="margin-top:10px">
-          <div class="fg"><label>Nome da Criança 2 <span style="font-weight:500;color:var(--muted)">(opcional)</span></label><input type="text" id="f-nomeCrianca2" placeholder="Ex: Helena"></div>
-          <div class="fg"><label>Idade / Aniversário 2</label><select id="f-idade2" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--r-sm);font:13px 'Montserrat',sans-serif;color:var(--text);background:var(--surface);outline:none"><option value="">Selecione...</option><option>1 aninho</option><option>2 anos</option><option>3 anos</option><option>4 anos</option><option>5 anos</option><option>6 anos</option><option>7 anos</option><option>8 anos</option><option>9 anos</option><option>10 anos</option><option>11 anos</option><option>12 anos</option><option>13 anos</option></select></div>
+          <div class="fg" id="f-wrap-crianca2"><label>Nome da Criança 2 <span style="font-weight:500;color:var(--muted)">(opcional)</span></label><input type="text" id="f-nomeCrianca2" placeholder="Ex: Helena"></div>
+          <div class="fg" id="f-wrap-idade2"><label>Idade / Aniversário 2</label><select id="f-idade2" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--r-sm);font:13px 'Montserrat',sans-serif;color:var(--text);background:var(--surface);outline:none"><option value="">Selecione...</option><option>1 aninho</option><option>2 anos</option><option>3 anos</option><option>4 anos</option><option>5 anos</option><option>6 anos</option><option>7 anos</option><option>8 anos</option><option>9 anos</option><option>10 anos</option><option>11 anos</option><option>12 anos</option><option>13 anos</option></select></div>
         </div>
       </div>
       <div class="fs">
@@ -2243,7 +2243,7 @@ input[type="date"]{cursor:pointer}
             <div id="f-local-slot"><select id="f-local"><option value="">Selecione o local...</option></select></div>
           </div>
           <div class="fg"><label>Tipo de Serviço</label>
-            <select id="f-tipo"><option value="">Selecione...</option><option>Aniversário infantil</option><option>Ensaio Newborn</option><option>Ensaio Gestante</option><option>Ensaio Família</option><option>Batizado</option><option>Formatura</option><option>Casamento</option><option>Outro</option></select>
+            <select id="f-tipo" onchange="onTipoFestaChange()"><option value="">Selecione...</option><option>Aniversário infantil</option><option>Ensaio Newborn</option><option>Ensaio Gestante</option><option>Ensaio Família</option><option>Batizado</option><option>Formatura</option><option>Casamento</option><option>Outro</option></select>
           </div>
           <div id="sec-pacote-exec" style="display:contents">
           <div class="fg full" id="sec-pacote-chips">
@@ -2904,6 +2904,7 @@ input[type="date"]{cursor:pointer}
                 <select id="ct-contract-model" required onchange="onContractModelChange()">
                   <option value="padrao">🤍 Padrão — cobertura feita por André Vitor</option>
                   <option value="equipe">👥 Equipe — cobertura feita por fotógrafo da equipe</option>
+                  <option value="casamento">💍 Casamento — contrato voltado para casamentos</option>
                 </select>
                 <div class="ct-helper">O modelo "Equipe" gera o Contrato de Cobertura Fotográfica – Equipe.</div>
               </div>
@@ -2920,8 +2921,8 @@ input[type="date"]{cursor:pointer}
             <div class="g2">
               <div class="fg"><label>Nome completo *</label><input id="ct-client-name" required></div>
               <div class="fg"><label>CPF *</label><input id="ct-client-cpf" required placeholder="000.000.000-00" inputmode="numeric" maxlength="14" oninput="fmtCpf(this)"></div>
-              <div class="fg"><label>Nome da criança *</label><input id="ct-child-name" required></div>
-              <div class="fg"><label>Tipo de evento *</label><input id="ct-event-type" required></div>
+              <div class="fg"><label id="ct-child-label">Nome da criança *</label><input id="ct-child-name" required></div>
+              <div class="fg"><label>Tipo de evento *</label><input id="ct-event-type" required oninput="ctAjustaNomeDoEvento()"></div>
             </div>
           </div>
           <div class="fs">
@@ -4032,7 +4033,9 @@ function opCardHTML(c,cc){
     if(open>0)pendBadge=`<span class="pend-badge warn">⚠️ ${open} pendência${open>1?'s':''}</span>`;
     else pendBadge=`<span class="pend-badge ok">✅ Tudo ok</span>`;
   }
-  const contractBadge=c.contrato?.token?`<span class="pend-badge ${c.contrato.status==='accepted'?'ok':'warn'}">${c.contrato.status==='accepted'?'✅ Contrato assinado':'📄 Aguardando aceite'}</span>`:'';
+  const _ctsFesta=_contratosDaFesta(c);const _ctAssin=_ctsFesta.filter(x=>x.status==='accepted').length;const _ctTudo=_ctAssin===_ctsFesta.length;
+  const _ctTexto=_ctsFesta.length>1?`${_ctTudo?'✅':'📄'} ${_ctAssin}/${_ctsFesta.length} contratos assinados`:(_ctTudo?'✅ Contrato assinado':'📄 Aguardando aceite');
+  const contractBadge=_ctsFesta.length?`<span class="pend-badge ${_ctTudo?'ok':'warn'}">${_ctTexto}</span>`:'';
   let liqBadge='';
   if((c.tipoExecucao||'proprio')!=='freelancer'&&(c.tipoExecucao||'proprio')!=='sou-freela'&&(c.gastosItens||[]).length>0){
     const _liq=calcEmpresaShare(c);
@@ -4862,6 +4865,7 @@ function fillPacSelect(){ renderPacChips(); }
 function clearOpForm(){
   _preencheLocalSelect('');
   ['f-titulo','f-nomePais','f-tel','f-nomeCrianca','f-idade','f-nomeCrianca2','f-idade2','f-data','f-horario','f-horarioFim','f-local','f-tipo','f-pacoteCustom','f-galeria','f-galeriaClienteId','f-motivo','f-detalhe','f-pend-obs'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});
+  _aplicaCamposNoivosNaFesta();
   const _obsNotesW=document.getElementById('f-obs-cl-notes');if(_obsNotesW)_obsNotesW.style.display='none';
   document.getElementById('btn-abrir-galeria').style.display='none';
   const _bvg=document.getElementById('btn-ver-galeria');if(_bvg)_bvg.style.display='none';
@@ -4965,7 +4969,7 @@ function openOpModal(cardId,defaultCol,event,fromProj){
     document.getElementById('f-horario').value=card.horario||'';
     document.getElementById('f-horarioFim').value=card.horarioFim||'';
     _preencheLocalSelect(card.local||'');
-    document.getElementById('f-tipo').value=card.tipo||'';
+    document.getElementById('f-tipo').value=card.tipo||'';_aplicaCamposNoivosNaFesta();
     document.getElementById('f-pacoteCustom').value=card.pacoteCustom||'';
     document.getElementById('f-valorTotal').value=card.valorTotal||'';
     document.getElementById('f-valorPlano').value=card.valorTotal||'';
@@ -5985,7 +5989,7 @@ function saveOpCard(){
   _sincronizaCinegrafista();
   const oldCard=editingOpId?opCards.find(c=>c.id===editingOpId):null;
   const oldCol=oldCard?.coluna;
-  const data={id:editingOpId||uid(),coluna:newCol,somenteProjeto:oldCard?.somenteProjeto||opFromProj||false,titulo:document.getElementById('f-titulo').value.trim(),nomePais,telefone:document.getElementById('f-tel').value.trim(),nomeCrianca:document.getElementById('f-nomeCrianca').value.trim(),idade:document.getElementById('f-idade').value.trim(),nomeCrianca2:document.getElementById('f-nomeCrianca2').value.trim(),idade2:document.getElementById('f-idade2').value.trim(),dataEvento:document.getElementById('f-data').value,horario:document.getElementById('f-horario').value,horarioFim:document.getElementById('f-horarioFim').value,local:_localDoFormulario(),tipo:document.getElementById('f-tipo').value,pacoteId:(getSelectedPacIds()[0]||''),pacoteIds:getSelectedPacIds(),pacoteCustom:document.getElementById('f-pacoteCustom').value.trim(),tipoExecucao:document.getElementById('f-execucao').value||'proprio',freelancerId:document.getElementById('f-freelancerId').value||'',parceiroId:(document.getElementById('f-execucao').value==='sou-freela'?document.getElementById('f-op-parceiroId')?.value||'':''),filmmakerNome:(()=>{const s=document.getElementById('f-filmakerId');if(!s)return '';const v=s.value||'';if(v==='__outro__'){return (document.getElementById('f-filmakerCustom')?.value||'').trim();}return v;})(),filmmakerCusto:(()=>{const _fids=getSelectedPacIds();const fNome=document.getElementById('f-filmakerId')?.value||'';const allFmOpts=_fids.flatMap(id=>{const p=packages.find(pk=>pk.id===id);return p?.filmmakerOptions||[];});const opt=allFmOpts.find(f=>f.nome===fNome);return opt?opt.valor:0;})(),valorEmpresa:parseFloat(document.getElementById('f-valorEmpresa')?.value)||0,valorAndre:parseFloat(document.getElementById('f-valorAndre')?.value)||0,valorFreelancer:parseFloat(document.getElementById('f-valorFreelancer')?.value)||0,valorTotal:(parseFloat(document.getElementById('f-valorEmpresa')?.value)||0)+(parseFloat(document.getElementById('f-valorAndre')?.value)||0),valorCoresJob:0,valorReserva:parseFloat(document.getElementById('f-valorReserva').value)||0,dataReserva:document.getElementById('f-dataReserva').value,valorRestante:parseFloat(document.getElementById('f-valorRestante').value)||0,dataRestante:document.getElementById('f-dataRestante').value,statusPag:document.getElementById('f-statusPag').value,gastos:gastosItensTemp.filter(g=>g.tipo!=='album').reduce((s,g)=>s+(g.val||0),0),gastosItens:[...gastosItensTemp],formaPag:document.getElementById('f-formaPag').value,avistaDesconto:document.getElementById('f-avistaDesconto')?.checked||false,nParcelas:parseInt(document.getElementById('f-nParcelas').value)||1,parcelasItens:[...parcelasItensTemp],galeria:document.getElementById('f-galeria').value.trim(),galeriaClienteId:document.getElementById('f-galeriaClienteId')?.value.trim()||'',obs:oldCard?.obs||'',motivo:document.getElementById('f-motivo').value,detalhe:document.getElementById('f-detalhe').value.trim(),pendObs:document.getElementById('f-pend-obs')?.value.trim()||'',pendencias:[...pendenciasTemp],pagoEmpresa:document.getElementById('f-pagoEmpresa')?.checked||false,pagoAndre:document.getElementById('f-pagoAndre')?.checked||false,followupDate:document.getElementById('f-followup').value||'',albumGuardado:_albumGuardado,contrato:oldCard?.contrato||null,criadoEm:oldCard?.criadoEm||Date.now(),updatedAt:Date.now()};
+  const data={id:editingOpId||uid(),coluna:newCol,somenteProjeto:oldCard?.somenteProjeto||opFromProj||false,titulo:document.getElementById('f-titulo').value.trim(),nomePais,telefone:document.getElementById('f-tel').value.trim(),nomeCrianca:document.getElementById('f-nomeCrianca').value.trim(),idade:document.getElementById('f-idade').value.trim(),nomeCrianca2:document.getElementById('f-nomeCrianca2').value.trim(),idade2:document.getElementById('f-idade2').value.trim(),dataEvento:document.getElementById('f-data').value,horario:document.getElementById('f-horario').value,horarioFim:document.getElementById('f-horarioFim').value,local:_localDoFormulario(),tipo:document.getElementById('f-tipo').value,pacoteId:(getSelectedPacIds()[0]||''),pacoteIds:getSelectedPacIds(),pacoteCustom:document.getElementById('f-pacoteCustom').value.trim(),tipoExecucao:document.getElementById('f-execucao').value||'proprio',freelancerId:document.getElementById('f-freelancerId').value||'',parceiroId:(document.getElementById('f-execucao').value==='sou-freela'?document.getElementById('f-op-parceiroId')?.value||'':''),filmmakerNome:(()=>{const s=document.getElementById('f-filmakerId');if(!s)return '';const v=s.value||'';if(v==='__outro__'){return (document.getElementById('f-filmakerCustom')?.value||'').trim();}return v;})(),filmmakerCusto:(()=>{const _fids=getSelectedPacIds();const fNome=document.getElementById('f-filmakerId')?.value||'';const allFmOpts=_fids.flatMap(id=>{const p=packages.find(pk=>pk.id===id);return p?.filmmakerOptions||[];});const opt=allFmOpts.find(f=>f.nome===fNome);return opt?opt.valor:0;})(),valorEmpresa:parseFloat(document.getElementById('f-valorEmpresa')?.value)||0,valorAndre:parseFloat(document.getElementById('f-valorAndre')?.value)||0,valorFreelancer:parseFloat(document.getElementById('f-valorFreelancer')?.value)||0,valorTotal:(parseFloat(document.getElementById('f-valorEmpresa')?.value)||0)+(parseFloat(document.getElementById('f-valorAndre')?.value)||0),valorCoresJob:0,valorReserva:parseFloat(document.getElementById('f-valorReserva').value)||0,dataReserva:document.getElementById('f-dataReserva').value,valorRestante:parseFloat(document.getElementById('f-valorRestante').value)||0,dataRestante:document.getElementById('f-dataRestante').value,statusPag:document.getElementById('f-statusPag').value,gastos:gastosItensTemp.filter(g=>g.tipo!=='album').reduce((s,g)=>s+(g.val||0),0),gastosItens:[...gastosItensTemp],formaPag:document.getElementById('f-formaPag').value,avistaDesconto:document.getElementById('f-avistaDesconto')?.checked||false,nParcelas:parseInt(document.getElementById('f-nParcelas').value)||1,parcelasItens:[...parcelasItensTemp],galeria:document.getElementById('f-galeria').value.trim(),galeriaClienteId:document.getElementById('f-galeriaClienteId')?.value.trim()||'',obs:oldCard?.obs||'',motivo:document.getElementById('f-motivo').value,detalhe:document.getElementById('f-detalhe').value.trim(),pendObs:document.getElementById('f-pend-obs')?.value.trim()||'',pendencias:[...pendenciasTemp],pagoEmpresa:document.getElementById('f-pagoEmpresa')?.checked||false,pagoAndre:document.getElementById('f-pagoAndre')?.checked||false,followupDate:document.getElementById('f-followup').value||'',albumGuardado:_albumGuardado,contrato:oldCard?.contrato||null,contratos:oldCard?.contratos||null,criadoEm:oldCard?.criadoEm||Date.now(),updatedAt:Date.now()};
   // O valor digitado manualmente é o total real cobrado do cliente.
   // Sem preenchimento, mantém o total calculado a partir dos pacotes.
   const _valorPlanoInformado=parseFloat(document.getElementById('f-valorPlano')?.value)||0;
@@ -12145,6 +12149,15 @@ function _getCriancas(card){
   ].filter(c=>c.nome);
 }
 function _nomesCriancas(card){return _getCriancas(card).map(c=>c.nome).join(' e ')}
+// Tipo "Casamento" na ficha: o bloco de crianças vira um campo só, "Nome dos noivos".
+function _ehCasamento(texto){return _norm(texto).includes('casamento');}
+function _aplicaCamposNoivosNaFesta(){
+  const ehCasamento=_ehCasamento(document.getElementById('f-tipo')?.value);
+  [['f-wrap-idade1',!ehCasamento],['f-wrap-crianca2',!ehCasamento],['f-wrap-idade2',!ehCasamento]].forEach(([id,mostra])=>{const el=document.getElementById(id);if(el)el.style.display=mostra?'':'none';});
+  const lbl=document.getElementById('f-lbl-crianca1');if(lbl)lbl.textContent=ehCasamento?'Nome dos noivos':'Nome da Criança 1';
+  const inp=document.getElementById('f-nomeCrianca');if(inp)inp.placeholder=ehCasamento?'Ex: Ana e Pedro':'Ex: Sofia';
+}
+function onTipoFestaChange(){_aplicaCamposNoivosNaFesta();}
 function _resumoCriancas(card){return _getCriancas(card).map(c=>c.nome+(c.idade?' · '+c.idade:'')).join(' • ')}
 function esc(str){return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 // Normaliza texto para busca: remove acentos e caixa, assim "Barbara" encontra "Bárbara"
@@ -13626,7 +13639,7 @@ function fillContractModal(card){
   setContractField('ct-client-name',cl?.nome||card.nomePais||'');
   setContractField('ct-client-cpf',cl?.cpf||'');
   setContractField('ct-child-name',_nomesCriancas(card)||card.titulo||'');
-  setContractField('ct-event-type',card.tipo||'Aniversário infantil');
+  setContractField('ct-event-type',card.tipo||'Aniversário infantil');ctAjustaNomeDoEvento();
   setContractField('ct-event-date',card.dataEvento||'');
   const coverageHours=contractDefaultHours(card);
   const startTime=card.horario||'17:30';
@@ -13671,7 +13684,7 @@ function fillContractModal(card){
 
   clearContractMessage();
   updateContractSummary();
-  if(card.contrato?.token)showContractMessage('Este evento já possui um contrato vinculado. Gere outro somente se precisar substituir o link atual.','info');
+  if(_contratosDaFesta(card).length)showContractMessage('Este evento já tem contrato vinculado. O novo contrato será adicionado aos anteriores, sem substituí-los.','info');
 }
 
 function openContractModal(opId,clientId){
@@ -13733,8 +13746,8 @@ async function createContractFromCrm(){
       if(res.status===404)throw new Error('Gerador de contratos não encontrado nesta versão. Atualize o CRM pelo link oficial e tente novamente.');
       throw new Error(result.error||'Não foi possível gerar o contrato.');
     }
-    card.contratoModelo=(contractFieldValue('ct-contract-model')||'padrao');card.contratoFotografoEquipe=contractFieldValue('ct-team-photographer');
-    card.contrato={token:result.token,url:result.contractUrl||`${CONTRACT_SYSTEM_URL}/contrato/${result.token}`,version:result.contractVersion,status:'pending',createdAt:new Date().toISOString(),acceptedAt:null,protocol:null,imageConsent:null,pdfUrl:null,lastCheckedAt:new Date().toISOString()};
+    const _modeloNovo=(contractFieldValue('ct-contract-model')||'padrao');card.contratoModelo=_modeloNovo;card.contratoFotografoEquipe=contractFieldValue('ct-team-photographer');
+    _gravaContratosDaFesta(card,[..._contratosDaFesta(card),{model:_modeloNovo,token:result.token,url:result.contractUrl||`${CONTRACT_SYSTEM_URL}/contrato/${result.token}`,version:result.contractVersion,status:'pending',createdAt:new Date().toISOString(),acceptedAt:null,protocol:null,imageConsent:null,pdfUrl:null,lastCheckedAt:new Date().toISOString()}]);
     if(['novo-contato','orcamento-enviado','negociacao'].includes(card.coluna))card.coluna='contrato-enviado';
     card.updatedAt=Date.now();savOp();renderOp();renderDashboard();renderOpContractSection(card);
     if(contractSourceClientId&&viewingClId===contractSourceClientId){const cl=clients.find(c=>c.id===contractSourceClientId);if(cl)renderClientContracts(cl,getClientEvents(cl));}
@@ -13750,16 +13763,37 @@ async function createContractFromCrm(){
 }
 
 function contractConsentLabel(value){return value==='authorized'?'Uso de imagens autorizado':value==='not_authorized'?'Uso de imagens não autorizado':'Decisão não registrada';}
-function copyContractLink(cardId){
-  const card=opCards.find(c=>c.id===cardId);const url=contractPublicUrl(card?.contrato);if(!url)return;
+// Contratos da festa. Uma festa pode ter mais de um (ex.: o padrão e o de casamento).
+// Ficam em card.contratos, na ordem em que foram gerados. Festas antigas guardam um
+// só em card.contrato: ele continua valendo até a próxima gravação, quando vai para a
+// lista e card.contrato sai do cadastro.
+function _contratosDaFesta(card){
+  if(!card)return[];
+  if(Array.isArray(card.contratos))return card.contratos;
+  return card.contrato?.token?[card.contrato]:[];
+}
+function _gravaContratosDaFesta(card,lista){
+  card.contratos=lista;
+  delete card.contrato;
+}
+function _nomeModeloContrato(card,ct){
+  const nomes={padrao:'📄 Contrato padrão',equipe:'👥 Contrato equipe',casamento:'💍 Contrato de casamento'};
+  return nomes[ct?.model||card?.contratoModelo||'padrao']||nomes.padrao;
+}
+// No contrato de casamento o campo do nome vira "Nome dos noivos" (some com "Nome da criança").
+function ctAjustaNomeDoEvento(){
+  setContractText('ct-child-label',_ehCasamento(contractFieldValue('ct-event-type'))?'Nome dos noivos *':'Nome da criança *');
+}
+function copyContractLink(cardId,idx=0){
+  const card=opCards.find(c=>c.id===cardId);const url=contractPublicUrl(_contratosDaFesta(card)[idx]);if(!url)return;
   navigator.clipboard.writeText(url).then(()=>toast('🔗 Link do contrato copiado!','green')).catch(()=>toast('⚠️ Não foi possível copiar.','orange'));
 }
-function openContractLink(cardId){const card=opCards.find(c=>c.id===cardId);const url=contractPublicUrl(card?.contrato);if(url)window.open(url,'_blank','noopener');}
-function openContractPdf(cardId){const card=opCards.find(c=>c.id===cardId);if(card?.contrato?.pdfUrl)window.open(card.contrato.pdfUrl,'_blank','noopener');}
+function openContractLink(cardId,idx=0){const card=opCards.find(c=>c.id===cardId);const url=contractPublicUrl(_contratosDaFesta(card)[idx]);if(url)window.open(url,'_blank','noopener');}
+function openContractPdf(cardId,idx=0){const ct=_contratosDaFesta(opCards.find(c=>c.id===cardId))[idx];if(ct?.pdfUrl)window.open(ct.pdfUrl,'_blank','noopener');}
 
-function deleteContract(cardId){
+function deleteContract(cardId,idx=0){
   const card=opCards.find(c=>c.id===cardId);
-  const ct=card?.contrato;
+  const ct=_contratosDaFesta(card)[idx];
   if(!card||!ct?.token){toast('⚠️ Nenhum contrato vinculado a este evento.','orange');return;}
   if(ct.status==='accepted'){
     toast('🔒 Contratos já assinados não podem ser excluídos por este botão.','orange');
@@ -13782,8 +13816,8 @@ function deleteContract(cardId){
           if(res.status===409)throw new Error('Este contrato já foi aceito e não pode ser excluído.');
           throw new Error(data.error||'Não foi possível excluir o contrato no gerador.');
         }
-        card.contrato=null;
-        if(card.coluna==='contrato-enviado')card.coluna='negociacao';
+        _gravaContratosDaFesta(card,_contratosDaFesta(card).filter(x=>x.token!==ct.token));
+        if(!_contratosDaFesta(card).length&&card.coluna==='contrato-enviado')card.coluna='negociacao';
         card.updatedAt=Date.now();
         savOp();renderOp();renderDashboard();renderFin();renderAgenda();
         if(editingOpId===card.id)renderOpContractSection(card);
@@ -13797,25 +13831,25 @@ function deleteContract(cardId){
 function renderOpContractSection(card){
   const box=document.getElementById('op-contract-box');if(!box)return;
   if(!card){box.innerHTML='<div style="font-size:12px;color:var(--muted);padding:8px 0">Salve o evento primeiro para gerar e vincular o contrato.</div>';return;}
-  const ct=card.contrato;
-  if(!ct?.token){box.innerHTML=`<div style="border:1.5px dashed #d7c57b;background:#fffaf0;border-radius:10px;padding:14px"><div style="font-size:12px;color:var(--muted);margin-bottom:10px">O contrato será preenchido com os dados deste evento e salvo automaticamente aqui.</div><button type="button" class="btn btn-p btn-sm" onclick="openContractModal('${card.id}')">✨ Gerar contrato</button></div>`;return;}
-  const accepted=ct.status==='accepted';
-  box.innerHTML=`<div style="border:1.5px solid ${accepted?'#86c8a5':'#e0c96b'};background:${accepted?'#effcf4':'#fffaf0'};border-radius:11px;padding:14px">
+  const lista=_contratosDaFesta(card);
+  if(!lista.length){box.innerHTML=`<div style="border:1.5px dashed #d7c57b;background:#fffaf0;border-radius:10px;padding:14px"><div style="font-size:12px;color:var(--muted);margin-bottom:10px">O contrato será preenchido com os dados deste evento e salvo automaticamente aqui.</div><button type="button" class="btn btn-p btn-sm" onclick="openContractModal('${card.id}')">✨ Gerar contrato</button></div>`;return;}
+  box.innerHTML=lista.map((ct,i)=>{const accepted=ct.status==='accepted';return`<div style="border:1.5px solid ${accepted?'#86c8a5':'#e0c96b'};background:${accepted?'#effcf4':'#fffaf0'};border-radius:11px;padding:14px;margin-bottom:10px">
     <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap">
-      <div><div style="font-size:13px;font-weight:800;color:${accepted?'#586F86':'#7a5b00'}">${accepted?'✅ Contrato assinado':'⏳ Aguardando aceite'}</div><div style="font-size:11px;color:var(--muted);margin-top:3px">Versão ${esc(ct.version||'—')}${ct.acceptedAt?' · '+new Date(ct.acceptedAt).toLocaleString('pt-BR'):''}</div>${ct.protocol?`<div style="font-size:10px;color:var(--muted);margin-top:3px;word-break:break-all">Protocolo: ${esc(ct.protocol)}</div>`:''}${accepted?`<div style="font-size:11px;color:#586F86;margin-top:5px">${contractConsentLabel(ct.imageConsent)}</div>`:''}</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn btn-g btn-sm" onclick="copyContractLink('${card.id}')">📋 Copiar link</button><button type="button" class="btn btn-g btn-sm" onclick="openContractLink('${card.id}')">↗ Abrir</button>${ct.pdfUrl?`<button type="button" class="btn btn-g btn-sm" onclick="openContractPdf('${card.id}')">⬇ PDF</button>`:''}<button type="button" class="btn btn-g btn-sm" onclick="syncContractStatus('${card.id}',true)">↻ Atualizar</button>${!accepted?`<button type="button" class="btn btn-d btn-sm" style="margin-right:0" onclick="deleteContract('${card.id}')">🗑 Excluir contrato</button>`:''}</div>
-    </div></div>`;
+      <div><div style="font-size:11px;font-weight:700;color:var(--muted)">${esc(_nomeModeloContrato(card,ct))}</div><div style="font-size:13px;font-weight:800;color:${accepted?'#586F86':'#7a5b00'};margin-top:2px">${accepted?'✅ Contrato assinado':'⏳ Aguardando aceite'}</div><div style="font-size:11px;color:var(--muted);margin-top:3px">Versão ${esc(ct.version||'—')}${ct.acceptedAt?' · '+new Date(ct.acceptedAt).toLocaleString('pt-BR'):''}</div>${ct.protocol?`<div style="font-size:10px;color:var(--muted);margin-top:3px;word-break:break-all">Protocolo: ${esc(ct.protocol)}</div>`:''}${accepted?`<div style="font-size:11px;color:#586F86;margin-top:5px">${contractConsentLabel(ct.imageConsent)}</div>`:''}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn btn-g btn-sm" onclick="copyContractLink('${card.id}',${i})">📋 Copiar link</button><button type="button" class="btn btn-g btn-sm" onclick="openContractLink('${card.id}',${i})">↗ Abrir</button>${ct.pdfUrl?`<button type="button" class="btn btn-g btn-sm" onclick="openContractPdf('${card.id}',${i})">⬇ PDF</button>`:''}<button type="button" class="btn btn-g btn-sm" onclick="syncContractStatus('${card.id}',true,${i})">↻ Atualizar</button>${!accepted?`<button type="button" class="btn btn-d btn-sm" style="margin-right:0" onclick="deleteContract('${card.id}',${i})">🗑 Excluir contrato</button>`:''}</div>
+    </div></div>`;}).join('')+`<div><button type="button" class="btn btn-p btn-sm" onclick="openContractModal('${card.id}')">✨ Gerar outro contrato</button></div>`;
 }
 
 function renderClientContracts(cl,evs){
   const box=document.getElementById('cl-det-contracts');if(!box)return;
   if(!evs.length){box.innerHTML='<div style="font-size:12px;color:var(--muted);padding:10px 0">Crie um evento para gerar o primeiro contrato desta cliente.</div>';return;}
   const sorted=[...evs].sort((a,b)=>(b.dataEvento||'').localeCompare(a.dataEvento||''));
-  box.innerHTML=sorted.map(ev=>{const ct=ev.contrato;const accepted=ct?.status==='accepted';return`<div style="border:1px solid var(--border);border-left:4px solid ${accepted?'#7D95AE':ct?'#d5aa26':'#cbd5e1'};border-radius:10px;padding:12px 13px;margin-bottom:8px;background:var(--surface)"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><div><div style="font-size:12px;font-weight:800;color:var(--n900)">${esc(ev.titulo||_nomesCriancas(ev)||ev.tipo||'Evento')}</div><div style="font-size:10px;color:var(--muted);margin-top:2px">${ev.dataEvento?fmtDate(ev.dataEvento):'Sem data'} · ${ct?(accepted?'✅ Assinado':'⏳ Aguardando aceite'):'Sem contrato'}</div>${ct?.protocol?`<div style="font-size:9px;color:var(--muted);margin-top:2px">Protocolo: ${esc(ct.protocol)}</div>`:''}</div><div style="display:flex;gap:5px;flex-wrap:wrap">${ct?`<button class="btn btn-g btn-sm" onclick="event.stopPropagation();copyContractLink('${ev.id}')">📋 Link</button><button class="btn btn-g btn-sm" onclick="event.stopPropagation();openContractLink('${ev.id}')">↗ Abrir</button>${ct.pdfUrl?`<button class="btn btn-g btn-sm" onclick="event.stopPropagation();openContractPdf('${ev.id}')">⬇ PDF</button>`:''}${!accepted?`<button class="btn btn-d btn-sm" style="margin-right:0" onclick="event.stopPropagation();deleteContract('${ev.id}')">🗑 Excluir</button>`:''}`:`<button class="btn btn-p btn-sm" onclick="event.stopPropagation();openContractModal('${ev.id}','${cl.id}')">✨ Gerar</button>`}</div></div></div>`;}).join('');
+  box.innerHTML=sorted.map(ev=>{const lista=_contratosDaFesta(ev);const linhas=lista.map((ct,i)=>{const accepted=ct.status==='accepted';return`<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap;border-left:3px solid ${accepted?'#7D95AE':'#d5aa26'};padding:6px 0 6px 10px;margin-top:8px"><div><div style="font-size:11px;font-weight:700;color:var(--n900)">${esc(_nomeModeloContrato(ev,ct))} · ${accepted?'✅ Assinado':'⏳ Aguardando aceite'}</div>${ct.protocol?`<div style="font-size:9px;color:var(--muted);margin-top:2px">Protocolo: ${esc(ct.protocol)}</div>`:''}</div><div style="display:flex;gap:5px;flex-wrap:wrap"><button class="btn btn-g btn-sm" onclick="event.stopPropagation();copyContractLink('${ev.id}',${i})">📋 Link</button><button class="btn btn-g btn-sm" onclick="event.stopPropagation();openContractLink('${ev.id}',${i})">↗ Abrir</button>${ct.pdfUrl?`<button class="btn btn-g btn-sm" onclick="event.stopPropagation();openContractPdf('${ev.id}',${i})">⬇ PDF</button>`:''}${!accepted?`<button class="btn btn-d btn-sm" style="margin-right:0" onclick="event.stopPropagation();deleteContract('${ev.id}',${i})">🗑 Excluir</button>`:''}</div></div>`;}).join('');
+    return`<div style="border:1px solid var(--border);border-left:4px solid ${lista.length?'#d5aa26':'#cbd5e1'};border-radius:10px;padding:12px 13px;margin-bottom:8px;background:var(--surface)"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><div><div style="font-size:12px;font-weight:800;color:var(--n900)">${esc(ev.titulo||_nomesCriancas(ev)||ev.tipo||'Evento')}</div><div style="font-size:10px;color:var(--muted);margin-top:2px">${ev.dataEvento?fmtDate(ev.dataEvento):'Sem data'}${lista.length?'':' · Sem contrato'}</div></div><button class="btn ${lista.length?'btn-g':'btn-p'} btn-sm" onclick="event.stopPropagation();openContractModal('${ev.id}','${cl.id}')">✨ ${lista.length?'Gerar outro':'Gerar'}</button></div>${linhas}</div>`;}).join('');
 }
 
-async function syncContractStatus(cardId,notify){
-  const card=opCards.find(c=>c.id===cardId);const ct=card?.contrato;if(!card||!ct?.token)return false;
+async function syncContractStatus(cardId,notify,idx=0){
+  const card=opCards.find(c=>c.id===cardId);const ct=_contratosDaFesta(card)[idx];if(!card||!ct?.token)return false;
   try{
     const res=await fetch(`${contractSystemBase(ct)}/api/public/contracts/${encodeURIComponent(ct.token)}/status`,{cache:'no-store'});const data=await res.json();if(!res.ok)throw new Error(data.error||'Falha ao consultar contrato.');
     const wasAccepted=ct.status==='accepted';const before=JSON.stringify([ct.status,ct.version,ct.url,ct.acceptedAt,ct.protocol,ct.imageConsent,ct.pdfUrl,card.coluna]);ct.status=data.status;ct.version=data.contractVersion||ct.version;ct.url=data.contractUrl||ct.url;ct.acceptedAt=data.acceptedAt||ct.acceptedAt;ct.protocol=data.acceptanceId||ct.protocol;ct.imageConsent=data.imageConsent||ct.imageConsent;ct.pdfUrl=data.summaryPdfUrl||ct.pdfUrl;ct.lastCheckedAt=new Date().toISOString();
@@ -13830,7 +13864,7 @@ async function syncContractStatus(cardId,notify){
 }
 async function syncAllContractStatuses(silent){
   if(contractStatusSyncBusy)return;contractStatusSyncBusy=true;
-  try{const cards=opCards.filter(c=>c.contrato?.token&&c.contrato.status!=='accepted');for(const card of cards)await syncContractStatus(card.id,!silent);}finally{contractStatusSyncBusy=false;}
+  try{const pendentes=[];opCards.forEach(c=>_contratosDaFesta(c).forEach((ct,i)=>{if(ct?.token&&ct.status!=='accepted')pendentes.push([c.id,i]);}));for(const [id,i] of pendentes)await syncContractStatus(id,!silent,i);}finally{contractStatusSyncBusy=false;}
 }
 setTimeout(()=>syncAllContractStatuses(true),3500);
 setInterval(()=>syncAllContractStatuses(true),60000);
