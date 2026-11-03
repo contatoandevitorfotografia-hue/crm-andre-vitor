@@ -5555,10 +5555,10 @@ function syncAllDistrib(){
   */
 }
 // André: o que sobra do total (já com desconto) depois dos custos do pacote e da parte da Empresa.
-// Freela contratada: também desconta o cachê. Transporte fica fora da divisão.
+// Freela contratada: também desconta o cachê. Também desconta o transporte lançado em Pessoal.
 function calcAndreShare(data){
   const cache=(data.tipoExecucao||'proprio')==='freelancer'?(data.valorFreelancer||(freelancers.find(f=>f.id===data.freelancerId)?.valorFreela||0)):0;
-  return parseFloat(Math.max(0,_totalComDesconto(data)-calcEmpresaShare(data)-_custosPacoteDoCard(data)-cache).toFixed(2));
+  return parseFloat(Math.max(0,_totalComDesconto(data)-_empresaBruta(data)-_custosPacoteDoCard(data)-cache-_transporteDaFesta(data,'pessoal')).toFixed(2));
 }
 function recalcAllCards(){
   let changed=0;
@@ -5638,7 +5638,7 @@ function calcDistribuicao(){
   // Empresa: 40% × valorCores + gastos empresa (pass-through)
   // André: 60% × valorCores + (valorTotal - valorCores - custosAlbum - custosEmpresa)
   // Empresa e André: mesma conta do Financeiro. Custos do pacote (memórias, movimento, cinegrafista) saem antes
-  // da divisão; o cinegrafista escolhido no campo entra sempre que estiver escolhido. Transporte fica fora.
+  // da divisão; o cinegrafista escolhido no campo entra sempre que estiver escolhido. Cada lado desconta o transporte que lançou.
   _sincronizaCinegrafista();
   const _fichaCard=_cardDaFicha();
   const empShare=calcEmpresaShare(_fichaCard);
@@ -7387,10 +7387,14 @@ function _descontoEmpresa(card){
   if(!d||total<=0)return 0;
   return parseFloat((_vcDoCard(card)*0.4*(d/total)).toFixed(2));
 }
-// Empresa: 40% do Plano Cores, menos o desconto à vista sobre essa parte. Transporte fica fora da divisão.
-function calcEmpresaShare(c){
+// Empresa: 40% do Plano Cores, menos o desconto à vista sobre essa parte e
+// menos o transporte lançado em Empresa (a Empresa paga o próprio transporte).
+function _empresaBruta(c){
   if((c.tipoExecucao||'proprio')==='freelancer'||(c.tipoExecucao||'proprio')==='sou-freela')return 0;
   return parseFloat(Math.max(0,_vcDoCard(c)*0.4-_descontoEmpresa(c)).toFixed(2));
+}
+function calcEmpresaShare(c){
+  return parseFloat(Math.max(0,_empresaBruta(c)-_transporteDaFesta(c,'empresa')).toFixed(2));
 }
 // Subtítulo da festa nas tabelas de Festas — igual nos dois Financeiros:
 // título do projeto (lido do card na hora, não gravado); sem título, o tipo
@@ -7649,21 +7653,21 @@ function selFinF(m){finCurF=m;renderFinFestas();}
 function selFinG(m){finCurG=m;renderFinGastos();}
 function selFinD(m){finCurD=m;renderFinDiarios();}
 
-// "Meu futuro": se a festa tem valor, é a parte do André (a mesma que a ficha
-// mostra) menos os gastos de transporte cadastrados nela. Sem valor, é digitado.
-// Não muda a parte do André nem as contas da Empresa.
-function _transporteDaFesta(c){return (c.gastosItens||[]).filter(g=>_ehGastoTransporte(g)).reduce((s,g)=>s+(+g.val||0),0)}
+// "Meu futuro": se a festa tem valor, é a parte do André já líquida (com o
+// transporte lançado em Pessoal descontado). Sem valor, é digitado na mão.
+// Gastos de transporte da festa: de um lado só ('empresa' ou 'pessoal') ou dos dois
+function _transporteDaFesta(c,tipo){return (c.gastosItens||[]).filter(g=>_ehGastoTransporte(g)&&(!tipo||(g.tipo||'empresa')===tipo)).reduce((s,g)=>s+(+g.val||0),0)}
 function _meuFuturoDaFesta(c){
   if(!((+c.valorTotal||0)>0))return +c.meuFuturo||0;
-  return Math.max(0,calcAndreShare(c)-_transporteDaFesta(c));
+  return calcAndreShare(c);
 }
 function _atualizaMeuFuturoFicha(card,andShare){
   const campo=document.getElementById('f-meuFuturo');const dica=document.getElementById('f-meuFuturo-dica');if(!campo)return;
   const auto=(+card.valorTotal||0)>0;
   campo.readOnly=auto;
   campo.style.opacity=auto?'.75':'';
-  if(auto)campo.value=Math.max(0,andShare-_transporteDaFesta(card)).toFixed(2);
-  if(dica)dica.textContent=auto?'Calculado: parte do André − transporte da festa':'Sem valor na festa: digite na mão';
+  if(auto)campo.value=andShare.toFixed(2);
+  if(dica)dica.textContent=auto?'Calculado: parte do André, já com o transporte descontado':'Sem valor na festa: digite na mão';
 }
 function _resetaMeuFuturoFicha(){
   const campo=document.getElementById('f-meuFuturo');if(campo){campo.readOnly=false;campo.style.opacity='';}
@@ -8041,7 +8045,7 @@ function quickChangeStatus(cardId){
 // empLiq/andLiq — quanto cabe de líquido a cada lado, pra saber se um
 // pagamento já "quita" aquele lado especificamente.
 function _empLiqDaFesta(card){
-  return calcEmpresaShare(card); // transporte fica fora da divisão
+  return calcEmpresaShare(card); // já com o transporte da Empresa descontado
 }
 // Mesma ideia do _empLiqDaFesta, só que do lado do André: a parte dele
 // (calcAndreShare) também precisa descontar os gastos pessoais daquela
@@ -8050,7 +8054,7 @@ function _empLiqDaFesta(card){
 // aparece como "Falta pagar" no Financeiro Pessoal > Festas (que já
 // desconta esse gasto).
 function _andreLiqDaFesta(card){
-  return calcAndreShare(card); // transporte fica fora da divisão
+  return calcAndreShare(card); // já com o transporte pessoal descontado
 }
 // Quanto já foi registrado como "pago" no Financeiro Pessoal (Festas) pra
 // essa mesma festa — usado só pra mostrar o total combinado (Empresa +
@@ -8445,7 +8449,7 @@ function saveInlineFalta(cardId){
     // por trás, fazia a edição sumir no próximo render e nunca refletir no
     // Valor no Banco. Agora deriva o novo valor pago a partir da falta.
     const _esIF=calcEmpresaShare(card);
-    const _geIF=(card.gastosItens||[]).filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(g.val||0),0);
+    const _geIF=(card.gastosItens||[]).filter(g=>(g.tipo||'empresa')==='empresa'&&!_ehGastoTransporte(g)).reduce((s,g)=>s+(g.val||0),0); // o transporte da Empresa já sai de _esIF
     const _liqIF=Math.max(0,_esIF-_geIF);
     const novaReserva=Math.max(0,parseFloat((_liqIF-val).toFixed(2)));
     const _valorAntesIF=card.valorReserva||0,_statusAntesIF=card.statusPag;
