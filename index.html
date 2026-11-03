@@ -2376,6 +2376,11 @@ input[type="date"]{cursor:pointer}
         </div>
         </div>
         <!-- DISTRIBUIÇÃO 40/60 -->
+        <!-- Meu futuro: sobra da festa para o futuro (calculada se a festa tem valor) -->
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:#1A2A20;border:1px solid #2F4A3A;border-radius:10px;padding:10px 12px;margin-bottom:12px">
+          <label for="f-meuFuturo" style="font-size:12px;font-weight:700;color:#9FD3B8">🌱 Meu futuro <span style="font-weight:500;color:#7FA893">· quanto guardar desta festa</span><span id="f-meuFuturo-dica" style="display:block;font-size:10px;font-weight:500;color:#7FA893;margin-top:3px"></span></label>
+          <div class="mw"><input type="number" id="f-meuFuturo" placeholder="0,00" min="0" step="0.01" style="width:130px"></div>
+        </div>
         <div id="sec-distribuicao" style="background:#181D24;padding:14px;border-radius:10px;border:1px solid var(--border);margin-top:11px;display:none">
           <div id="dist-header-label" style="font-size:11px;font-weight:700;color:#e0a14e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">⚖️ Distribuição</div>
 
@@ -2397,11 +2402,6 @@ input[type="date"]{cursor:pointer}
             </div>
           </div>
 
-          <!-- Meu futuro: quanto guardar desta festa para o futuro -->
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:#1A2A20;border:1px solid #2F4A3A;border-radius:10px;padding:10px 12px;margin-bottom:12px">
-            <label for="f-meuFuturo" style="font-size:12px;font-weight:700;color:#9FD3B8">🌱 Meu futuro <span style="font-weight:500;color:#7FA893">· quanto guardar desta festa</span></label>
-            <div class="mw"><input type="number" id="f-meuFuturo" placeholder="0,00" min="0" step="0.01" style="width:130px"></div>
-          </div>
           <!-- checkboxes removidas a pedido -->
           <input type="hidden" id="f-pagoEmpresa">
           <input type="hidden" id="f-pagoAndre">
@@ -4858,6 +4858,7 @@ function focusPacChips(){
 function fillPacSelect(){ renderPacChips(); }
 function clearOpForm(){
   _preencheLocalSelect('');
+  _resetaMeuFuturoFicha();
   ['f-titulo','f-nomePais','f-tel','f-nomeCrianca','f-idade','f-nomeCrianca2','f-idade2','f-data','f-horario','f-horarioFim','f-local','f-tipo','f-pacoteCustom','f-galeria','f-galeriaClienteId','f-motivo','f-detalhe','f-pend-obs'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});
   const _obsNotesW=document.getElementById('f-obs-cl-notes');if(_obsNotesW)_obsNotesW.style.display='none';
   document.getElementById('btn-abrir-galeria').style.display='none';
@@ -5642,6 +5643,7 @@ function calcDistribuicao(){
   const _fichaCard=_cardDaFicha();
   const empShare=calcEmpresaShare(_fichaCard);
   const andShare=calcAndreShare(_fichaCard);
+  _atualizaMeuFuturoFicha(_fichaCard,andShare);
   const t=_totalComDesconto(_fichaCard);
   const r=parseFloat(document.getElementById('f-valorReserva').value)||0;
   const rest=parseFloat(document.getElementById('f-valorRestante').value)||0;
@@ -5989,6 +5991,7 @@ function saveOpCard(){
   if(_valorPlanoInformado>0)data.valorTotal=_valorPlanoInformado;
   data.valorEmpresa=calcEmpresaShare(data);
   data.valorAndre=calcAndreShare(data);
+  data.meuFuturo=_meuFuturoDaFesta(data);
   // Carimba quando o link da galeria foi enviado pela 1ª vez, pra disparar
   // o lembrete de follow-up 5 dias depois (perguntar se baixou/gostou).
   data.galeriaEnviadaEm=(data.galeria&&!oldCard?.galeria)?Date.now():(oldCard?.galeriaEnviadaEm||'');
@@ -7646,10 +7649,28 @@ function selFinF(m){finCurF=m;renderFinFestas();}
 function selFinG(m){finCurG=m;renderFinGastos();}
 function selFinD(m){finCurD=m;renderFinDiarios();}
 
-// "Meu futuro": quanto de cada festa foi separado para o futuro (campo na ficha).
-// Não entra em nenhuma conta da Empresa nem do André.
-function _totalMeuFuturo(){return opCards.reduce((s,c)=>s+(+c.meuFuturo||0),0)}
-function _festasComMeuFuturo(){return opCards.filter(c=>(+c.meuFuturo||0)>0).length}
+// "Meu futuro": se a festa tem valor, é a parte do André (a mesma que a ficha
+// mostra) menos os gastos de transporte cadastrados nela. Sem valor, é digitado.
+// Não muda a parte do André nem as contas da Empresa.
+function _transporteDaFesta(c){return (c.gastosItens||[]).filter(g=>_ehGastoTransporte(g)).reduce((s,g)=>s+(+g.val||0),0)}
+function _meuFuturoDaFesta(c){
+  if(!((+c.valorTotal||0)>0))return +c.meuFuturo||0;
+  return Math.max(0,calcAndreShare(c)-_transporteDaFesta(c));
+}
+function _atualizaMeuFuturoFicha(card,andShare){
+  const campo=document.getElementById('f-meuFuturo');const dica=document.getElementById('f-meuFuturo-dica');if(!campo)return;
+  const auto=(+card.valorTotal||0)>0;
+  campo.readOnly=auto;
+  campo.style.opacity=auto?'.75':'';
+  if(auto)campo.value=Math.max(0,andShare-_transporteDaFesta(card)).toFixed(2);
+  if(dica)dica.textContent=auto?'Calculado: parte do André − transporte da festa':'Sem valor na festa: digite na mão';
+}
+function _resetaMeuFuturoFicha(){
+  const campo=document.getElementById('f-meuFuturo');if(campo){campo.readOnly=false;campo.style.opacity='';}
+  const dica=document.getElementById('f-meuFuturo-dica');if(dica)dica.textContent='';
+}
+function _totalMeuFuturo(){return opCards.reduce((s,c)=>s+_meuFuturoDaFesta(c),0)}
+function _festasComMeuFuturo(){return opCards.filter(c=>_meuFuturoDaFesta(c)>0).length}
 function renderFinResumo(){
   // Stats cards (ano todo) — exclui freela (empresa não recebe)
   const fc=opCards.filter(c=>FIN_COLS.includes(c.coluna)&&(c.tipoExecucao||'proprio')!=='sou-freela'&&(c.tipoExecucao||'proprio')!=='freelancer');
