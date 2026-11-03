@@ -2376,11 +2376,6 @@ input[type="date"]{cursor:pointer}
         </div>
         </div>
         <!-- DISTRIBUIÇÃO 40/60 -->
-        <!-- Meu futuro: sobra da festa para o futuro (calculada se a festa tem valor) -->
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:#1A2A20;border:1px solid #2F4A3A;border-radius:10px;padding:10px 12px;margin-bottom:12px">
-          <label for="f-meuFuturo" style="font-size:12px;font-weight:700;color:#9FD3B8">🌱 Meu futuro <span style="font-weight:500;color:#7FA893">· quanto guardar desta festa</span><span id="f-meuFuturo-dica" style="display:block;font-size:10px;font-weight:500;color:#7FA893;margin-top:3px"></span></label>
-          <div class="mw"><input type="number" id="f-meuFuturo" placeholder="0,00" min="0" step="0.01" style="width:130px"></div>
-        </div>
         <div id="sec-distribuicao" style="background:#181D24;padding:14px;border-radius:10px;border:1px solid var(--border);margin-top:11px;display:none">
           <div id="dist-header-label" style="font-size:11px;font-weight:700;color:#e0a14e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">⚖️ Distribuição</div>
 
@@ -4858,12 +4853,11 @@ function focusPacChips(){
 function fillPacSelect(){ renderPacChips(); }
 function clearOpForm(){
   _preencheLocalSelect('');
-  _resetaMeuFuturoFicha();
   ['f-titulo','f-nomePais','f-tel','f-nomeCrianca','f-idade','f-nomeCrianca2','f-idade2','f-data','f-horario','f-horarioFim','f-local','f-tipo','f-pacoteCustom','f-galeria','f-galeriaClienteId','f-motivo','f-detalhe','f-pend-obs'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});
   const _obsNotesW=document.getElementById('f-obs-cl-notes');if(_obsNotesW)_obsNotesW.style.display='none';
   document.getElementById('btn-abrir-galeria').style.display='none';
   const _bvg=document.getElementById('btn-ver-galeria');if(_bvg)_bvg.style.display='none';
-  ['f-valorPlano','f-valorTotal','f-valorEmpresa','f-valorAndre','f-valorReserva','f-valorAndrePago','f-valorRestante','f-gastos','f-valorCores','f-meuFuturo'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});const _fvp=document.getElementById('f-valorPlano');if(_fvp)_fvp.dataset.auto='1';const _vcW=document.getElementById('f-valor-cores-wrap');if(_vcW)_vcW.style.display='none';gastosItensTemp=[];renderGastosItens();parcelasItensTemp=[];renderParcelasItens();_albumGuardado=false;_renderAlbumGuardadoBtn();const _cpE=document.getElementById('f-pagoEmpresa');if(_cpE)_cpE.checked=false;const _cpA=document.getElementById('f-pagoAndre');if(_cpA)_cpA.checked=false;
+  ['f-valorPlano','f-valorTotal','f-valorEmpresa','f-valorAndre','f-valorReserva','f-valorAndrePago','f-valorRestante','f-gastos','f-valorCores'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});const _fvp=document.getElementById('f-valorPlano');if(_fvp)_fvp.dataset.auto='1';const _vcW=document.getElementById('f-valor-cores-wrap');if(_vcW)_vcW.style.display='none';gastosItensTemp=[];renderGastosItens();parcelasItensTemp=[];renderParcelasItens();_albumGuardado=false;_renderAlbumGuardadoBtn();const _cpE=document.getElementById('f-pagoEmpresa');if(_cpE)_cpE.checked=false;const _cpA=document.getElementById('f-pagoAndre');if(_cpA)_cpA.checked=false;
   ['f-dataReserva','f-dataRestante'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});
   document.getElementById('f-statusPag').value='pendente';const _fpRst=document.getElementById('f-formaPag');if(_fpRst)_fpRst.value='avista';const _npRst=document.getElementById('f-nParcelas');if(_npRst)_npRst.value='';const _fAvDRst=document.getElementById('f-avistaDesconto');if(_fAvDRst)_fAvDRst.checked=false;onFormaPagChange();document.querySelectorAll('.pac-chip-opt.selected').forEach(el=>el.classList.remove('selected'));renderPacChips();renderGastosItens();
   document.getElementById('f-followup').value='';document.getElementById('f-execucao').value='proprio';document.getElementById('frl-select-wrap').style.display='none';document.getElementById('f-freelancerId').value='';const _fvfRst=document.getElementById('f-valorFreelancer');if(_fvfRst)_fvfRst.value='';const _fvfW=document.getElementById('frl-valor-wrap');if(_fvfW)_fvfW.style.display='none';
@@ -4982,7 +4976,7 @@ function openOpModal(cardId,defaultCol,event,fromProj){
     document.getElementById('f-valorRestante').value=card.valorRestante!==undefined?card.valorRestante:'';
     document.getElementById('f-dataRestante').value=card.dataRestante||'';
     gastosItensTemp=[...(card.gastosItens||[])];renderGastosItens();document.getElementById('f-gastos').value=card.gastos||0;
-    _albumGuardado=card.albumGuardado||false;document.getElementById('f-meuFuturo').value=card.meuFuturo||'';_renderAlbumGuardadoBtn();
+    _albumGuardado=card.albumGuardado||false;_renderAlbumGuardadoBtn();
     document.getElementById('f-statusPag').value=card.statusPag||'pendente';
     const _pE=document.getElementById('f-pagoEmpresa');if(_pE)_pE.checked=card.pagoEmpresa||false;
     const _pA=document.getElementById('f-pagoAndre');if(_pA)_pA.checked=card.pagoAndre||false;
@@ -5643,7 +5637,6 @@ function calcDistribuicao(){
   const _fichaCard=_cardDaFicha();
   const empShare=calcEmpresaShare(_fichaCard);
   const andShare=calcAndreShare(_fichaCard);
-  _atualizaMeuFuturoFicha(_fichaCard,andShare);
   const t=_totalComDesconto(_fichaCard);
   const r=parseFloat(document.getElementById('f-valorReserva').value)||0;
   const rest=parseFloat(document.getElementById('f-valorRestante').value)||0;
@@ -5984,14 +5977,13 @@ function saveOpCard(){
   _sincronizaCinegrafista();
   const oldCard=editingOpId?opCards.find(c=>c.id===editingOpId):null;
   const oldCol=oldCard?.coluna;
-  const data={id:editingOpId||uid(),coluna:newCol,somenteProjeto:oldCard?.somenteProjeto||opFromProj||false,titulo:document.getElementById('f-titulo').value.trim(),nomePais,telefone:document.getElementById('f-tel').value.trim(),nomeCrianca:document.getElementById('f-nomeCrianca').value.trim(),idade:document.getElementById('f-idade').value.trim(),nomeCrianca2:document.getElementById('f-nomeCrianca2').value.trim(),idade2:document.getElementById('f-idade2').value.trim(),dataEvento:document.getElementById('f-data').value,horario:document.getElementById('f-horario').value,horarioFim:document.getElementById('f-horarioFim').value,local:_localDoFormulario(),tipo:document.getElementById('f-tipo').value,pacoteId:(getSelectedPacIds()[0]||''),pacoteIds:getSelectedPacIds(),pacoteCustom:document.getElementById('f-pacoteCustom').value.trim(),tipoExecucao:document.getElementById('f-execucao').value||'proprio',freelancerId:document.getElementById('f-freelancerId').value||'',parceiroId:(document.getElementById('f-execucao').value==='sou-freela'?document.getElementById('f-op-parceiroId')?.value||'':''),filmmakerNome:(()=>{const s=document.getElementById('f-filmakerId');if(!s)return '';const v=s.value||'';if(v==='__outro__'){return (document.getElementById('f-filmakerCustom')?.value||'').trim();}return v;})(),filmmakerCusto:(()=>{const _fids=getSelectedPacIds();const fNome=document.getElementById('f-filmakerId')?.value||'';const allFmOpts=_fids.flatMap(id=>{const p=packages.find(pk=>pk.id===id);return p?.filmmakerOptions||[];});const opt=allFmOpts.find(f=>f.nome===fNome);return opt?opt.valor:0;})(),valorEmpresa:parseFloat(document.getElementById('f-valorEmpresa')?.value)||0,valorAndre:parseFloat(document.getElementById('f-valorAndre')?.value)||0,valorFreelancer:parseFloat(document.getElementById('f-valorFreelancer')?.value)||0,valorTotal:(parseFloat(document.getElementById('f-valorEmpresa')?.value)||0)+(parseFloat(document.getElementById('f-valorAndre')?.value)||0),valorCoresJob:0,valorReserva:parseFloat(document.getElementById('f-valorReserva').value)||0,dataReserva:document.getElementById('f-dataReserva').value,valorRestante:parseFloat(document.getElementById('f-valorRestante').value)||0,dataRestante:document.getElementById('f-dataRestante').value,statusPag:document.getElementById('f-statusPag').value,gastos:gastosItensTemp.filter(g=>g.tipo!=='album').reduce((s,g)=>s+(g.val||0),0),gastosItens:[...gastosItensTemp],formaPag:document.getElementById('f-formaPag').value,avistaDesconto:document.getElementById('f-avistaDesconto')?.checked||false,nParcelas:parseInt(document.getElementById('f-nParcelas').value)||1,parcelasItens:[...parcelasItensTemp],galeria:document.getElementById('f-galeria').value.trim(),galeriaClienteId:document.getElementById('f-galeriaClienteId')?.value.trim()||'',obs:oldCard?.obs||'',motivo:document.getElementById('f-motivo').value,detalhe:document.getElementById('f-detalhe').value.trim(),pendObs:document.getElementById('f-pend-obs')?.value.trim()||'',pendencias:[...pendenciasTemp],pagoEmpresa:document.getElementById('f-pagoEmpresa')?.checked||false,pagoAndre:document.getElementById('f-pagoAndre')?.checked||false,followupDate:document.getElementById('f-followup').value||'',meuFuturo:parseFloat(document.getElementById('f-meuFuturo')?.value)||0,albumGuardado:_albumGuardado,contrato:oldCard?.contrato||null,criadoEm:oldCard?.criadoEm||Date.now(),updatedAt:Date.now()};
+  const data={id:editingOpId||uid(),coluna:newCol,somenteProjeto:oldCard?.somenteProjeto||opFromProj||false,titulo:document.getElementById('f-titulo').value.trim(),nomePais,telefone:document.getElementById('f-tel').value.trim(),nomeCrianca:document.getElementById('f-nomeCrianca').value.trim(),idade:document.getElementById('f-idade').value.trim(),nomeCrianca2:document.getElementById('f-nomeCrianca2').value.trim(),idade2:document.getElementById('f-idade2').value.trim(),dataEvento:document.getElementById('f-data').value,horario:document.getElementById('f-horario').value,horarioFim:document.getElementById('f-horarioFim').value,local:_localDoFormulario(),tipo:document.getElementById('f-tipo').value,pacoteId:(getSelectedPacIds()[0]||''),pacoteIds:getSelectedPacIds(),pacoteCustom:document.getElementById('f-pacoteCustom').value.trim(),tipoExecucao:document.getElementById('f-execucao').value||'proprio',freelancerId:document.getElementById('f-freelancerId').value||'',parceiroId:(document.getElementById('f-execucao').value==='sou-freela'?document.getElementById('f-op-parceiroId')?.value||'':''),filmmakerNome:(()=>{const s=document.getElementById('f-filmakerId');if(!s)return '';const v=s.value||'';if(v==='__outro__'){return (document.getElementById('f-filmakerCustom')?.value||'').trim();}return v;})(),filmmakerCusto:(()=>{const _fids=getSelectedPacIds();const fNome=document.getElementById('f-filmakerId')?.value||'';const allFmOpts=_fids.flatMap(id=>{const p=packages.find(pk=>pk.id===id);return p?.filmmakerOptions||[];});const opt=allFmOpts.find(f=>f.nome===fNome);return opt?opt.valor:0;})(),valorEmpresa:parseFloat(document.getElementById('f-valorEmpresa')?.value)||0,valorAndre:parseFloat(document.getElementById('f-valorAndre')?.value)||0,valorFreelancer:parseFloat(document.getElementById('f-valorFreelancer')?.value)||0,valorTotal:(parseFloat(document.getElementById('f-valorEmpresa')?.value)||0)+(parseFloat(document.getElementById('f-valorAndre')?.value)||0),valorCoresJob:0,valorReserva:parseFloat(document.getElementById('f-valorReserva').value)||0,dataReserva:document.getElementById('f-dataReserva').value,valorRestante:parseFloat(document.getElementById('f-valorRestante').value)||0,dataRestante:document.getElementById('f-dataRestante').value,statusPag:document.getElementById('f-statusPag').value,gastos:gastosItensTemp.filter(g=>g.tipo!=='album').reduce((s,g)=>s+(g.val||0),0),gastosItens:[...gastosItensTemp],formaPag:document.getElementById('f-formaPag').value,avistaDesconto:document.getElementById('f-avistaDesconto')?.checked||false,nParcelas:parseInt(document.getElementById('f-nParcelas').value)||1,parcelasItens:[...parcelasItensTemp],galeria:document.getElementById('f-galeria').value.trim(),galeriaClienteId:document.getElementById('f-galeriaClienteId')?.value.trim()||'',obs:oldCard?.obs||'',motivo:document.getElementById('f-motivo').value,detalhe:document.getElementById('f-detalhe').value.trim(),pendObs:document.getElementById('f-pend-obs')?.value.trim()||'',pendencias:[...pendenciasTemp],pagoEmpresa:document.getElementById('f-pagoEmpresa')?.checked||false,pagoAndre:document.getElementById('f-pagoAndre')?.checked||false,followupDate:document.getElementById('f-followup').value||'',albumGuardado:_albumGuardado,contrato:oldCard?.contrato||null,criadoEm:oldCard?.criadoEm||Date.now(),updatedAt:Date.now()};
   // O valor digitado manualmente é o total real cobrado do cliente.
   // Sem preenchimento, mantém o total calculado a partir dos pacotes.
   const _valorPlanoInformado=parseFloat(document.getElementById('f-valorPlano')?.value)||0;
   if(_valorPlanoInformado>0)data.valorTotal=_valorPlanoInformado;
   data.valorEmpresa=calcEmpresaShare(data);
   data.valorAndre=calcAndreShare(data);
-  data.meuFuturo=_meuFuturoDaFesta(data);
   // Carimba quando o link da galeria foi enviado pela 1ª vez, pra disparar
   // o lembrete de follow-up 5 dias depois (perguntar se baixou/gostou).
   data.galeriaEnviadaEm=(data.galeria&&!oldCard?.galeria)?Date.now():(oldCard?.galeriaEnviadaEm||'');
@@ -7653,28 +7645,8 @@ function selFinF(m){finCurF=m;renderFinFestas();}
 function selFinG(m){finCurG=m;renderFinGastos();}
 function selFinD(m){finCurD=m;renderFinDiarios();}
 
-// "Meu futuro": se a festa tem valor, é a parte do André já líquida (com o
-// transporte lançado em Pessoal descontado). Sem valor, é digitado na mão.
 // Gastos de transporte da festa: de um lado só ('empresa' ou 'pessoal') ou dos dois
 function _transporteDaFesta(c,tipo){return (c.gastosItens||[]).filter(g=>_ehGastoTransporte(g)&&(!tipo||(g.tipo||'empresa')===tipo)).reduce((s,g)=>s+(+g.val||0),0)}
-function _meuFuturoDaFesta(c){
-  if(!((+c.valorTotal||0)>0))return +c.meuFuturo||0;
-  return calcAndreShare(c);
-}
-function _atualizaMeuFuturoFicha(card,andShare){
-  const campo=document.getElementById('f-meuFuturo');const dica=document.getElementById('f-meuFuturo-dica');if(!campo)return;
-  const auto=(+card.valorTotal||0)>0;
-  campo.readOnly=auto;
-  campo.style.opacity=auto?'.75':'';
-  if(auto)campo.value=andShare.toFixed(2);
-  if(dica)dica.textContent=auto?'Calculado: parte do André, já com o transporte descontado':'Sem valor na festa: digite na mão';
-}
-function _resetaMeuFuturoFicha(){
-  const campo=document.getElementById('f-meuFuturo');if(campo){campo.readOnly=false;campo.style.opacity='';}
-  const dica=document.getElementById('f-meuFuturo-dica');if(dica)dica.textContent='';
-}
-function _totalMeuFuturo(){return opCards.reduce((s,c)=>s+_meuFuturoDaFesta(c),0)}
-function _festasComMeuFuturo(){return opCards.filter(c=>_meuFuturoDaFesta(c)>0).length}
 function renderFinResumo(){
   // Stats cards (ano todo) — exclui freela (empresa não recebe)
   const fc=opCards.filter(c=>FIN_COLS.includes(c.coluna)&&(c.tipoExecucao||'proprio')!=='sou-freela'&&(c.tipoExecucao||'proprio')!=='freelancer');
@@ -9348,7 +9320,6 @@ function renderPessResumo(){
     <div class="stat-card sc-receber"><div class="stat-icon">⏳</div><div class="stat-label">A Receber — ${curMes}</div><div class="stat-value">${fmtMoney(aReceberCur)}</div><div class="stat-sub">Restante das festas do mês</div></div>
     <div class="stat-card" style="background:${dGrad}"><div class="stat-icon">💸</div><div class="stat-label">Pode gastar — ${curMes}</div><div class="stat-value">${fmtMoney(disponivel)}</div><div class="stat-sub" style="opacity:.8">Festas − contas − gastos + ${fmtMoney(cCur.vg)} banco</div></div>
     <div class="stat-card" style="background:linear-gradient(135deg,#312e81,#1e1b4b)"><div class="stat-icon">🏦</div><div class="stat-label">Reserva Guardada</div><div class="stat-value" style="cursor:text" onclick="startPessRGEdit()" title="Clique para editar o valor guardado">${fmtMoney(pessRG)}</div><div class="stat-sub" style="opacity:.8;cursor:text;text-decoration:underline dotted" onclick="startPessRGEdit()" title="Clique para editar o valor guardado">Clique para editar</div></div>
-    <div class="stat-card" style="background:linear-gradient(135deg,#047857,#064e3b)"><div class="stat-icon">🌱</div><div class="stat-label">Meu futuro</div><div class="stat-value">${fmtMoney(_totalMeuFuturo())}</div><div class="stat-sub" style="opacity:.8">${_festasComMeuFuturo()} festa(s) com valor guardado</div></div>
     <div class="stat-card" style="background:linear-gradient(135deg,#0f766e,#134e4a)" onclick="event.stopPropagation()"><div class="stat-icon">➕</div><div class="stat-label">Adicionar ao Banco</div>
       <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px;position:relative;z-index:1">
         <input type="text" id="pess-entrada-desc" placeholder="De onde veio? (opcional)" style="width:100%;box-sizing:border-box;padding:6px 8px;border:none;border-radius:6px;font:600 12px 'Montserrat',sans-serif;outline:none">
