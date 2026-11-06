@@ -5632,11 +5632,23 @@ function syncFreelancerToAndre(card){
   }
 }
 function syncAllFreelancersToAndre(){
-  // Sincroniza TODOS os trabalhos confirmados para a seção pessoal do André
+  // Sincroniza TODOS os trabalhos confirmados para a seção pessoal do André.
+  // O "pago" de cada festa é guardado antes de refazer a lista e devolvido depois.
+  // Antes a lista era apagada e recriada sem o pago: a cada abertura do app, o que o
+  // André já tinha recebido (inclusive o pago à vista) voltava a zero.
+  const _pagoDaFesta={};
+  MESES_FIN.forEach(m=>{
+    (pessFD[m]||[]).forEach(e=>{const id=e._opFrlId||e._opId;if(id)_pagoDaFesta[id]=Math.max(_pagoDaFesta[id]||0,+(e.pago)||0);});
+  });
   MESES_FIN.forEach(m=>{
     if(pessFD[m])pessFD[m]=pessFD[m].filter(e=>!e._opFrlId);
   });
-  opCards.filter(c=>FIN_COLS.includes(c.coluna)&&(c.valorAndre||0)>0).forEach(c=>syncFreelancerToAndre(c));
+  opCards.filter(c=>FIN_COLS.includes(c.coluna)&&(c.valorAndre||0)>0).forEach(c=>{
+    syncFreelancerToAndre(c);
+    const _mes=_getMesFin(c.dataEvento);
+    const _entrada=_mes?(pessFD[_mes]||[]).find(e=>e._opFrlId===c.id):null;
+    if(_entrada&&_pagoDaFesta[c.id])_entrada.pago=_pagoDaFesta[c.id];
+  });
   savePessData();
 }
 function calcDistribuicao(){
