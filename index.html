@@ -5695,15 +5695,16 @@ function calcDistribuicao(){
 
       // Empresa: 40% do Plano Cores
       const _empPct=parseFloat((_totalCores2*0.4).toFixed(2));
-      document.getElementById('dist-bd-emp-40').textContent=fm(_empPct);
+      document.getElementById('dist-bd-emp-40').textContent=fm(_empresaBruta(_fichaCard));
 
       // Álbum: Gasto da Empresa
       document.getElementById('dist-bd-album').textContent=fm(_gastosAlbum2);
 
-      // André Pessoal: Sobra = Total - Cores - Álbum
-      const _sobra=parseFloat(Math.max(0,_totalValor-_totalCores2-_gastosAlbum2).toFixed(2));
+      // André Pessoal: o mesmo número da caixa principal (total − 40% do Plano Cores − álbum − desconto e transporte do André)
+      const _sobra=calcAndreShare(_fichaCard);
+      const _descAnd=_descontoAvista(_fichaCard),_transpAnd=_transporteDaFesta(_fichaCard,'pessoal'),_empAnd=_empresaBruta(_fichaCard);
       document.getElementById('dist-bd-andre').textContent=fm(_sobra);
-      document.getElementById('dist-bd-andre-calc').textContent=`(${fm(_totalValor)} − ${fm(_totalCores2)} − ${fm(_gastosAlbum2)} = ${fm(_sobra)})`;
+      document.getElementById('dist-bd-andre-calc').textContent=`(${fm(+_fichaCard.valorTotal||0)}${_descAnd>0?' − '+fm(_descAnd)+' (desconto à vista)':''} − ${fm(_empAnd)} (Empresa)${_gastosAlbum2>0?' − '+fm(_gastosAlbum2)+' (álbum)':''}${_transpAnd>0?' − '+fm(_transpAnd)+' (transporte)':''} = ${fm(_sobra)})`;
     } else {
       _breakdownRow.style.display='none';
     }
