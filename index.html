@@ -5631,14 +5631,39 @@ function syncFreelancerToAndre(card){
     savePessData();
   }
 }
+// Remove da seção Pessoal os lançamentos de uma festa excluída. O pagamento que estava
+// neles sai também do total do mês (cancelado).
+function _removeLancamentosAndreDaFesta(cardId){
+  MESES_FIN.forEach(m=>{
+    if(!pessFD[m])return;
+    const saem=pessFD[m].filter(e=>e._opId===cardId||e._opFrlId===cardId);
+    if(!saem.length)return;
+    const pago=saem.reduce((mx,e)=>Math.max(mx,+(e.pago)||0),0);
+    if(pago>0){_initPessVG(m);pessVG[m]=(+pessVG[m]||0)-pago;}
+    pessFD[m]=pessFD[m].filter(e=>!saem.includes(e));
+  });
+}
 function syncAllFreelancersToAndre(){
   // Sincroniza TODOS os trabalhos confirmados para a seção pessoal do André.
-  // O "pago" de cada festa é guardado antes de refazer a lista e devolvido depois.
-  // Antes a lista era apagada e recriada sem o pago: a cada abertura do app, o que o
-  // André já tinha recebido (inclusive o pago à vista) voltava a zero.
-  const _pagoDaFesta={};
+  // O "pago" de cada festa é guardado antes de refazer a lista e devolvido depois
+  // (antes a lista era apagada e recriada sem o pago, e cada abertura do app zerava o
+  // que o André já tinha recebido). Os totais mensais acompanham: se a festa sai das
+  // confirmadas, o pagamento sai do total do mês; se muda de mês, o total muda com ela.
+  const _antes={};
   MESES_FIN.forEach(m=>{
-    (pessFD[m]||[]).forEach(e=>{const id=e._opFrlId||e._opId;if(id)_pagoDaFesta[id]=Math.max(_pagoDaFesta[id]||0,+(e.pago)||0);});
+    (pessFD[m]||[]).forEach(e=>{
+      const id=e._opFrlId||e._opId;if(!id)return;
+      const p=+(e.pago)||0;
+      if(!_antes[id]||p>_antes[id].pago)_antes[id]={mes:m,pago:p};
+    });
+  });
+  // Garante que os totais dos meses envolvidos existam antes de mudar (mesmo padrão de _initPessVG)
+  Object.entries(_antes).forEach(([id,a])=>{
+    if(a.pago<=0)return;
+    _initPessVG(a.mes);
+    const c=opCards.find(x=>x.id===id);
+    const mNovo=c&&FIN_COLS.includes(c.coluna)&&(c.valorAndre||0)>0?_getMesFin(c.dataEvento):null;
+    if(mNovo)_initPessVG(mNovo);
   });
   MESES_FIN.forEach(m=>{
     if(pessFD[m])pessFD[m]=pessFD[m].filter(e=>!e._opFrlId);
@@ -5647,7 +5672,22 @@ function syncAllFreelancersToAndre(){
     syncFreelancerToAndre(c);
     const _mes=_getMesFin(c.dataEvento);
     const _entrada=_mes?(pessFD[_mes]||[]).find(e=>e._opFrlId===c.id):null;
-    if(_entrada&&_pagoDaFesta[c.id])_entrada.pago=_pagoDaFesta[c.id];
+    if(_entrada&&_antes[c.id]&&_antes[c.id].pago>0)_entrada.pago=_antes[c.id].pago;
+  });
+  const _depois={};
+  MESES_FIN.forEach(m=>{
+    (pessFD[m]||[]).forEach(e=>{const id=e._opFrlId||e._opId;if(id&&_antes[id])_depois[id]={mes:m,pago:+(e.pago)||0};});
+  });
+  Object.entries(_antes).forEach(([id,a])=>{
+    if(a.pago<=0)return;
+    const d=_depois[id];
+    if(d&&d.mes===a.mes){
+      const delta=d.pago-a.pago;
+      if(Math.abs(delta)>0.009)pessVG[a.mes]=(+pessVG[a.mes]||0)+delta;
+    }else{
+      pessVG[a.mes]=(+pessVG[a.mes]||0)-a.pago;
+      if(d&&d.pago>0)pessVG[d.mes]=(+pessVG[d.mes]||0)+d.pago;
+    }
   });
   savePessData();
 }
@@ -11471,7 +11511,7 @@ function closeMo(id){document.getElementById(id).classList.add('hidden')}
 function moOverlay(e,id){if(e.target===document.getElementById(id))closeMo(id)}
 function confirmDel(type){
   openCfm('Excluir?','Esta ação não pode ser desfeita.',()=>{
-    if(type==='op'){const delId=editingOpId;opCards=opCards.filter(c=>c.id!==delId);MESES_FIN.forEach(m=>{if(pessFD[m])pessFD[m]=pessFD[m].filter(e=>e._opId!==delId&&e._opFrlId!==delId)});pendencias=pendencias.filter(p=>p._parcelaOpId!==delId&&p._transpOpId!==delId);savPen();savOp();savePessData();renderOp();renderPr();renderFin();renderAgenda();renderPendencias();closeMo('mo-op')}
+    if(type==='op'){const delId=editingOpId;opCards=opCards.filter(c=>c.id!==delId);_removeLancamentosAndreDaFesta(delId);pendencias=pendencias.filter(p=>p._parcelaOpId!==delId&&p._transpOpId!==delId);savPen();savOp();savePessData();renderOp();renderPr();renderFin();renderAgenda();renderPendencias();closeMo('mo-op')}
     else if(type==='pr'){prCards=prCards.filter(c=>c.id!==editingPrId);savPr();renderPr();renderAgenda();closeMo('mo-pr')}
     else if(type==='alb'){const delId=editingAlbId;albCards=albCards.filter(c=>c.id!==delId);pendencias=pendencias.filter(p=>p._albCardId!==delId);savPen();savAlb();renderAlb();renderPendencias();closeMo('mo-alb')}
     else if(type==='pac'){packages=packages.filter(p=>p.id!==editingPacId);savPac();renderPac();closeMo('mo-pac')}
@@ -11495,7 +11535,7 @@ function abrirOrcamento(id){
   if(c.telefone)    params.set('tel',     c.telefone);
   window.open(base + '?' + params.toString(), '_blank');
 }
-function qDel(board,id,event){event.stopPropagation();openCfm('Excluir?','Esta ação não pode ser desfeita.',()=>{if(board==='op'){opCards=opCards.filter(c=>c.id!==id);MESES_FIN.forEach(m=>{if(pessFD[m])pessFD[m]=pessFD[m].filter(e=>e._opId!==id&&e._opFrlId!==id)});savOp();savePessData();renderOp();renderPr();renderFin();renderAgenda()}else if(board==='pr'){prCards=prCards.filter(c=>c.id!==id);savPr();renderPr();renderAgenda()}else if(board==='alb'){albCards=albCards.filter(c=>c.id!==id);pendencias=pendencias.filter(p=>p._albCardId!==id);savPen();savAlb();renderAlb();renderPendencias()}toast('🗑️ Removido','')})}
+function qDel(board,id,event){event.stopPropagation();openCfm('Excluir?','Esta ação não pode ser desfeita.',()=>{if(board==='op'){opCards=opCards.filter(c=>c.id!==id);_removeLancamentosAndreDaFesta(id);savOp();savePessData();renderOp();renderPr();renderFin();renderAgenda()}else if(board==='pr'){prCards=prCards.filter(c=>c.id!==id);savPr();renderPr();renderAgenda()}else if(board==='alb'){albCards=albCards.filter(c=>c.id!==id);pendencias=pendencias.filter(p=>p._albCardId!==id);savPen();savAlb();renderAlb();renderPendencias()}toast('🗑️ Removido','')})}
 function getClientEvents(cl){if(!cl.telefone)return[];const tel=cl.telefone.replace(/\D/g,'');return opCards.filter(c=>c.telefone&&c.telefone.replace(/\D/g,'')===tel)}
 function getClientTags(cl){
   const raw=(cl.tags||'').toLowerCase().match(/#[\w\u00C0-\u024F]+/g)||[];
