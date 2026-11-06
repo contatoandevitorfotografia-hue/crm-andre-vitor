@@ -8001,16 +8001,17 @@ function renderFinFestas(){
 function delFinFesta(cardId){
   const card=opCards.find(c=>c.id===cardId);if(!card)return;
   const nome=card.nomePais||card.titulo||'este card';
-  if(!confirm(`Excluir "${nome}" da seção Empresa?\n\nO evento continua visível na seção Pessoal.`))return;
+  if(!confirm(`Excluir "${nome}"?\n\nA festa sai do CRM, e o pagamento do André nela é cancelado.`))return;
   opCards=opCards.filter(c=>c.id!==cardId);
-  // Remove apenas dos diários da empresa — pessoal é independente
+  // Diário da Empresa e lançamentos do André saem juntos (o pagamento do André fica cancelado no total)
   MESES_FIN.forEach(m=>{
     if(finDD[m])finDD[m]=finDD[m].filter(e=>e._opId!==cardId);
   });
   pendencias=pendencias.filter(p=>p._parcelaOpId!==cardId&&p._transpOpId!==cardId);savPen();
-  savOp();saveFinData();
-  renderOp();renderFin();renderPendencias();
-  toast('🗑️ Removido da Empresa','');
+  _removeLancamentosAndreDaFesta(cardId);
+  savOp();saveFinData();savePessData();
+  renderOp();renderFin();renderPendencias();if(typeof renderPessAll==='function')renderPessAll();
+  toast('🗑️ Festa excluída. Pagamento do André cancelado.','');
 }
 // ── Festas avulsas da Empresa (espelho do "+ Adicionar festa" do Pessoal) ──
 // Entrada de dinheiro do negócio que não veio de um card do kanban. Vive em
