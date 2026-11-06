@@ -7396,7 +7396,18 @@ function _valorCoresPacs(pacs,_vistos=new Set()){
 // Valor do Plano Cores de um cartão (o valor informado na festa tem prioridade)
 function _vcDoCard(card){
   const pacs=(card.pacoteIds||(card.pacoteId?[card.pacoteId]:[])).map(id=>packages.find(p=>p.id===id)).filter(Boolean);
+  // Pacote Padrão (Plano Cores): o "Valor deste trabalho" digitado é o próprio Plano Cores da festa.
+  if(!card.valorCoresJob&&(+card.valorTotal||0)>0&&pacs.length&&_soPlanoCoresPacs(pacs))return +card.valorTotal;
   return card.valorCoresJob||_valorCoresPacs(pacs);
+}
+// Pacotes só de Plano Cores (Padrão, ou composto formado só por Padrão, sem "Valor do Plano Cores" próprio)
+function _soPlanoCoresPacs(pacs,_vistos=new Set()){
+  return pacs.every(p=>{
+    if(_vistos.has(p.id))return true;
+    _vistos.add(p.id);
+    if((p.compoe||[]).length)return !p.valorCores&&_soPlanoCoresPacs((p.compoe||[]).map(id=>packages.find(x=>x.id===id)).filter(Boolean),_vistos);
+    return !p.tipoPlano||p.tipoPlano==='padrao';
+  });
 }
 // Estado atual da ficha como um cartão (mesma conta do Financeiro, antes de salvar)
 function _cardDaFicha(){
