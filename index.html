@@ -5642,6 +5642,9 @@ function syncFreelancerToAndre(card){
     savePessData();
   }
 }
+// Festa que entra na seção do André: confirmada, com valor, e com parte para o André (conta ao vivo,
+// a mesma da caixa de Distribuição; não depende do valor salvo na festa)
+function _andreVale(c){return FIN_COLS.includes(c.coluna)&&(c.valorTotal||0)>0&&calcAndreShare(c)>0;}
 // Remove da seção Pessoal os lançamentos de uma festa excluída. O pagamento que estava
 // neles sai também do total do mês (cancelado).
 function _removeLancamentosAndreDaFesta(cardId){
@@ -5673,13 +5676,13 @@ function syncAllFreelancersToAndre(){
     if(a.pago<=0)return;
     _initPessVG(a.mes);
     const c=opCards.find(x=>x.id===id);
-    const mNovo=c&&FIN_COLS.includes(c.coluna)&&(c.valorAndre||0)>0?_getMesFin(c.dataEvento):null;
+    const mNovo=c&&_andreVale(c)?_getMesFin(c.dataEvento):null;
     if(mNovo)_initPessVG(mNovo);
   });
   MESES_FIN.forEach(m=>{
-    if(pessFD[m])pessFD[m]=pessFD[m].filter(e=>!e._opFrlId);
+    if(pessFD[m])pessFD[m]=pessFD[m].filter(e=>!(e._opFrlId||e._opId));
   });
-  opCards.filter(c=>FIN_COLS.includes(c.coluna)&&(c.valorAndre||0)>0).forEach(c=>{
+  opCards.filter(c=>_andreVale(c)).forEach(c=>{
     syncFreelancerToAndre(c);
     const _mes=_getMesFin(c.dataEvento);
     const _entrada=_mes?(pessFD[_mes]||[]).find(e=>e._opFrlId===c.id):null;
@@ -9524,7 +9527,9 @@ function renderPessEntradas(){
     const op=null; // opCardsPess é legado e nunca é populado — o "pago" vem sempre de f.pago (vínculo via quickEditPagPess)
     const gastosPes=_pessGastosDaFesta(f);
     const _vPagoPess=op?(op.valorReserva??0):(f.pago||0);
-    const _andShare=f.v;
+    // Lançamento ligado a uma festa mostra o mesmo valor da caixa de Distribuição dela
+    const _cardA=(f._opFrlId||f._opId)?opCards.find(o=>o.id===(f._opFrlId||f._opId)):null;
+    const _andShare=_cardA?calcAndreShare(_cardA):f.v;
     const _andLiq=Math.max(0,_andShare);
     const _andFalta=Math.max(0,parseFloat((_andLiq-_vPagoPess).toFixed(2)));
     // FALTA PAGAR = VALOR - VALOR PAGO (sempre, em ambos os casos)
@@ -9557,8 +9562,10 @@ function renderPessEntradas(){
       : `<button class="fin-del" onclick="event.stopPropagation();delPessFesta('${pessCurF}',${realIdx},false)" title="Excluir">×</button>`;
     
     // Campos editáveis
-    const brutoCell = `<span style="color:var(--muted);font-weight:700;cursor:pointer;text-decoration:underline dotted" title="Clique para editar o valor bruto (antes do desconto do gasto pessoal)" onclick="editPessValor('${pessCurF}',${realIdx},this)">${fmtMoney(f.v)}</span>`;
-    const valorCell = `<span style="color:var(--success);font-weight:700">${fmtMoney(Math.max(0,f.v))}</span>`;
+    const brutoCell = _cardA
+      ? `<span style="color:var(--muted);font-weight:700" title="Valor vindo da festa (mesmo da caixa de Distribuição)">${fmtMoney(_andShare)}</span>`
+      : `<span style="color:var(--muted);font-weight:700;cursor:pointer;text-decoration:underline dotted" title="Clique para editar o valor bruto (antes do desconto do gasto pessoal)" onclick="editPessValor('${pessCurF}',${realIdx},this)">${fmtMoney(f.v)}</span>`;
+    const valorCell = `<span style="color:var(--success);font-weight:700">${fmtMoney(Math.max(0,_andShare))}</span>`;
     const pagoBtnHtml = op 
       ? `<span style="color:#7D95AE;font-weight:700;cursor:pointer;text-decoration:underline dotted" title="Clique para editar" onclick="event.stopPropagation();inlineEditReservaPess('${op.id}')">${_vPagoPess>0?fmtMoney(_vPagoPess):'— editar'}</span>`
       : `<span style="color:#7D95AE;font-weight:700;cursor:pointer;text-decoration:underline dotted" title="Clique para editar" onclick="event.stopPropagation();quickEditPagPess('${pessCurF}',${realIdx})">${f.pago>0?fmtMoney(f.pago):'— editar'}</span>`;
