@@ -3328,6 +3328,9 @@ let dragId=null,dragBoard=null,cfmCb=null,agYear,agMonth,currentTab='dashboard',
 let tplSendCtx=null,activeTplId=null;
 let pendenciasTemp=[];
 const LOCAIS_SUGERIDOS=['Buffet Engenho'];
+// Buffets e espaços salvos pelo botão "Salvar na lista" (sincronizados com os demais dados)
+let locaisSalvos=(()=>{try{return JSON.parse(localStorage.getItem('crm_locais_v1')||'[]')}catch{return[]}})();
+function savLocaisSalvos(){localStorage.setItem('crm_locais_v1',JSON.stringify(locaisSalvos));_saveDadosFirebase()}
 let gerenciarTagsAberto=false;
 let gastosItensTemp=[];
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
@@ -3423,7 +3426,8 @@ function _flushDadosFirebase(){
     frl_cards:freelaCards,
     pgr:pendenciasGerais,
     pendencias:pendencias,
-    indic:indicData
+    indic:indicData,
+    loc:locaisSalvos
   };
   // O Firebase recusa o update() inteiro se QUALQUER campo, em qualquer
   // profundidade, for undefined (ex.: contrato.acceptedAt de um card antigo).
@@ -9264,6 +9268,7 @@ function initFinFirebase(){
       if(data.pgr&&Array.isArray(data.pgr)){pendenciasGerais=data.pgr;localStorage.setItem('crm_pgr_v1',JSON.stringify(pendenciasGerais));}
       if(data.pendencias&&Array.isArray(data.pendencias)){pendencias=data.pendencias;localStorage.setItem('crm_pen_v1',JSON.stringify(pendencias));}
       if(data.indic&&typeof data.indic==='object'){indicData=data.indic;localStorage.setItem('crm_indic_v1',JSON.stringify(indicData));}
+      if(data.loc&&Array.isArray(data.loc)){locaisSalvos=data.loc;localStorage.setItem('crm_locais_v1',JSON.stringify(locaisSalvos));}
       syncAllDistrib();
       if(currentTab==='oportunidades')renderOp();
       else if(currentTab==='projetos'){renderPr();renderAlb();}
@@ -11696,7 +11701,7 @@ function abrirFichaClienteDoCard(cardId){
 function _chaveLocal(s){return _norm(s).replace(/\s+/g,' ').trim()}
 function _listaLocais(){
   const mapa=new Map();
-  [...LOCAIS_SUGERIDOS,...opCards.map(c=>c.local)].forEach(l=>{
+  [...LOCAIS_SUGERIDOS,...locaisSalvos,...opCards.map(c=>c.local)].forEach(l=>{
     const nome=(l||'').trim();const k=_chaveLocal(nome);
     if(k&&!mapa.has(k))mapa.set(k,nome);
   });
@@ -11708,7 +11713,10 @@ function _localCanonico(bruto){
 }
 // Na ficha, a lista mostra só Buffets e Espaços. Endereços e outros lugares
 // continuam salvos nas festas antigas; aparecem como "Outro", sem sumir.
-function _locaisDaFicha(){return _listaLocais().filter(l=>{const n=_norm(l);return n.includes('buffet')||n.includes('espaco')})}
+function _locaisDaFicha(){
+  const salvos=new Set(locaisSalvos.map(_chaveLocal));
+  return _listaLocais().filter(l=>{const n=_norm(l);return salvos.has(_chaveLocal(l))||n.includes('buffet')||n.includes('espaco')});
+}
 function _preencheLocalSelect(valor){
   const slot=document.getElementById('f-local-slot');if(!slot)return;
   const locais=_locaisDaFicha();
@@ -11717,11 +11725,29 @@ function _preencheLocalSelect(valor){
   slot.innerHTML=`<select id="f-local" onchange="onLocalChange()"><option value="">Selecione o local...</option>`+
     locais.map(l=>`<option value="${esc(l)}"${l===atual?' selected':''}>${esc(l)}</option>`).join('')+
     `<option value="__outro__"${outro?' selected':''}>✏️ Outro (digitar local)…</option></select>`+
-    `<input type="text" id="f-localCustom" placeholder="Digite o local da festa" oninput="onLocalChange()" style="margin-top:8px;width:100%;display:${outro?'block':'none'}" value="${outro?esc(atual):''}">`;
+    `<input type="text" id="f-localCustom" placeholder="Digite o local da festa" oninput="onLocalChange()" style="margin-top:8px;width:100%;display:${outro?'block':'none'}" value="${outro?esc(atual):''}">`+
+    `<button type="button" id="f-local-salvar" class="btn btn-g btn-sm" onclick="salvarLocalNaLista()" style="margin-top:6px;display:${outro?'inline-block':'none'}">💾 Salvar na lista de buffets/espaços</button>`;
 }
 function onLocalChange(){
   const sel=document.getElementById('f-local');const custom=document.getElementById('f-localCustom');
-  if(custom)custom.style.display=sel?.value==='__outro__'?'block':'none';
+  const btn=document.getElementById('f-local-salvar');
+  const outro=sel?.value==='__outro__';
+  if(custom)custom.style.display=outro?'block':'none';
+  if(btn){
+    const nome=(custom?.value||'').trim();
+    const jaNaLista=!!nome&&_locaisDaFicha().some(l=>_chaveLocal(l)===_chaveLocal(nome));
+    btn.style.display=outro&&nome&&!jaNaLista?'inline-block':'none';
+  }
+}
+// Guarda o local digitado em "Outro" na lista de buffets/espaços, para aparecer nas próximas festas
+function salvarLocalNaLista(){
+  const nome=(document.getElementById('f-localCustom')?.value||'').trim();
+  if(!nome){toast('⚠️ Digite o nome do buffet ou espaço.','orange');return;}
+  const k=_chaveLocal(nome);
+  if(!locaisSalvos.some(l=>_chaveLocal(l)===k))locaisSalvos.push(nome);
+  savLocaisSalvos();
+  _preencheLocalSelect(nome);
+  toast(`📍 "${nome}" salvo na lista de buffets/espaços`,'green');
 }
 function _localDoFormulario(){
   const sel=document.getElementById('f-local');if(!sel)return'';
@@ -12292,7 +12318,7 @@ function _bkPayload(){
   return {version:'avf_crm_v2',exportedAt:Date.now(),
     counts:{oportunidades:opCards.length,projetos:prCards.length,albuns:albCards.length,pacotes:packages.length,clientes:clients.length,templates:templates.length,
             contas:(finContas||[]).length+(pessContas||[]).length,freelancers:(freelancers||[]).length},
-    data:{opCards,prCards,albCards,packages,clients,templates,indicData,
+    data:{opCards,prCards,albCards,packages,clients,templates,indicData,locaisSalvos,
           freelancers,tarefas,conteudos,pendencias,pendenciasGerais,freelaCards,
           ..._bkColeta()}};
 }
@@ -12301,6 +12327,7 @@ function _bkPayload(){
 function _bkRestaura(d){
   if(!d||!d.data)return false;
   if(d.data.opCards)opCards=d.data.opCards;
+  if(Array.isArray(d.data.locaisSalvos)){locaisSalvos=d.data.locaisSalvos;localStorage.setItem('crm_locais_v1',JSON.stringify(locaisSalvos));}
   if(d.data.prCards)prCards=d.data.prCards;
   if(d.data.albCards)albCards=d.data.albCards;
   if(d.data.packages)packages=d.data.packages;
