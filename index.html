@@ -5516,7 +5516,14 @@ const _DESCS_TRANSPORTE=new Set([
   'Volta: Uber da rodoviária até em casa','Volta: Ônibus para Jacareí','Volta: Metrô',
   'Uber até a rodoviária','Uber até em casa','Pássaro Marrom','Metrô','Uber',
 ]);
-function _ehGastoTransporte(g){return _DESCS_TRANSPORTE.has((g.desc||'').replace(/\s×\d+$/,'').trim());}
+// Compara sem acento e sem maiúscula ("metro" = "Metrô") e reconhece a palavra de transporte
+// dentro do nome ("Uber Shopping", "Ônibus para ..."). Hospedagem continua fora.
+const _DESCS_TRANSPORTE_NORM=new Set([..._DESCS_TRANSPORTE].map(_norm));
+const _RE_TRANSPORTE=/\b(uber|metro|onibus|taxi|transporte|trem|passaro marrom)\b/;
+function _ehGastoTransporte(g){
+  const d=_norm((g.desc||'').replace(/\s×\d+$/,'').trim());
+  return !!d&&(_DESCS_TRANSPORTE_NORM.has(d)||_RE_TRANSPORTE.test(d));
+}
 // Festa que já aconteceu não precisa mais de transporte cadastrado pra salvar.
 function _festaJaPassou(ds){
   if(!ds)return false;
