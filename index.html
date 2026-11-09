@@ -8339,7 +8339,7 @@ function inlineEditReservaPess(cardId){
 function _initPessVG(mes){
   if(pessVG[mes]===undefined){
     const F=pessFD[mes]||[];
-    pessVG[mes]=F.reduce((s,f)=>s+(f.pago||0),0);
+    pessVG[mes]=F.reduce((s,f)=>s+(+f.pago||0),0);
   }
 }
 function saveInlineVRPess(cardId){
@@ -9029,7 +9029,7 @@ function renderFinReserva(){
   let acum=0,rows='',total=0;
   MESES_FIN.forEach((m,idx)=>{
     if(idx>hoje||finVG[m]===undefined)return;
-    acum+=finVG[m];total=acum;
+    acum+=(+finVG[m]||0);total=acum;
     rows+=`<tr><td>${m}</td><td style="font-weight:600"><span onclick="startFinEditVG('${m}',this)" style="cursor:text" title="Clique para editar">${fmtMoney(finVG[m])}</span></td><td style="color:var(--success);font-weight:700">${fmtMoney(acum)}</td></tr>`;
   });
   const tb=document.getElementById('fin-res-tb');if(tb)tb.innerHTML=rows||`<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px">Nenhum valor no banco registrado ainda.</td></tr>`;
@@ -9900,7 +9900,7 @@ function renderPessReserva(){
   let acum=0,rows='',total=0;
   MESES_FIN.forEach((m,idx)=>{
     if(idx>hoje||pessVG[m]===undefined)return;
-    acum+=pessVG[m];total=acum;
+    acum+=(+pessVG[m]||0);total=acum;
     rows+=`<tr><td>${m}</td><td style="font-weight:600"><span onclick="startPessEditVG('${m}',this)" style="cursor:text" title="Clique para editar">${fmtMoney(pessVG[m])}</span></td><td style="color:var(--success);font-weight:700">${fmtMoney(acum)}</td></tr>`;
   });
   const tb=document.getElementById('p-res-tb');if(tb)tb.innerHTML=rows||`<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px">Nenhum valor registrado ainda.</td></tr>`;
@@ -10284,7 +10284,7 @@ function _initFinVG(mes){
   // Se finVG[mes] ainda não foi definido manualmente, inicializa com o valor automático (reservas das festas)
   if(finVG[mes]===undefined){
     const festas=_getFinFestas(mes);
-    finVG[mes]=festas.reduce((s,f)=>s+(f.reserva||0),0);
+    finVG[mes]=festas.reduce((s,f)=>s+(+f.reserva||0),0);
   }
 }
 // Depois que finVG[mes] é "travado" (materializado, seja por edição manual
@@ -12809,6 +12809,9 @@ function _resyncPix2xValorPago(){
 // "pago" mas valores parciais por baixo. Só festa própria — freela tem
 // regras próprias e a Empresa não recebe nada nelas.
 function _resyncAvistaPagoTotal(){
+  // Normaliza o Pessoal antes de qualquer soma: o listener da Empresa pode rodar antes do
+  // listener do Pessoal, e aí os pagamentos ainda estariam como texto (a soma concatenava).
+  _normalizaNumerosPess();
   let changedOp=false,changedPess=false;
   opCards.forEach(c=>{
     if(_migraFormaPag(c.formaPag||'avista')!=='avista'||c.statusPag!=='pago')return;
