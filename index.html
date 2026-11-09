@@ -1553,10 +1553,8 @@ input[type="date"]{cursor:pointer}
     <!-- ANOTAÇÕES -->
     <div class="listas-section" id="ls-anotacoes">
       <div class="lista-card">
-        <div class="lista-add-row" style="flex-wrap:wrap;gap:8px;margin-bottom:12px">
-          <input type="text" id="anot-cat-input" placeholder="Nova categoria (ex.: Deploy, Brindes para clientes)..." style="min-width:260px" onkeydown="if(event.key==='Enter')addAnotCategoria()">
-          <button class="btn btn-p btn-sm" onclick="addAnotCategoria()">＋ Criar categoria</button>
-        </div>
+        <textarea id="anot-nova" rows="3" placeholder="Escreva uma anotação (pode ter mais de uma linha, como os comandos do deploy)..." style="width:100%;font:500 13px 'Montserrat',sans-serif;border:1.5px solid var(--border);border-radius:8px;padding:8px;box-sizing:border-box"></textarea>
+        <div style="display:flex;justify-content:flex-end;margin:6px 0 14px"><button class="btn btn-p btn-sm" onclick="addAnotNota()">＋ Adicionar anotação</button></div>
         <div id="anot-list"></div>
       </div>
     </div>
@@ -3342,9 +3340,27 @@ const LOCAIS_SUGERIDOS=['Buffet Engenho'];
 // Buffets e espaços salvos pelo botão "Salvar na lista" (sincronizados com os demais dados)
 let locaisSalvos=(()=>{try{return JSON.parse(localStorage.getItem('crm_locais_v1')||'[]')}catch{return[]}})();
 function savLocaisSalvos(){localStorage.setItem('crm_locais_v1',JSON.stringify(locaisSalvos));_saveDadosFirebase()}
-// Anotações do dia a dia: categorias criadas por você, cada uma com as notas dentro (ex.: Deploy, Brindes)
-let anotCategorias=(()=>{try{return JSON.parse(localStorage.getItem('crm_anot_v1')||'[]')}catch{return[]}})();
-function savAnotCategorias(){localStorage.setItem('crm_anot_v1',JSON.stringify(anotCategorias));_saveDadosFirebase()}
+// Anotações do dia a dia: uma lista de notas soltas (ex.: comandos do deploy, brindes para clientes)
+let anotNotas=_anotCarregar();
+function savAnotNotas(){localStorage.setItem('crm_anot_v2',JSON.stringify(anotNotas));_saveDadosFirebase()}
+// Formato antigo (categorias com as notas dentro) -> lista única de notas, mais recentes primeiro
+function _anotDeCategorias(cats){
+  const out=[];
+  (Array.isArray(cats)?cats:[]).forEach(c=>(Array.isArray(c&&c.notas)?c.notas:[]).forEach(n=>{
+    if(n&&n.texto)out.push({id:n.id||uid(),texto:n.texto,criadaEm:n.criadaEm||Date.now(),...(n.editadaEm?{editadaEm:n.editadaEm}:{})});
+  }));
+  return out.sort((a,b)=>(b.criadaEm||0)-(a.criadaEm||0));
+}
+function _anotCarregar(){
+  try{
+    const v2=localStorage.getItem('crm_anot_v2');
+    if(v2!==null){const arr=JSON.parse(v2);return Array.isArray(arr)?arr:[]}
+    // Migração única: junta as notas das categorias antigas numa lista só (os nomes das categorias somem)
+    const notas=_anotDeCategorias(JSON.parse(localStorage.getItem('crm_anot_v1')||'[]'));
+    localStorage.setItem('crm_anot_v2',JSON.stringify(notas));
+    return notas;
+  }catch{return[]}
+}
 let gerenciarTagsAberto=false;
 let gastosItensTemp=[];
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
@@ -3442,7 +3458,7 @@ function _flushDadosFirebase(){
     pendencias:pendencias,
     indic:indicData,
     loc:locaisSalvos,
-    anot:{n:anotCategorias.length,cats:anotCategorias}
+    anot:{n:anotNotas.length,notas:anotNotas}
   };
   // O Firebase recusa o update() inteiro se QUALQUER campo, em qualquer
   // profundidade, for undefined (ex.: contrato.acceptedAt de um card antigo).
@@ -6293,86 +6309,57 @@ function switchLista(nome,btn){
   if(nome==='cnt_cal')renderCntCal();
 }
 function renderListas(){fillListasClienteSelects();renderTarefas();renderTarefasClientes();renderConteudos();renderPendencias();renderPendenciasGerais();renderAnotacoes();}
-// ── Anotações: categorias criadas por você, com as notas dentro (ex.: Deploy, Brindes) ──
-const _anotRascunhos={};        // texto digitado (ainda não salvo) em cada categoria
-let _anotEditando=null;         // {cat, nota} enquanto uma nota está sendo editada
+// ── Anotações: lista única de notas (ver anotNotas no topo do script) ──
+let _anotEditando=null;         // id da nota que está sendo editada
 let _anotEditTexto='';          // texto da edição em andamento (sobrevive a re-renderizações)
-function _anotRascunho(catId,val){_anotRascunhos[catId]=val}
 function _anotEditRascunho(val){_anotEditTexto=val}
-function addAnotCategoria(){
-  const inp=document.getElementById('anot-cat-input');if(!inp)return;
-  const nome=(inp.value||'').trim();
-  if(!nome){toast('⚠️ Dê um nome para a categoria','orange');return}
-  if(anotCategorias.some(c=>_norm(c.nome)===_norm(nome))){toast('⚠️ Já existe uma categoria com esse nome','orange');return}
-  anotCategorias.push({id:uid(),nome,notas:[],criadaEm:Date.now()});
-  inp.value='';savAnotCategorias();renderAnotacoes();toast('✅ Categoria criada!','green');
-}
-function delAnotCategoria(catId){
-  const c=anotCategorias.find(x=>x.id===catId);if(!c)return;
-  const n=(c.notas||[]).length;
-  if(!confirm(`Excluir a categoria "${c.nome}"${n?` e as ${n} anotação(ões) dentro dela`:''}?`))return;
-  anotCategorias=anotCategorias.filter(x=>x.id!==catId);delete _anotRascunhos[catId];
-  savAnotCategorias();renderAnotacoes();
-}
-function addAnotNota(catId){
-  const texto=(_anotRascunhos[catId]||'').replace(/\s+$/,'');
+function addAnotNota(){
+  const ta=document.getElementById('anot-nova');
+  const texto=(ta?.value||'').replace(/\s+$/,'');
   if(!texto.trim()){toast('⚠️ Escreva a anotação antes de adicionar','orange');return}
-  const c=anotCategorias.find(x=>x.id===catId);if(!c)return;
-  (c.notas=c.notas||[]).push({id:uid(),texto,criadaEm:Date.now()});
-  _anotRascunhos[catId]='';savAnotCategorias();renderAnotacoes();
+  anotNotas.unshift({id:uid(),texto,criadaEm:Date.now()});
+  if(ta)ta.value='';
+  savAnotNotas();renderAnotacoes();ta?.focus();
 }
-function delAnotNota(catId,notaId){
+function delAnotNota(notaId){
   if(!confirm('Excluir esta anotação?'))return;
-  const c=anotCategorias.find(x=>x.id===catId);if(!c)return;
-  c.notas=(c.notas||[]).filter(n=>n.id!==notaId);
-  if(_anotEditando&&_anotEditando.nota===notaId)_anotEditando=null;
-  savAnotCategorias();renderAnotacoes();
+  anotNotas=anotNotas.filter(n=>n.id!==notaId);
+  if(_anotEditando===notaId)_anotEditando=null;
+  savAnotNotas();renderAnotacoes();
 }
-function editAnotNota(catId,notaId){
-  const c=anotCategorias.find(x=>x.id===catId);const n=c&&(c.notas||[]).find(x=>x.id===notaId);if(!n)return;
-  _anotEditando={cat:catId,nota:notaId};_anotEditTexto=n.texto;
+function editAnotNota(notaId){
+  const n=anotNotas.find(x=>x.id===notaId);if(!n)return;
+  _anotEditando=notaId;_anotEditTexto=n.texto;
   renderAnotacoes();
   setTimeout(()=>document.getElementById('anot-edit-'+notaId)?.focus(),20);
 }
 function cancelAnotEdit(){_anotEditando=null;_anotEditTexto='';renderAnotacoes()}
-function saveAnotEdit(catId,notaId){
+function saveAnotEdit(notaId){
   const texto=(_anotEditTexto||'').replace(/\s+$/,'');
   if(!texto.trim()){toast('⚠️ A anotação não pode ficar vazia','orange');return}
-  const c=anotCategorias.find(x=>x.id===catId);const n=c&&(c.notas||[]).find(x=>x.id===notaId);
+  const n=anotNotas.find(x=>x.id===notaId);
   if(n){n.texto=texto;n.editadaEm=Date.now()}
-  _anotEditando=null;_anotEditTexto='';savAnotCategorias();renderAnotacoes();
+  _anotEditando=null;_anotEditTexto='';savAnotNotas();renderAnotacoes();
 }
-function copiarAnotNota(catId,notaId){
-  const c=anotCategorias.find(x=>x.id===catId);const n=c&&(c.notas||[]).find(x=>x.id===notaId);if(!n)return;
+function copiarAnotNota(notaId){
+  const n=anotNotas.find(x=>x.id===notaId);if(!n)return;
   const falhou=()=>toast('⚠️ Não consegui copiar','orange');
   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(n.texto).then(()=>toast('📋 Copiado!','green')).catch(falhou);
   else falhou();
 }
 function renderAnotacoes(){
   const el=document.getElementById('anot-list');if(!el)return;
-  if(!anotCategorias.length){el.innerHTML=`<div class="lista-empty">Nenhuma categoria ainda. Crie uma acima, por exemplo: Deploy ou Brindes 🗂️</div>`;return}
-  el.innerHTML=anotCategorias.map(c=>{
-    const notas=c.notas||[];
-    const notasHtml=notas.length?notas.map(n=>{
-      const editando=_anotEditando&&_anotEditando.nota===n.id;
-      const dataTxt=new Date(n.editadaEm||n.criadaEm).toLocaleDateString('pt-BR');
-      const corpo=editando
-        ?`<textarea id="anot-edit-${n.id}" rows="4" oninput="_anotEditRascunho(this.value)" style="width:100%;font:500 13px 'Montserrat',sans-serif;border:1.5px solid var(--border);border-radius:8px;padding:8px;box-sizing:border-box">${esc(_anotEditTexto)}</textarea>
-           <div style="display:flex;gap:6px;justify-content:flex-end"><button class="btn btn-p btn-sm" onclick="saveAnotEdit('${c.id}','${n.id}')">Salvar</button><button class="btn btn-g btn-sm" onclick="cancelAnotEdit()">Cancelar</button></div>`
-        :`<div style="white-space:pre-wrap;font-size:13px;line-height:1.5">${esc(n.texto)}</div>
-           <div style="display:flex;gap:6px;justify-content:flex-end;align-items:center"><span style="font-size:10px;color:var(--muted);margin-right:auto">${dataTxt}${n.editadaEm?' · editada':''}</span><button class="btn btn-g btn-sm" title="Copiar" onclick="copiarAnotNota('${c.id}','${n.id}')">📋</button><button class="btn btn-g btn-sm" title="Editar" onclick="editAnotNota('${c.id}','${n.id}')">✏️</button><button class="btn btn-g btn-sm" title="Excluir" onclick="delAnotNota('${c.id}','${n.id}')" style="color:#dc2626">×</button></div>`;
-      return `<div style="background:var(--n50,#f8f8f8);border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px">${corpo}</div>`;
-    }).join(''):`<div class="lista-empty" style="padding:10px">Nenhuma anotação nesta categoria ainda.</div>`;
-    return `<div class="lista-card" style="margin-bottom:12px">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px">
-        <div style="font-weight:800;font-size:14px">🗂️ ${esc(c.nome)} <span style="font-size:11px;color:var(--muted);font-weight:600">${notas.length} anotação(ões)</span></div>
-        <button class="btn btn-g btn-sm" title="Excluir categoria" onclick="delAnotCategoria('${c.id}')" style="color:#dc2626">Excluir categoria</button>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">${notasHtml}</div>
-      <textarea id="anot-nova-${c.id}" rows="3" oninput="_anotRascunho('${c.id}',this.value)" placeholder="Escreva uma anotação (pode ter mais de uma linha, como os comandos do deploy)..." style="width:100%;font:500 13px 'Montserrat',sans-serif;border:1.5px solid var(--border);border-radius:8px;padding:8px;box-sizing:border-box">${esc(_anotRascunhos[c.id]||'')}</textarea>
-      <div style="display:flex;justify-content:flex-end;margin-top:6px"><button class="btn btn-p btn-sm" onclick="addAnotNota('${c.id}')">＋ Adicionar anotação</button></div>
-    </div>`;
-  }).join('');
+  if(!anotNotas.length){el.innerHTML=`<div class="lista-empty">Nenhuma anotação ainda. Escreva a primeira acima 🗂️</div>`;return}
+  el.innerHTML=`<div style="display:flex;flex-direction:column;gap:8px">${anotNotas.map(n=>{
+    const editando=_anotEditando===n.id;
+    const dataTxt=new Date(n.editadaEm||n.criadaEm).toLocaleDateString('pt-BR');
+    const corpo=editando
+      ?`<textarea id="anot-edit-${n.id}" rows="4" oninput="_anotEditRascunho(this.value)" style="width:100%;font:500 13px 'Montserrat',sans-serif;border:1.5px solid var(--border);border-radius:8px;padding:8px;box-sizing:border-box">${esc(_anotEditTexto)}</textarea>
+         <div style="display:flex;gap:6px;justify-content:flex-end"><button class="btn btn-p btn-sm" onclick="saveAnotEdit('${n.id}')">Salvar</button><button class="btn btn-g btn-sm" onclick="cancelAnotEdit()">Cancelar</button></div>`
+      :`<div style="white-space:pre-wrap;font-size:13px;line-height:1.5">${esc(n.texto)}</div>
+         <div style="display:flex;gap:6px;justify-content:flex-end;align-items:center"><span style="font-size:10px;color:var(--muted);margin-right:auto">${dataTxt}${n.editadaEm?' · editada':''}</span><button class="btn btn-g btn-sm" title="Copiar" onclick="copiarAnotNota('${n.id}')">📋</button><button class="btn btn-g btn-sm" title="Editar" onclick="editAnotNota('${n.id}')">✏️</button><button class="btn btn-g btn-sm" title="Excluir" onclick="delAnotNota('${n.id}')" style="color:#dc2626">×</button></div>`;
+    return `<div style="background:var(--n50,#f8f8f8);border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px">${corpo}</div>`;
+  }).join('')}</div>`;
 }
 function fillListasClienteSelects(){
   const opts=`<option value="">Sem cliente</option>`+[...clients].sort((a,b)=>(a.nome||'').localeCompare(b.nome||'')).map(c=>`<option value="${c.id}">${esc(c.nome)}</option>`).join('');
@@ -9379,7 +9366,7 @@ function initFinFirebase(){
       if(data.pendencias&&Array.isArray(data.pendencias)){pendencias=data.pendencias;localStorage.setItem('crm_pen_v1',JSON.stringify(pendencias));}
       if(data.indic&&typeof data.indic==='object'){indicData=data.indic;localStorage.setItem('crm_indic_v1',JSON.stringify(indicData));}
       if(data.loc&&Array.isArray(data.loc)){locaisSalvos=data.loc;localStorage.setItem('crm_locais_v1',JSON.stringify(locaisSalvos));}
-      if(data.anot&&typeof data.anot==='object'&&'n' in data.anot){anotCategorias=Array.isArray(data.anot.cats)?data.anot.cats:[];localStorage.setItem('crm_anot_v1',JSON.stringify(anotCategorias));}
+      if(data.anot&&typeof data.anot==='object'&&'n' in data.anot){anotNotas=Array.isArray(data.anot.notas)?data.anot.notas:_anotDeCategorias(data.anot.cats);localStorage.setItem('crm_anot_v2',JSON.stringify(anotNotas));}
       syncAllDistrib();
       if(currentTab==='oportunidades')renderOp();
       else if(currentTab==='projetos'){renderPr();renderAlb();}
@@ -12443,7 +12430,7 @@ function _bkPayload(){
   return {version:'avf_crm_v2',exportedAt:Date.now(),
     counts:{oportunidades:opCards.length,projetos:prCards.length,albuns:albCards.length,pacotes:packages.length,clientes:clients.length,templates:templates.length,
             contas:(finContas||[]).length+(pessContas||[]).length,freelancers:(freelancers||[]).length},
-    data:{opCards,prCards,albCards,packages,clients,templates,indicData,locaisSalvos,anotCategorias,
+    data:{opCards,prCards,albCards,packages,clients,templates,indicData,locaisSalvos,anotNotas,
           freelancers,tarefas,conteudos,pendencias,pendenciasGerais,freelaCards,
           ..._bkColeta()}};
 }
@@ -12453,7 +12440,8 @@ function _bkRestaura(d){
   if(!d||!d.data)return false;
   if(d.data.opCards)opCards=d.data.opCards;
   if(Array.isArray(d.data.locaisSalvos)){locaisSalvos=d.data.locaisSalvos;localStorage.setItem('crm_locais_v1',JSON.stringify(locaisSalvos));}
-  if(Array.isArray(d.data.anotCategorias)){anotCategorias=d.data.anotCategorias;localStorage.setItem('crm_anot_v1',JSON.stringify(anotCategorias));}
+  if(Array.isArray(d.data.anotNotas)){anotNotas=d.data.anotNotas;localStorage.setItem('crm_anot_v2',JSON.stringify(anotNotas));}
+  else if(Array.isArray(d.data.anotCategorias)){anotNotas=_anotDeCategorias(d.data.anotCategorias);localStorage.setItem('crm_anot_v2',JSON.stringify(anotNotas));}
   if(d.data.prCards)prCards=d.data.prCards;
   if(d.data.albCards)albCards=d.data.albCards;
   if(d.data.packages)packages=d.data.packages;
