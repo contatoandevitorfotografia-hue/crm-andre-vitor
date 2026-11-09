@@ -5573,6 +5573,11 @@ function syncAllDistrib(){
 }
 // André: o que sobra do total (já com desconto) depois dos custos do pacote e da parte da Empresa.
 // Freela contratada: também desconta o cachê. Também desconta o transporte lançado em Pessoal.
+// Parte bruta do André: a mesma conta, antes do transporte lançado em Pessoal (que é custo dele).
+function _andreBruta(data){
+  const cache=(data.tipoExecucao||'proprio')==='freelancer'?(data.valorFreelancer||(freelancers.find(f=>f.id===data.freelancerId)?.valorFreela||0)):0;
+  return parseFloat(Math.max(0,_totalComDesconto(data)-_empresaBruta(data)-_custosPacoteDoCard(data)-cache).toFixed(2));
+}
 function calcAndreShare(data){
   const cache=(data.tipoExecucao||'proprio')==='freelancer'?(data.valorFreelancer||(freelancers.find(f=>f.id===data.freelancerId)?.valorFreela||0)):0;
   return parseFloat(Math.max(0,_totalComDesconto(data)-_empresaBruta(data)-_custosPacoteDoCard(data)-cache-_transporteDaFesta(data,'pessoal')).toFixed(2));
@@ -5785,7 +5790,9 @@ function calcDistribuicao(){
   const _andPagoD=parseFloat(document.getElementById('f-valorAndrePago')?.value)||0;
   document.getElementById('dist-emp-rec').textContent=r>0?fm(r):'—';
   document.getElementById('dist-and-rec').textContent=_andPagoD>0?fm(_andPagoD):'—';
-  const _empRestD=Math.max(0,_empLiqD-r),_andRestD=Math.max(0,_andLiqD-_andPagoD);
+  // A receber é sobre o valor bruto (o transporte é custo). Festa marcada como Pago Total não tem nada a receber.
+  const _pagoTotalD=(document.getElementById('f-statusPag')?.value||'')==='pago';
+  const _empRestD=_pagoTotalD?0:Math.max(0,_empresaBruta(_fichaCard)-r),_andRestD=_pagoTotalD?0:Math.max(0,_andreBruta(_fichaCard)-_andPagoD);
   document.getElementById('dist-emp-rest').textContent=_empRestD>0.009?fm(_empRestD):'—';
   document.getElementById('dist-and-rest').textContent=_andRestD>0.009?fm(_andRestD):'—';
   // Freela contratada: o André recebe a parte dele num momento separado do
@@ -5833,11 +5840,10 @@ function autoStatusPag(){
   // nesses casos o dropdown fica manual, como no À Vista.
   if(forma==='cartao'&&(document.getElementById('f-execucao')?.value||'proprio')==='proprio'){
     const _cardF=_cardDaFicha();
-    // Mesma conta do _empLiqDaFesta/_andreLiqDaFesta (líquido de cada lado,
-    // já descontando gasto/cachê) — os campos "Valor Pago" guardam progresso
-    // rumo a esse líquido, não ao valor bruto do pacote.
-    const empLiq=calcEmpresaShare(_cardF);
-    const andLiq=calcAndreShare(_cardF);
+    // Mesma conta do valor bruto de cada lado (_empresaBruta/_andreBruta): os campos "Valor Pago"
+    // guardam progresso rumo a esse bruto. O transporte é custo e não entra aqui.
+    const empLiq=_empresaBruta(_cardF);
+    const andLiq=_andreBruta(_cardF);
     const empPago=parseFloat(document.getElementById('f-valorReserva')?.value)||0;
     const andPago=parseFloat(document.getElementById('f-valorAndrePago')?.value)||0;
     // "Status do Pagamento" e o campo oculto de restante continuam só do
@@ -7483,12 +7489,13 @@ function _getFinFestas(mes){
     const gastosEmp=(c.gastosItens||[]).filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(+g.val||0),0);
     const gastosAlbum=(c.gastosItens||[]).filter(g=>g.tipo==='album').reduce((s,g)=>s+(g.val||0),0);
     const empLiq=parseFloat(empShare.toFixed(2));
-    const empFalta=Math.max(0,parseFloat((empLiq-vPago).toFixed(2)));
+    const empBruta=_empresaBruta(c);
+    const empFalta=Math.max(0,parseFloat((empBruta-vPago).toFixed(2)));
     // Status: Quitado se valor pago >= valor total
-    const localSt=vPago>=empLiq&&empLiq>0?'pago':vPago>0?'sinal':'pendente';
+    const localSt=vPago>=empBruta&&empBruta>0?'pago':vPago>0?'sinal':'pendente';
     return{id:c.id,n:c.nomePais||c.titulo||'Cliente',t:_subtituloFesta(c,'festa'),
       d:c.dataEvento?parseInt(c.dataEvento.split('-')[2]):0,
-      v:empShare,liq:empLiq,vFull:t,p:localSt==='pago',
+      v:empBruta,liq:empLiq,vFull:t,p:localSt==='pago',
       custo:gastosEmp,custoAlbum:gastosAlbum,reserva:vPago,
       rest:empFalta,
       statusPag:localSt
@@ -8152,7 +8159,8 @@ function _pagamentoDaFesta(card,forceFrl,andPagoOverride){
     pago=card.statusPag==='pago'?total:Math.min(total,empPago);
     quitado=total>0&&pago>=total;
   }else{
-    const empLiq=_empLiqDaFesta(card),andLiq=_andreLiqDaFesta(card);
+    // Falta e quitado sobre o valor bruto de cada lado (o transporte é custo, não entra aqui)
+    const empLiq=_empresaBruta(card),andLiq=_andreBruta(card);
     const andPago=andPagoOverride!==undefined?(+andPagoOverride||0):_andPagoFichaDaFesta(card);
     quitado=(empLiq+andLiq)>0&&empPago>=empLiq-0.009&&andPago>=andLiq-0.009;
     pago=quitado?total:Math.min(total,empPago+andPago);
@@ -8194,9 +8202,9 @@ function quickEditPag(cardId,lado,origem){
   const existing=document.getElementById('qep-overlay');if(existing)existing.remove();
   const mostraEmpresa=lado!=='andre';
   const mostraAndre=lado!=='empresa';
-  const andreTotal=_andreLiqDaFesta(card);
+  const andreTotal=_andreBruta(card);
   const andreRecebido=origem==='fin'?_pessoalPagoDaFesta(card):_andPagoFichaDaFesta(card);
-  const empresaTotal=_empLiqDaFesta(card);
+  const empresaTotal=_empresaBruta(card);
   const empresaRecebido=origem==='fin'?(+card.valorReservaFin||0):(card.valorReserva||0);
   const div=document.createElement('div');
   div.id='qep-overlay';
@@ -8209,12 +8217,12 @@ function quickEditPag(cardId,lado,origem){
     <div style="font-size:12px;color:#6b7280;margin-bottom:16px">${esc(card.titulo||card.nomePais||'Cliente')}</div>
     <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px">
       ${mostraEmpresa?`<div>
-        <div style="font-size:11px;font-weight:600;color:#7fd99a;margin-bottom:4px">🟢 Empresa recebeu (líquido de ${fmtMoney(empresaTotal)})</div>
+        <div style="font-size:11px;font-weight:600;color:#7fd99a;margin-bottom:4px">🟢 Empresa recebeu (de ${fmtMoney(empresaTotal)})</div>
         <input type="number" id="qep-emp-input" value="${empresaRecebido||''}" min="0" step="0.01" placeholder="0,00"
           style="width:100%;padding:10px 14px;font-size:18px;font-weight:700;text-align:center;border:2px solid #7fd99a;border-radius:10px;box-sizing:border-box;outline:none">
       </div>`:''}
       ${mostraAndre?`<div>
-        <div style="font-size:11px;font-weight:600;color:#60a5fa;margin-bottom:4px">🔵 André recebeu (líquido de ${fmtMoney(andreTotal)})</div>
+        <div style="font-size:11px;font-weight:600;color:#60a5fa;margin-bottom:4px">🔵 André recebeu (de ${fmtMoney(andreTotal)})</div>
         <input type="number" id="qep-and-input" value="${andreRecebido||''}" min="0" step="0.01" placeholder="0,00"
           style="width:100%;padding:10px 14px;font-size:18px;font-weight:700;text-align:center;border:2px solid #60a5fa;border-radius:10px;box-sizing:border-box;outline:none">
       </div>`:''}
@@ -8252,7 +8260,7 @@ function _commitQuickPag(cardId,novoEmpresaPago,novoAndrePago,origem){
     // Ficha e cartão: mexem só no valor pago da ficha.
     if(origem==='fin'){_ajustaVGReservaSimples(card,novoEmpresaPago);card.valorReservaFin=novoEmpresaPago;saveFinData();}
     card.valorReserva=novoEmpresaPago;
-    const _liq=_empLiqDaFesta(card);
+    const _liq=_empresaBruta(card);
     const _faltaFinal=Math.max(0,_liq-novoEmpresaPago);
     if(_faltaFinal<=0&&_liq>0){card.statusPag='pago';card.valorRestante=0;}
     else if(novoEmpresaPago>0){card.statusPag='sinal';card.valorRestante=_faltaFinal;}
@@ -8484,8 +8492,8 @@ function savePessRest(mes,idx){
     // lado Empresa.
     const entrada=pessFD[mes][idx];
     const gastosPes=_pessGastosDaFesta(entrada);
-    const andLiq=Math.max(0,entrada.v||0);
-    const novoPago=Math.max(0,parseFloat((andLiq-val).toFixed(2)));
+    const andBruto=_andBrutoLinha(entrada);
+    const novoPago=Math.max(0,parseFloat((andBruto-val).toFixed(2)));
     _initPessVG(mes);
     pessVG[mes]=(+pessVG[mes]||0)+(novoPago-(entrada.pago||0));
     entrada.pago=novoPago;
@@ -8496,7 +8504,7 @@ function savePessRest(mes,idx){
 }
 function inlineEditFalta(cardId,triggerEl){
   const card=opCards.find(c=>c.id===cardId);if(!card)return;
-  const curRest=card.valorRestante||0;
+  const curRest=Math.max(0,parseFloat((_empresaBruta(card)-(+card.valorReservaFin||0)).toFixed(2)));
   triggerEl.outerHTML=`<span id="falta-edit-${cardId}" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;gap:4px">
     <input id="falta-inp-${cardId}" type="number" step="0.01" min="0" value="${curRest>0?curRest:''}"
       placeholder="Valor restante total"
@@ -8516,10 +8524,8 @@ function saveInlineFalta(cardId){
     // valor pago) — editar só esse campo, sem também ajustar o valor pago
     // por trás, fazia a edição sumir no próximo render e nunca refletir no
     // Valor no Banco. Agora deriva o novo valor pago a partir da falta.
-    const _esIF=calcEmpresaShare(card);
-    const _geIF=(card.gastosItens||[]).filter(g=>(g.tipo||'empresa')==='empresa'&&!_ehGastoTransporte(g)).reduce((s,g)=>s+(g.val||0),0); // o transporte da Empresa já sai de _esIF
-    const _liqIF=Math.max(0,_esIF-_geIF);
-    const novaReserva=Math.max(0,parseFloat((_liqIF-val).toFixed(2)));
+    // A falta é sobre o valor bruto da Empresa: o transporte é custo e não entra nessa conta
+    const novaReserva=Math.max(0,parseFloat((_empresaBruta(card)-val).toFixed(2)));
     const _valorAntesIF=card.valorReserva||0,_statusAntesIF=card.statusPag;
     _ajustaVGReservaSimples(card,novaReserva);card.valorReservaFin=novaReserva;saveFinData();
     card.valorReserva=novaReserva;
@@ -9331,11 +9337,21 @@ let pessEditVG=null, _pessReady=false, _pessSaveTs=0;
 let pessRG=0, _pessRGEditing=false;
 let contaSP=0;
 
+// Valores de uma linha do Financeiro Pessoal (André). Festa vinculada usa a conta ao vivo da festa;
+// lançamento avulso usa o valor digitado (bruto = líquido).
+function _andBrutoLinha(f){
+  const c=(f._opFrlId||f._opId)?opCards.find(o=>o.id===(f._opFrlId||f._opId)):null;
+  return Math.max(0,c?_andreBruta(c):(+f.v||0));
+}
+function _andLiqLinha(f){
+  const c=(f._opFrlId||f._opId)?opCards.find(o=>o.id===(f._opFrlId||f._opId)):null;
+  return Math.max(0,c?calcAndreShare(c):(+f.v||0));
+}
 function _calcPessAReceber(mes){
   const F=pessFD[mes]||[];
   return F.reduce((s,f)=>{
     const gp=_pessGastosDaFesta(f);
-    const liq=Math.max(0,f.v);
+    const liq=_andBrutoLinha(f);
     // O valor já recebido é o campo "pago" da própria entrada.
     const vPago=f.pago||0;
     return s+Math.max(0,liq-vPago);
@@ -9344,7 +9360,7 @@ function _calcPessAReceber(mes){
 
 function _calcPessMes(mes){
   const F=pessFD[mes]||[], D=pessDD[mes]||[];
-  const totalF=F.reduce((s,f)=>s+f.v,0);
+  const totalF=F.reduce((s,f)=>s+_andBrutoLinha(f),0);
   const contasMes=_contasDoMes(pessContas,mes);
   const totalG=contasMes.reduce((s,c)=>s+_contaValor(c,mes),0);
   const pendG=contasMes.reduce((s,c)=>s+_contaValorPendente(c,mes),0);
@@ -9395,7 +9411,7 @@ function renderPessResumo(){
   const aReceberCur=_calcPessAReceber(curMes);
   const pessLiqMes=(pessFD[curMes]||[]).reduce((s,f)=>{
     const gp=_pessGastosDaFesta(f);
-    return s+Math.max(0,f.v);
+    return s+_andLiqLinha(f);
   },0);
   const disponivel=aReceberCur-cCur.pendG-cCur.pendD+cCur.vg;
   const dOk=disponivel>300,dNo=disponivel<0;
@@ -9535,12 +9551,12 @@ function renderPessEntradas(){
     // Lançamento ligado a uma festa mostra o mesmo valor da caixa de Distribuição dela
     const _cardA=(f._opFrlId||f._opId)?opCards.find(o=>o.id===(f._opFrlId||f._opId)):null;
     const _andShare=_cardA?calcAndreShare(_cardA):f.v;
-    const _andLiq=Math.max(0,_andShare);
-    const _andFalta=Math.max(0,parseFloat((_andLiq-_vPagoPess).toFixed(2)));
+    const _andBruto=Math.max(0,_cardA?_andreBruta(_cardA):(f.v||0));
+    const _andFalta=Math.max(0,parseFloat((_andBruto-_vPagoPess).toFixed(2)));
     // FALTA PAGAR = VALOR - VALOR PAGO (sempre, em ambos os casos)
     const rest=_andFalta;
     // Status: Quitado se valor pago >= valor total
-    const statusPag=(_vPagoPess>=_andLiq&&_andLiq>0)?'pago':(_vPagoPess>0)?'sinal':'pendente';
+    const statusPag=(_vPagoPess>=_andBruto&&_andBruto>0)?'pago':(_vPagoPess>0)?'sinal':'pendente';
     const pc=statusPag==='pago'?'pay-pago':statusPag==='sinal'?'pay-sinal':'pay-pend';
     const pt=statusPag==='pago'?'✅ Quitado':statusPag==='sinal'?'💰 Reserva':'⏳ Pendente';
     const reservaCell=op
@@ -9568,7 +9584,7 @@ function renderPessEntradas(){
     
     // Campos editáveis
     const brutoCell = _cardA
-      ? `<span style="color:var(--muted);font-weight:700" title="Valor vindo da festa (mesmo da caixa de Distribuição)">${fmtMoney(_andShare)}</span>`
+      ? `<span style="color:var(--muted);font-weight:700" title="Valor bruto da festa (antes do transporte do André)">${fmtMoney(_andBruto)}</span>`
       : `<span style="color:var(--muted);font-weight:700;cursor:pointer;text-decoration:underline dotted" title="Clique para editar o valor bruto (antes do desconto do gasto pessoal)" onclick="editPessValor('${pessCurF}',${realIdx},this)">${fmtMoney(f.v)}</span>`;
     const valorCell = `<span style="color:var(--success);font-weight:700">${fmtMoney(Math.max(0,_andShare))}</span>`;
     const pagoBtnHtml = op 
@@ -11020,11 +11036,11 @@ function renderHistMes(){
 
   if(tipo==='pess'){
     const festas=pessFD[m]||[];
-    bruto=festas.reduce((s,f)=>s+f.v,0);
+    bruto=festas.reduce((s,f)=>s+_andBrutoLinha(f),0);
     // líquido = bruto - gastos pessoais de cada festa
     liquido=festas.reduce((s,f)=>{
       const gp=_pessGastosDaFesta(f);
-      return s+Math.max(0,f.v);
+      return s+_andLiqLinha(f);
     },0);
     // transporte = gastos diários do mês com cat = __transporte__
     transporte=(pessGD[m]||[]).filter(g=>g.cat==='__transporte__').reduce((s,g)=>s+(g.v||0),0);
