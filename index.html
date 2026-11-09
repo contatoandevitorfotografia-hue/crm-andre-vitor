@@ -6056,7 +6056,7 @@ function saveOpCard(){
   _sincronizaCinegrafista();
   const oldCard=editingOpId?opCards.find(c=>c.id===editingOpId):null;
   const oldCol=oldCard?.coluna;
-  const data={id:editingOpId||uid(),coluna:newCol,somenteProjeto:oldCard?.somenteProjeto||opFromProj||false,titulo:document.getElementById('f-titulo').value.trim(),nomePais,telefone:document.getElementById('f-tel').value.trim(),nomeCrianca:document.getElementById('f-nomeCrianca').value.trim(),idade:document.getElementById('f-idade').value.trim(),nomeCrianca2:document.getElementById('f-nomeCrianca2').value.trim(),idade2:document.getElementById('f-idade2').value.trim(),dataEvento:document.getElementById('f-data').value,horario:document.getElementById('f-horario').value,horarioFim:document.getElementById('f-horarioFim').value,local:_localDoFormulario(),tipo:document.getElementById('f-tipo').value,pacoteId:(getSelectedPacIds()[0]||''),pacoteIds:getSelectedPacIds(),pacoteCustom:document.getElementById('f-pacoteCustom').value.trim(),tipoExecucao:document.getElementById('f-execucao').value||'proprio',freelancerId:document.getElementById('f-freelancerId').value||'',parceiroId:(document.getElementById('f-execucao').value==='sou-freela'?document.getElementById('f-op-parceiroId')?.value||'':''),filmmakerNome:(()=>{const s=document.getElementById('f-filmakerId');if(!s)return '';const v=s.value||'';if(v==='__outro__'){return (document.getElementById('f-filmakerCustom')?.value||'').trim();}return v;})(),filmmakerCusto:(()=>{const _fids=getSelectedPacIds();const fNome=document.getElementById('f-filmakerId')?.value||'';const allFmOpts=_fids.flatMap(id=>{const p=packages.find(pk=>pk.id===id);return p?.filmmakerOptions||[];});const opt=allFmOpts.find(f=>f.nome===fNome);return opt?opt.valor:0;})(),valorEmpresa:parseFloat(document.getElementById('f-valorEmpresa')?.value)||0,valorAndre:parseFloat(document.getElementById('f-valorAndre')?.value)||0,valorFreelancer:parseFloat(document.getElementById('f-valorFreelancer')?.value)||0,valorTotal:(parseFloat(document.getElementById('f-valorEmpresa')?.value)||0)+(parseFloat(document.getElementById('f-valorAndre')?.value)||0),valorCoresJob:0,valorReserva:parseFloat(document.getElementById('f-valorReserva').value)||0,dataReserva:document.getElementById('f-dataReserva').value,valorRestante:parseFloat(document.getElementById('f-valorRestante').value)||0,dataRestante:document.getElementById('f-dataRestante').value,statusPag:document.getElementById('f-statusPag').value,gastos:gastosItensTemp.filter(g=>g.tipo!=='album').reduce((s,g)=>s+(g.val||0),0),gastosItens:[...gastosItensTemp],formaPag:document.getElementById('f-formaPag').value,avistaDesconto:document.getElementById('f-avistaDesconto')?.checked||false,nParcelas:parseInt(document.getElementById('f-nParcelas').value)||1,parcelasItens:[...parcelasItensTemp],galeria:document.getElementById('f-galeria').value.trim(),galeriaClienteId:document.getElementById('f-galeriaClienteId')?.value.trim()||'',obs:oldCard?.obs||'',motivo:document.getElementById('f-motivo').value,detalhe:document.getElementById('f-detalhe').value.trim(),pendObs:document.getElementById('f-pend-obs')?.value.trim()||'',pendencias:[...pendenciasTemp],pagoEmpresa:document.getElementById('f-pagoEmpresa')?.checked||false,pagoAndre:document.getElementById('f-pagoAndre')?.checked||false,followupDate:document.getElementById('f-followup').value||'',albumGuardado:_albumGuardado,contrato:oldCard?.contrato||null,contratos:oldCard?.contratos||null,criadoEm:oldCard?.criadoEm||Date.now(),updatedAt:Date.now()};
+  const data={id:editingOpId||uid(),coluna:newCol,valorReservaFin:oldCard?.valorReservaFin??0,somenteProjeto:oldCard?.somenteProjeto||opFromProj||false,titulo:document.getElementById('f-titulo').value.trim(),nomePais,telefone:document.getElementById('f-tel').value.trim(),nomeCrianca:document.getElementById('f-nomeCrianca').value.trim(),idade:document.getElementById('f-idade').value.trim(),nomeCrianca2:document.getElementById('f-nomeCrianca2').value.trim(),idade2:document.getElementById('f-idade2').value.trim(),dataEvento:document.getElementById('f-data').value,horario:document.getElementById('f-horario').value,horarioFim:document.getElementById('f-horarioFim').value,local:_localDoFormulario(),tipo:document.getElementById('f-tipo').value,pacoteId:(getSelectedPacIds()[0]||''),pacoteIds:getSelectedPacIds(),pacoteCustom:document.getElementById('f-pacoteCustom').value.trim(),tipoExecucao:document.getElementById('f-execucao').value||'proprio',freelancerId:document.getElementById('f-freelancerId').value||'',parceiroId:(document.getElementById('f-execucao').value==='sou-freela'?document.getElementById('f-op-parceiroId')?.value||'':''),filmmakerNome:(()=>{const s=document.getElementById('f-filmakerId');if(!s)return '';const v=s.value||'';if(v==='__outro__'){return (document.getElementById('f-filmakerCustom')?.value||'').trim();}return v;})(),filmmakerCusto:(()=>{const _fids=getSelectedPacIds();const fNome=document.getElementById('f-filmakerId')?.value||'';const allFmOpts=_fids.flatMap(id=>{const p=packages.find(pk=>pk.id===id);return p?.filmmakerOptions||[];});const opt=allFmOpts.find(f=>f.nome===fNome);return opt?opt.valor:0;})(),valorEmpresa:parseFloat(document.getElementById('f-valorEmpresa')?.value)||0,valorAndre:parseFloat(document.getElementById('f-valorAndre')?.value)||0,valorFreelancer:parseFloat(document.getElementById('f-valorFreelancer')?.value)||0,valorTotal:(parseFloat(document.getElementById('f-valorEmpresa')?.value)||0)+(parseFloat(document.getElementById('f-valorAndre')?.value)||0),valorCoresJob:0,valorReserva:parseFloat(document.getElementById('f-valorReserva').value)||0,dataReserva:document.getElementById('f-dataReserva').value,valorRestante:parseFloat(document.getElementById('f-valorRestante').value)||0,dataRestante:document.getElementById('f-dataRestante').value,statusPag:document.getElementById('f-statusPag').value,gastos:gastosItensTemp.filter(g=>g.tipo!=='album').reduce((s,g)=>s+(g.val||0),0),gastosItens:[...gastosItensTemp],formaPag:document.getElementById('f-formaPag').value,avistaDesconto:document.getElementById('f-avistaDesconto')?.checked||false,nParcelas:parseInt(document.getElementById('f-nParcelas').value)||1,parcelasItens:[...parcelasItensTemp],galeria:document.getElementById('f-galeria').value.trim(),galeriaClienteId:document.getElementById('f-galeriaClienteId')?.value.trim()||'',obs:oldCard?.obs||'',motivo:document.getElementById('f-motivo').value,detalhe:document.getElementById('f-detalhe').value.trim(),pendObs:document.getElementById('f-pend-obs')?.value.trim()||'',pendencias:[...pendenciasTemp],pagoEmpresa:document.getElementById('f-pagoEmpresa')?.checked||false,pagoAndre:document.getElementById('f-pagoAndre')?.checked||false,followupDate:document.getElementById('f-followup').value||'',albumGuardado:_albumGuardado,contrato:oldCard?.contrato||null,contratos:oldCard?.contratos||null,criadoEm:oldCard?.criadoEm||Date.now(),updatedAt:Date.now()};
   // O valor digitado manualmente é o total real cobrado do cliente.
   // Sem preenchimento, mantém o total calculado a partir dos pacotes.
   const _valorPlanoInformado=parseFloat(document.getElementById('f-valorPlano')?.value)||0;
@@ -7487,7 +7487,7 @@ function _getFinFestas(mes){
     const t=_totalComDesconto(c);
     const empShare=calcEmpresaShare(c);
     const ratio=t>0?empShare/t:0.4;
-    const vPago=+c.valorReserva||0;
+    const vPago=+c.valorReservaFin||0;
     const gastosEmp=(c.gastosItens||[]).filter(g=>(g.tipo||'empresa')==='empresa').reduce((s,g)=>s+(+g.val||0),0);
     const gastosAlbum=(c.gastosItens||[]).filter(g=>g.tipo==='album').reduce((s,g)=>s+(g.val||0),0);
     const empLiq=parseFloat(empShare.toFixed(2));
@@ -7744,8 +7744,8 @@ function renderFinResumo(){
   const totalGastos=fc.reduce((s,c)=>s+(c.gastos||0),0);
   // Reservas e A Receber baseados em empLiq (líquido real da empresa)
   const _empLiqCalc=c=>calcEmpresaShare(c);
-  const reservas=fc.reduce((s,c)=>{const liq=_empLiqCalc(c);const vp=c.valorReserva||0;return s+Math.min(vp,liq);},0);
-  const aReceber=fc.reduce((s,c)=>{const liq=_empLiqCalc(c);const vp=c.valorReserva||0;return s+Math.max(0,liq-vp);},0);
+  const reservas=fc.reduce((s,c)=>{const liq=_empLiqCalc(c);const vp=+c.valorReservaFin||0;return s+Math.min(vp,liq);},0);
+  const aReceber=fc.reduce((s,c)=>{const liq=_empLiqCalc(c);const vp=+c.valorReservaFin||0;return s+Math.max(0,liq-vp);},0);
   const statsEl=document.getElementById('fin-stats');
   const curMesFin=_finCurMes();
   const cCurFin=_calcFinMes(curMesFin);
@@ -8103,7 +8103,7 @@ function saveQuickPagFinManual(mes,idx){
 // selo do Financeiro Pessoal), sem mudar nada por conta própria.
 function quickChangeStatus(cardId){
   const card=opCards.find(c=>c.id===cardId);if(!card)return;
-  quickEditPag(cardId);
+  quickEditPag(cardId,undefined,'fin');
 }
 // empLiq/andLiq — quanto cabe de líquido a cada lado, pra saber se um
 // pagamento já "quita" aquele lado especificamente.
@@ -8192,7 +8192,7 @@ function _backfillGastoAlbumTipoErrado(){
 // dividir automaticamente um valor "total" entre os dois. Isso evita o
 // pagamento digitado pra um lado (ex.: só a parte da Empresa) ser desviado
 // inteiro pro outro lado por trás das cortinas.
-function quickEditPag(cardId,lado){
+function quickEditPag(cardId,lado,origem){
   const card=opCards.find(c=>c.id===cardId);if(!card)return;
   const existing=document.getElementById('qep-overlay');if(existing)existing.remove();
   const mostraEmpresa=lado!=='andre';
@@ -8200,7 +8200,7 @@ function quickEditPag(cardId,lado){
   const andreTotal=_andreLiqDaFesta(card);
   const andreRecebido=_pessoalPagoDaFesta(card);
   const empresaTotal=_empLiqDaFesta(card);
-  const empresaRecebido=card.valorReserva||0;
+  const empresaRecebido=origem==='fin'?(+card.valorReservaFin||0):(card.valorReserva||0);
   const div=document.createElement('div');
   div.id='qep-overlay';
   div.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0.35)';
@@ -8224,7 +8224,7 @@ function quickEditPag(cardId,lado){
     </div>
     <div style="display:flex;gap:10px">
       <button onclick="document.getElementById('qep-overlay').remove()" style="flex:1;padding:11px;border:1.5px solid #e5e7eb;background:#f9fafb;border-radius:9px;font-size:14px;cursor:pointer;font-weight:500">Cancelar</button>
-      <button onclick="saveQuickPag('${cardId}')" style="flex:2;padding:11px;background:#7D95AE;color:#fff;border:none;border-radius:9px;font-size:15px;font-weight:700;cursor:pointer">Salvar</button>
+      <button onclick="saveQuickPag('${cardId}','${origem==='fin'?'fin':'ficha'}')" style="flex:2;padding:11px;background:#7D95AE;color:#fff;border:none;border-radius:9px;font-size:15px;font-weight:700;cursor:pointer">Salvar</button>
     </div>
   </div>`;
   document.body.appendChild(div);
@@ -8232,17 +8232,17 @@ function quickEditPag(cardId,lado){
   const inp=document.getElementById(mostraEmpresa?'qep-emp-input':'qep-and-input');
   inp.focus();inp.select();
 }
-function saveQuickPag(cardId){
+function saveQuickPag(cardId,origem){
   const empInp=document.getElementById('qep-emp-input');
   const andInp=document.getElementById('qep-and-input');
   const novoEmpresaPago=empInp?parseFloat(empInp.value)||0:null;
   const novoAndrePago=andInp?parseFloat(andInp.value)||0:null;
-  _commitQuickPag(cardId,novoEmpresaPago,novoAndrePago);
+  _commitQuickPag(cardId,novoEmpresaPago,novoAndrePago,origem);
 }
 // novoEmpresaPago/novoAndrePago vêm null quando o popup não mostrou aquele
 // campo (ex.: aberto só com o lado da Empresa) — nesse caso o outro lado
 // nem é tocado.
-function _commitQuickPag(cardId,novoEmpresaPago,novoAndrePago){
+function _commitQuickPag(cardId,novoEmpresaPago,novoAndrePago,origem){
   const card=opCards.find(c=>c.id===cardId);if(!card)return;
   syncFreelancerToAndre(card); // garante que existe uma entrada vinculada no Financeiro Pessoal
   const mes=_getMesFin(card.dataEvento);
@@ -8251,7 +8251,9 @@ function _commitQuickPag(cardId,novoEmpresaPago,novoAndrePago){
   // Empresa — direto, sem mexer no lado do André
   if(novoEmpresaPago!==null){
     const _valorAntes=card.valorReserva||0,_statusAntes=card.statusPag;
-    _ajustaVGReservaSimples(card,novoEmpresaPago);saveFinData();
+    // Financeiro: só o que é registrado aqui mexe no banco e no valor pago do Financeiro.
+    // Ficha e cartão: mexem só no valor pago da ficha.
+    if(origem==='fin'){_ajustaVGReservaSimples(card,novoEmpresaPago);card.valorReservaFin=novoEmpresaPago;saveFinData();}
     card.valorReserva=novoEmpresaPago;
     const _liq=_empLiqDaFesta(card);
     const _faltaFinal=Math.max(0,_liq-novoEmpresaPago);
@@ -8303,7 +8305,7 @@ function saveInlineVT(cardId){
   if(!isNaN(val)&&val>0){
     const novaReserva=parseFloat((val*0.5).toFixed(2));
     const _valorAntesVT=card.valorReserva||0,_statusAntesVT=card.statusPag;
-    _ajustaVGReservaSimples(card,novaReserva);saveFinData();
+    _ajustaVGReservaSimples(card,novaReserva);card.valorReservaFin=novaReserva;saveFinData();
     card.valorTotal=val;
     card.valorReserva=novaReserva;
     if(card.statusPag!=='pago'){card.valorRestante=parseFloat((val*0.5).toFixed(2));}
@@ -8316,7 +8318,7 @@ function saveInlineVT(cardId){
 // pergunta pra quem vai o valor (Empresa ou André) antes de salvar, pra
 // não presumir automaticamente que todo pagamento é da empresa.
 function inlineEditReserva(cardId){
-  quickEditPag(cardId,'empresa');
+  quickEditPag(cardId,'empresa','fin');
 }
 
 function inlineEditReservaPess(cardId){
@@ -8516,7 +8518,7 @@ function saveInlineFalta(cardId){
     const _liqIF=Math.max(0,_esIF-_geIF);
     const novaReserva=Math.max(0,parseFloat((_liqIF-val).toFixed(2)));
     const _valorAntesIF=card.valorReserva||0,_statusAntesIF=card.statusPag;
-    _ajustaVGReservaSimples(card,novaReserva);saveFinData();
+    _ajustaVGReservaSimples(card,novaReserva);card.valorReservaFin=novaReserva;saveFinData();
     card.valorReserva=novaReserva;
     card.valorRestante=val;
     if(val===0){card.statusPag='pago';}
@@ -10291,26 +10293,26 @@ function _initFinVG(mes){
 // ou por pagar/desfazer uma conta), ele parava de refletir novos valores
 // pagos de festas — o valor no banco ficava congelado mesmo cadastrando
 // pagamentos novos. Estas funções mantêm finVG em sincronia sempre que o
-// "valor pago" (valorReserva) de uma festa muda.
+// "valor pago" do Financeiro (valorReservaFin) de uma festa muda.
 function _elegivelVG(c){
   return c&&FIN_COLS.includes(c.coluna)&&(c.tipoExecucao||'proprio')!=='sou-freela'&&(c.tipoExecucao||'proprio')!=='freelancer';
 }
-// Uso: quando SÓ o valorReserva muda (mesmo mês/coluna/execução) — cobre
+// Uso: quando SÓ o valorReservaFin muda (mesmo mês/coluna/execução) — cobre
 // os editores rápidos (quick-edit, inline na aba Festas).
 function _ajustaVGReservaSimples(card,novoValor){
   if(!_elegivelVG(card))return;
   const mes=_getMesFin(card.dataEvento);if(!mes)return;
   _initFinVG(mes);
-  finVG[mes]=(+finVG[mes]||0)+(novoValor-(card.valorReserva||0));
+  finVG[mes]=(+finVG[mes]||0)+(novoValor-(+card.valorReservaFin||0));
 }
 // Uso: quando o card inteiro pode mudar (modal completo) — cobre também
 // troca de data/coluna/execução, removendo a contribuição antiga do mês
 // antigo e somando a nova no mês novo.
 function _syncVGReservaChange(oldCard,newCard){
   const mesA=_elegivelVG(oldCard)?_getMesFin(oldCard.dataEvento):null;
-  const valA=mesA?(oldCard.valorReserva||0):0;
+  const valA=mesA?(+oldCard.valorReservaFin||0):0;
   const mesD=_elegivelVG(newCard)?_getMesFin(newCard.dataEvento):null;
-  const valD=mesD?(newCard.valorReserva||0):0;
+  const valD=mesD?(+newCard.valorReservaFin||0):0;
   if(mesA)_initFinVG(mesA);
   if(mesD)_initFinVG(mesD);
   if(mesA)finVG[mesA]=(+finVG[mesA]||0)-(+valA||0);
@@ -12699,7 +12701,7 @@ function _corrigeAline27Set2026(){
   if(!card)return;
   const liq=_empLiqDaFesta(card);
   const _valorAntes=card.valorReserva||0,_statusAntes=card.statusPag;
-  _ajustaVGReservaSimples(card,liq);saveFinData();
+  _ajustaVGReservaSimples(card,liq);card.valorReservaFin=liq;saveFinData();
   card.valorReserva=liq;
   card.statusPag=liq>0?'pago':'pendente';
   card.valorRestante=0;
@@ -12761,6 +12763,9 @@ function _toNum(v){
 function _normalizaNumerosOp(){
   (opCards||[]).forEach(c=>{
     ['valorTotal','valorReserva','valorRestante','valorEmpresa','valorAndre','valorFreelancer','gastos'].forEach(k=>{if(c[k]!==undefined)c[k]=_toNum(c[k]);});
+    // Valor pago registrado no Financeiro Empresa (separado do valor pago da ficha).
+    // Quem ainda não tem o campo começa com o mesmo valor da ficha: nenhum número muda.
+    if(c.valorReservaFin===undefined)c.valorReservaFin=+c.valorReserva||0;else c.valorReservaFin=+_toNum(c.valorReservaFin)||0;
     // Custos de pacote salvos antes como "empresa" (Edição e cinegrafista do Movimento) viram custo de álbum
     (c.gastosItens||[]).forEach(g=>{g.val=_toNum(g.val);if((g._fromPacote||g._filmmaker)&&g.tipo==='empresa')g.tipo='album';});
     (c.parcelasItens||[]).forEach(p=>{p.valor=_toNum(p.valor);});
@@ -12791,7 +12796,6 @@ function _resyncPix2xValorPago(){
     const novoStatus=recebidas.length===c.parcelasItens.length?'pago':recebidas.length>0?'sinal':'pendente';
     if((c.valorReserva||0)===totalRec&&c.statusPag===novoStatus)return;
     const _valorAntes=c.valorReserva||0,_statusAntes=c.statusPag;
-    _ajustaVGReservaSimples(c,totalRec);saveFinData();
     c.valorReserva=totalRec;
     c.statusPag=novoStatus;
     c.valorRestante=novoStatus==='pago'?0:totalPend;
@@ -12819,7 +12823,6 @@ function _resyncAvistaPagoTotal(){
     const empLiq=parseFloat(_empLiqDaFesta(c).toFixed(2));
     if(Math.abs((c.valorReserva||0)-empLiq)>0.009){
       const _va=c.valorReserva||0;
-      _ajustaVGReservaSimples(c,empLiq);
       c.valorReserva=empLiq;c.valorRestante=0;
       _stamparDatasPagamento(c,_va,'pago');
       c.updatedAt=Date.now();
