@@ -1442,6 +1442,14 @@ input[type="date"]{cursor:pointer}
         <div class="dash-sec-hdr"><h3>⚠️ Pendências</h3><span class="fin-sub" id="dash-pen-count"></span><button class="btn btn-g btn-sm" style="font-size:11px;padding:3px 10px" onclick="switchTab('listas',document.querySelector('[data-tab=listas]'))">Ver todas</button></div>
         <div class="dash-sec-body" id="dash-pen-list"></div>
       </div>
+      <div class="dash-section">
+        <div class="dash-sec-hdr"><h3>🗂️ Anotações</h3><span class="fin-sub" id="dash-anot-count"></span></div>
+        <div style="padding:12px 14px 0">
+          <textarea id="anot-nova-d" rows="2" placeholder="Anotação rápida (ex.: comandos do deploy, brindes)..." style="width:100%;font:500 13px 'Montserrat',sans-serif;border:1.5px solid var(--border);border-radius:8px;padding:8px;box-sizing:border-box"></textarea>
+          <div style="display:flex;justify-content:flex-end;margin:6px 0 10px"><button class="btn btn-p btn-sm" onclick="addAnotNota('d')">＋ Adicionar anotação</button></div>
+        </div>
+        <div class="dash-sec-body" id="anot-list-d" style="padding:0 14px 12px"></div>
+      </div>
     </div>
     <div class="dash-section" style="margin-bottom:16px">
       <div class="dash-sec-hdr"><h3>🎯 Conversão por Mês</h3><span id="dash-conv-ano-wrap"></span></div>
@@ -1553,9 +1561,9 @@ input[type="date"]{cursor:pointer}
     <!-- ANOTAÇÕES -->
     <div class="listas-section" id="ls-anotacoes">
       <div class="lista-card">
-        <textarea id="anot-nova" rows="3" placeholder="Escreva uma anotação (pode ter mais de uma linha, como os comandos do deploy)..." style="width:100%;font:500 13px 'Montserrat',sans-serif;border:1.5px solid var(--border);border-radius:8px;padding:8px;box-sizing:border-box"></textarea>
-        <div style="display:flex;justify-content:flex-end;margin:6px 0 14px"><button class="btn btn-p btn-sm" onclick="addAnotNota()">＋ Adicionar anotação</button></div>
-        <div id="anot-list"></div>
+        <textarea id="anot-nova-l" rows="3" placeholder="Escreva uma anotação (pode ter mais de uma linha, como os comandos do deploy)..." style="width:100%;font:500 13px 'Montserrat',sans-serif;border:1.5px solid var(--border);border-radius:8px;padding:8px;box-sizing:border-box"></textarea>
+        <div style="display:flex;justify-content:flex-end;margin:6px 0 14px"><button class="btn btn-p btn-sm" onclick="addAnotNota('l')">＋ Adicionar anotação</button></div>
+        <div id="anot-list-l"></div>
       </div>
     </div>
     <!-- CONTEÚDOS -->
@@ -3994,6 +4002,7 @@ function renderDashboard(){
   renderDashConversao();
   // Listas
   renderDashListas();
+  renderAnotacoes();
   // Analytics
   renderDashAnalytics(null);
   updateBackupBanner();
@@ -6309,12 +6318,13 @@ function switchLista(nome,btn){
   if(nome==='cnt_cal')renderCntCal();
 }
 function renderListas(){fillListasClienteSelects();renderTarefas();renderTarefasClientes();renderConteudos();renderPendencias();renderPendenciasGerais();renderAnotacoes();}
-// ── Anotações: lista única de notas (ver anotNotas no topo do script) ──
-let _anotEditando=null;         // id da nota que está sendo editada
+// ── Anotações: uma lista só, mostrada na aba Listas (k='l') e no Dashboard (k='d') ──
+let _anotEditando=null;         // {id, k}: nota em edição e em qual tela
 let _anotEditTexto='';          // texto da edição em andamento (sobrevive a re-renderizações)
+let _anotSig='';                // assinatura da última tela desenhada (evita redesenhar à toa)
 function _anotEditRascunho(val){_anotEditTexto=val}
-function addAnotNota(){
-  const ta=document.getElementById('anot-nova');
+function addAnotNota(k){
+  const ta=document.getElementById('anot-nova-'+k);
   const texto=(ta?.value||'').replace(/\s+$/,'');
   if(!texto.trim()){toast('⚠️ Escreva a anotação antes de adicionar','orange');return}
   anotNotas.unshift({id:uid(),texto,criadaEm:Date.now()});
@@ -6324,14 +6334,14 @@ function addAnotNota(){
 function delAnotNota(notaId){
   if(!confirm('Excluir esta anotação?'))return;
   anotNotas=anotNotas.filter(n=>n.id!==notaId);
-  if(_anotEditando===notaId)_anotEditando=null;
+  if(_anotEditando&&_anotEditando.id===notaId)_anotEditando=null;
   savAnotNotas();renderAnotacoes();
 }
-function editAnotNota(notaId){
+function editAnotNota(notaId,k){
   const n=anotNotas.find(x=>x.id===notaId);if(!n)return;
-  _anotEditando=notaId;_anotEditTexto=n.texto;
+  _anotEditando={id:notaId,k};_anotEditTexto=n.texto;
   renderAnotacoes();
-  setTimeout(()=>document.getElementById('anot-edit-'+notaId)?.focus(),20);
+  setTimeout(()=>document.getElementById('anot-edit-'+k+'-'+notaId)?.focus(),20);
 }
 function cancelAnotEdit(){_anotEditando=null;_anotEditTexto='';renderAnotacoes()}
 function saveAnotEdit(notaId){
@@ -6347,19 +6357,30 @@ function copiarAnotNota(notaId){
   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(n.texto).then(()=>toast('📋 Copiado!','green')).catch(falhou);
   else falhou();
 }
-function renderAnotacoes(){
-  const el=document.getElementById('anot-list');if(!el)return;
+function _renderAnotLista(k){
+  const el=document.getElementById('anot-list-'+k);if(!el)return;
   if(!anotNotas.length){el.innerHTML=`<div class="lista-empty">Nenhuma anotação ainda. Escreva a primeira acima 🗂️</div>`;return}
   el.innerHTML=`<div style="display:flex;flex-direction:column;gap:8px">${anotNotas.map(n=>{
-    const editando=_anotEditando===n.id;
+    const editando=!!_anotEditando&&_anotEditando.id===n.id&&_anotEditando.k===k;
     const dataTxt=new Date(n.editadaEm||n.criadaEm).toLocaleDateString('pt-BR');
     const corpo=editando
-      ?`<textarea id="anot-edit-${n.id}" rows="4" oninput="_anotEditRascunho(this.value)" style="width:100%;font:500 13px 'Montserrat',sans-serif;border:1.5px solid var(--border);border-radius:8px;padding:8px;box-sizing:border-box">${esc(_anotEditTexto)}</textarea>
+      ?`<textarea id="anot-edit-${k}-${n.id}" rows="4" oninput="_anotEditRascunho(this.value)" style="width:100%;font:500 13px 'Montserrat',sans-serif;border:1.5px solid var(--border);border-radius:8px;padding:8px;box-sizing:border-box">${esc(_anotEditTexto)}</textarea>
          <div style="display:flex;gap:6px;justify-content:flex-end"><button class="btn btn-p btn-sm" onclick="saveAnotEdit('${n.id}')">Salvar</button><button class="btn btn-g btn-sm" onclick="cancelAnotEdit()">Cancelar</button></div>`
       :`<div style="white-space:pre-wrap;font-size:13px;line-height:1.5">${esc(n.texto)}</div>
-         <div style="display:flex;gap:6px;justify-content:flex-end;align-items:center"><span style="font-size:10px;color:var(--muted);margin-right:auto">${dataTxt}${n.editadaEm?' · editada':''}</span><button class="btn btn-g btn-sm" title="Copiar" onclick="copiarAnotNota('${n.id}')">📋</button><button class="btn btn-g btn-sm" title="Editar" onclick="editAnotNota('${n.id}')">✏️</button><button class="btn btn-g btn-sm" title="Excluir" onclick="delAnotNota('${n.id}')" style="color:#dc2626">×</button></div>`;
+         <div style="display:flex;gap:6px;justify-content:flex-end;align-items:center"><span style="font-size:10px;color:var(--muted);margin-right:auto">${dataTxt}${n.editadaEm?' · editada':''}</span><button class="btn btn-g btn-sm" title="Copiar" onclick="copiarAnotNota('${n.id}')">📋</button><button class="btn btn-g btn-sm" title="Editar" onclick="editAnotNota('${n.id}','${k}')">✏️</button><button class="btn btn-g btn-sm" title="Excluir" onclick="delAnotNota('${n.id}')" style="color:#dc2626">×</button></div>`;
     return `<div style="background:var(--n50,#f8f8f8);border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px">${corpo}</div>`;
   }).join('')}</div>`;
+}
+function renderAnotacoes(){
+  if(!document.getElementById('anot-list-l')&&!document.getElementById('anot-list-d'))return;
+  // Só redesenha quando as notas ou a edição mudaram (senão quem está digitando perde o cursor)
+  const sig=JSON.stringify([anotNotas,_anotEditando]);
+  if(sig===_anotSig)return;
+  _anotSig=sig;
+  _renderAnotLista('l');
+  _renderAnotLista('d');
+  const cnt=document.getElementById('dash-anot-count');
+  if(cnt)cnt.textContent=`${anotNotas.length} anotaç${anotNotas.length===1?'ão':'ões'}`;
 }
 function fillListasClienteSelects(){
   const opts=`<option value="">Sem cliente</option>`+[...clients].sort((a,b)=>(a.nome||'').localeCompare(b.nome||'')).map(c=>`<option value="${c.id}">${esc(c.nome)}</option>`).join('');
@@ -9366,7 +9387,7 @@ function initFinFirebase(){
       if(data.pendencias&&Array.isArray(data.pendencias)){pendencias=data.pendencias;localStorage.setItem('crm_pen_v1',JSON.stringify(pendencias));}
       if(data.indic&&typeof data.indic==='object'){indicData=data.indic;localStorage.setItem('crm_indic_v1',JSON.stringify(indicData));}
       if(data.loc&&Array.isArray(data.loc)){locaisSalvos=data.loc;localStorage.setItem('crm_locais_v1',JSON.stringify(locaisSalvos));}
-      if(data.anot&&typeof data.anot==='object'&&'n' in data.anot){anotNotas=Array.isArray(data.anot.notas)?data.anot.notas:_anotDeCategorias(data.anot.cats);localStorage.setItem('crm_anot_v2',JSON.stringify(anotNotas));}
+      if(data.anot&&typeof data.anot==='object'&&'n' in data.anot){anotNotas=Array.isArray(data.anot.notas)?data.anot.notas:_anotDeCategorias(data.anot.cats);localStorage.setItem('crm_anot_v2',JSON.stringify(anotNotas));renderAnotacoes();}
       syncAllDistrib();
       if(currentTab==='oportunidades')renderOp();
       else if(currentTab==='projetos'){renderPr();renderAlb();}
