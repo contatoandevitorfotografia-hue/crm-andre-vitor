@@ -170,6 +170,7 @@ select{background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;c
 .lst-item.done .lst-txt{text-decoration:line-through;color:var(--mut)}
 .lst-txt{flex:1;font-size:13px;font-weight:500;line-height:1.4;padding-top:1px}
 .lst-meta{font-size:11px;color:var(--mut);margin-top:3px;font-weight:500}
+.anot-btn{padding:4px 9px;border-radius:6px;border:1px solid var(--brd);background:var(--surf);color:var(--txt);font-size:12px;cursor:pointer;flex-shrink:0;font-weight:700;font-family:'Montserrat',sans-serif}
 .lst-badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;margin-left:6px}
 .lst-badge.ideia{background:#F5EDD8;color:#A06E1E}
 .lst-badge.gravado{background:#FEF3C7;color:#92400E}
@@ -293,6 +294,7 @@ select{background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;c
         <button class="lst-tab active" onclick="switchLstTab('cnt',this)">🎬 Conteúdos</button>
         <button class="lst-tab" onclick="switchLstTab('pen',this)">⏰ Pendências de Clientes</button>
         <button class="lst-tab" onclick="switchLstTab('pgr',this)">📋 Pendências</button>
+        <button class="lst-tab" onclick="switchLstTab('anot',this)">🗂️ Anotações</button>
       </div>
 
       <!-- CONTEÚDOS -->
@@ -335,6 +337,17 @@ select{background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;c
           </div>
         </div>
         <div id="lst-pgr-list"></div>
+      </div>
+
+      <!-- ANOTAÇÕES -->
+      <div class="lst-sec" id="lst-sec-anot">
+        <div class="lst-add-stack">
+          <textarea id="lst-anot-inp" class="lst-add-main" rows="3" placeholder="Escreva uma anotação (pode ter mais de uma linha, como os comandos do deploy)..."></textarea>
+          <div class="lst-add-sub" style="justify-content:flex-end">
+            <button class="btn-add" onclick="addAnot()">+ Adicionar anotação</button>
+          </div>
+        </div>
+        <div id="lst-anot-list"></div>
       </div>
     </section>
 
@@ -565,6 +578,9 @@ let _dadosCache={};
 try{_dadosCache=JSON.parse(localStorage.getItem('mob_dados_v1')||'{}')||{};}catch(e){_dadosCache={};}
 let opCards=toArr(_dadosCache.op),packages=toArr(_dadosCache.pac),conteudos=toArr(_dadosCache.cnt),freelancers=[],freelaCards=[];
 let pendencias=toArr(_dadosCache.pendencias),pendenciasGerais=toArr(_dadosCache.pgr),pessoais=toArr(_dadosCache.pessoais),cefaleias=toArr(_dadosCache.cefaleias);
+// Anotações: lista única (mesma do CRM do computador, nó dados26/anot), com cache próprio
+let anotNotas=(()=>{try{return toArr(JSON.parse(localStorage.getItem('mob_anot_v1')||'[]'))}catch(e){return[]}})();
+let _anotTs=0,_anotTmr=null,_anotEditId=null,_anotEditTxt='',_anotSig='';
 let _pesTab='fazer';
 
 // Financeiro — só contas da casa (Empresa + Pessoal), sincronizado dos nós
@@ -913,6 +929,9 @@ function _flushDados(){
 window.addEventListener('pagehide',_flushDados);
 window.addEventListener('beforeunload',_flushDados);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')_flushDados();});
+window.addEventListener('pagehide',_flushAnot);
+window.addEventListener('beforeunload',_flushAnot);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')_flushAnot();});
 
 // ── READY CHECK ───────────────────────────────
 function checkReady(){
@@ -961,6 +980,7 @@ function initMobSync(){
     // Se ficou uma edição pendente de uma sessão anterior (ex.: o app foi
     // fechado antes do envio completar), tenta reenviar assim que conectar.
     if(localStorage.getItem('mob_dados_pending')==='1')_flushDados();
+    _flushAnot(); // reenvia anotações pendentes de uma sessão anterior (se houver)
     // Sem internet, o snapshot do Firebase pode nunca chegar — depois de um
     // tempo, mostra o app com o que já está salvo no aparelho em vez de
     // deixar a tela de carregamento girando pra sempre.
@@ -993,6 +1013,19 @@ function initMobSync(){
       }
       // lembretes sempre carrega (pode existir mesmo sem op/tar/cnt)
       if(d&&d.lem&&Date.now()-_dadosTs>2000){lembretes=toArr(d.lem);}
+      // Anotações: aplica a lista do Firebase, a não ser que este aparelho tenha edição pendente
+      if(d&&d.anot&&typeof d.anot==='object'&&'n' in d.anot){
+        if(localStorage.getItem('mob_anot_pending')==='1'){
+          const pendTs=parseInt(localStorage.getItem('mob_anot_pending_ts'))||0;
+          if(Date.now()-pendTs<120000)_flushAnot();
+          else{localStorage.removeItem('mob_anot_pending');localStorage.removeItem('mob_anot_pending_ts')}
+        }
+        if(localStorage.getItem('mob_anot_pending')!=='1'&&Date.now()-_anotTs>2000){
+          anotNotas=Array.isArray(d.anot.notas)?toArr(d.anot.notas):_anotDeCats(d.anot.cats);
+          try{localStorage.setItem('mob_anot_v1',JSON.stringify(anotNotas));}catch(e){}
+          renderAnotacoes();
+        }
+      }
       if(!_rDados){_rDados=true;checkReady();}
       else{
         const sec=document.querySelector('.mob-sec.active')?.id;
@@ -1552,6 +1585,104 @@ function renderListas(){
   renderLstConteudos();
   renderLstPendencias();
   renderLstPgr();
+  renderAnotacoes();
+}
+
+// ── Anotações (mesma lista do CRM do computador: nó dados26/anot) ──
+// Este app só grava "anot" quando você mexe nas anotações, então nunca
+// reenvia uma lista antiga por causa de outra coisa que foi salva.
+function _anotDeCats(cats){
+  const out=[];
+  toArr(cats).forEach(c=>toArr(c&&c.notas).forEach(n=>{
+    if(n&&n.texto)out.push({id:n.id||uid(),texto:n.texto,criadaEm:n.criadaEm||Date.now(),...(n.editadaEm?{editadaEm:n.editadaEm}:{})});
+  }));
+  return out.sort((a,b)=>(b.criadaEm||0)-(a.criadaEm||0));
+}
+function saveAnot(){
+  _anotTs=Date.now();
+  try{
+    localStorage.setItem('mob_anot_v1',JSON.stringify(anotNotas));
+    localStorage.setItem('mob_anot_pending','1');
+    localStorage.setItem('mob_anot_pending_ts',_anotTs.toString());
+  }catch(e){}
+  clearTimeout(_anotTmr);
+  _anotTmr=setTimeout(_flushAnot,1500);
+}
+function _flushAnot(){
+  clearTimeout(_anotTmr);_anotTmr=null;
+  // Só envia se houver edição de anotações ainda não confirmada no Firebase
+  if(!_finDb||localStorage.getItem('mob_anot_pending')!=='1')return;
+  const ts=_anotTs;
+  try{
+    _finDb.ref('dados26').update({anot:{n:anotNotas.length,notas:anotNotas}}).then(()=>{
+      if(ts===_anotTs){localStorage.removeItem('mob_anot_pending');localStorage.removeItem('mob_anot_pending_ts');}
+    }).catch(()=>{clearTimeout(_anotTmr);_anotTmr=setTimeout(_flushAnot,3000)});
+  }catch(e){clearTimeout(_anotTmr);_anotTmr=setTimeout(_flushAnot,3000)}
+}
+function renderAnotacoes(){
+  const el=document.getElementById('lst-anot-list');if(!el)return;
+  const sig=JSON.stringify([anotNotas,_anotEditId]);
+  if(sig===_anotSig)return; // nada mudou: não redesenha (não perde o cursor de quem está digitando)
+  _anotSig=sig;
+  if(!anotNotas.length){el.innerHTML='<div class="empty">Nenhuma anotação ainda. Escreva a primeira acima 🗂️</div>';return}
+  el.innerHTML=anotNotas.map(n=>{
+    if(_anotEditId===n.id){
+      return`<div class="lst-item" style="flex-direction:column;gap:8px">
+        <textarea id="anot-edit-${n.id}" rows="4" class="lst-add-main" oninput="_anotEditTxt=this.value">${esc(_anotEditTxt)}</textarea>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn-add" onclick="saveAnotEdit('${n.id}')">Salvar</button>
+          <button class="anot-btn" onclick="cancelAnotEdit()">Cancelar</button>
+        </div>
+      </div>`;
+    }
+    const dataTxt=new Date(n.editadaEm||n.criadaEm).toLocaleDateString('pt-BR');
+    return`<div class="lst-item" style="flex-direction:column;gap:6px">
+      <div class="lst-txt" style="white-space:pre-wrap">${esc(n.texto)}</div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span class="lst-meta" style="margin-top:0;margin-right:auto">${dataTxt}${n.editadaEm?' · editada':''}</span>
+        <button class="anot-btn" title="Copiar" onclick="copiarAnot('${n.id}')">📋</button>
+        <button class="anot-btn" title="Editar" onclick="editAnot('${n.id}')">✏️</button>
+        <button class="btn-del" title="Excluir" onclick="delAnot('${n.id}')">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function addAnot(){
+  const inp=document.getElementById('lst-anot-inp');
+  const texto=(inp?.value||'').replace(/\s+$/,'');
+  if(!texto.trim()){toast('⚠️ Escreva a anotação antes de adicionar');return}
+  anotNotas.unshift({id:uid(),texto,criadaEm:Date.now()});
+  if(inp)inp.value='';
+  saveAnot();renderAnotacoes();
+  toast('✅ Anotação salva');
+}
+function editAnot(id){
+  const n=anotNotas.find(x=>x.id===id);if(!n)return;
+  _anotEditId=id;_anotEditTxt=n.texto;
+  renderAnotacoes();
+  setTimeout(()=>{const t=document.getElementById('anot-edit-'+id);if(t){t.focus();t.setSelectionRange(t.value.length,t.value.length)}},30);
+}
+function cancelAnotEdit(){_anotEditId=null;_anotEditTxt='';renderAnotacoes()}
+function saveAnotEdit(id){
+  const texto=(_anotEditTxt||'').replace(/\s+$/,'');
+  if(!texto.trim()){toast('⚠️ A anotação não pode ficar vazia');return}
+  const n=anotNotas.find(x=>x.id===id);
+  if(n){n.texto=texto;n.editadaEm=Date.now()}
+  _anotEditId=null;_anotEditTxt='';
+  saveAnot();renderAnotacoes();
+  toast('✅ Anotação atualizada');
+}
+function delAnot(id){
+  if(!confirm('Excluir esta anotação?'))return;
+  anotNotas=anotNotas.filter(n=>n.id!==id);
+  if(_anotEditId===id){_anotEditId=null;_anotEditTxt=''}
+  saveAnot();renderAnotacoes();
+}
+function copiarAnot(id){
+  const n=anotNotas.find(x=>x.id===id);if(!n)return;
+  const falhou=()=>toast('⚠️ Não consegui copiar');
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(n.texto).then(()=>toast('📋 Copiado!')).catch(falhou);
+  else falhou();
 }
 
 // — Conteúdos —
