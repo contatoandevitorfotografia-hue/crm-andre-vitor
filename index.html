@@ -7494,6 +7494,11 @@ function _finCurMes(){
   return n;
 }
 function _getMesFin(ds){if(!ds)return null;const d=new Date(ds+'T12:00:00');return MESES_FIN[d.getMonth()];}
+// Meses de 2027 nas abas Festas: vêm depois de dezembro, com '/27' (mesmo padrão da aba Contas)
+const MESES_FESTAS_SHOW=[...MESES_FIN_SHOW,...MESES_FIN.map(m=>m+'/27')];
+// Festa com data em 2027 cai no mês '/27'; as demais datas continuam como antes
+function _chaveMesFesta(ds){if(!ds)return null;const d=new Date(ds+'T12:00:00');return MESES_FIN[d.getMonth()]+(d.getFullYear()===2027?'/27':'');}
+function _rotuloFesta(k){return String(k||'').endsWith('/27')?String(k).replace('/27',' 2027'):k+' 2026'}
 // Valor do Plano Cores dos pacotes: o Padrão (Plano Cores) vale o próprio preço;
 // Memórias, Movimento e Histórias usam o "Valor do Plano Cores" informado.
 // Pacote composto sem esse valor usa o Plano Cores dos pacotes que ele compõe.
@@ -7585,7 +7590,7 @@ function calcEmpresaShare(c){
 // do evento; sem nada, o fallback.
 function _subtituloFesta(card,fallback){return (card?.titulo||'').trim()||card?.tipo||fallback||'';}
 function _getFinFestas(mes){
-  return opCards.filter(c=>FIN_COLS.includes(c.coluna)&&_getMesFin(c.dataEvento)===mes&&(c.tipoExecucao||'proprio')!=='sou-freela'&&(c.tipoExecucao||'proprio')!=='freelancer').map(c=>{
+  return opCards.filter(c=>FIN_COLS.includes(c.coluna)&&_chaveMesFesta(c.dataEvento)===mes&&(c.tipoExecucao||'proprio')!=='sou-freela'&&(c.tipoExecucao||'proprio')!=='freelancer').map(c=>{
     const t=_totalComDesconto(c);
     const empShare=calcEmpresaShare(c);
     const ratio=t>0?empShare/t:0.4;
@@ -7826,9 +7831,9 @@ function switchFinTab(tab,btn){
 }
 function toggleFinForm(id){const el=document.getElementById(id);el.classList.toggle('on');if(el.classList.contains('on'))setTimeout(()=>el.scrollIntoView({behavior:'smooth',block:'nearest'}),50);}
 
-function _finMesTabs(containerId, cur, setter, statusFn){
+function _finMesTabs(containerId, cur, setter, statusFn, meses){
   const cont=document.getElementById(containerId);if(!cont)return;
-  cont.innerHTML=MESES_FIN_SHOW.map(m=>{
+  cont.innerHTML=(meses||MESES_FIN_SHOW).map(m=>{
     const st=statusFn?statusFn(m):'';
     const isQ=st==='quitado';
     return `<button class="fin-mtab${m===cur?' active':''}${isQ?' quitado':''}" onclick="${setter}('${m}',this)" title="${isQ?'✅ Tudo pago neste mês':''}">${m}</button>`;
@@ -7977,8 +7982,8 @@ function commitFinRG(){}
 
 function renderFinFestas(){
   if(!finCurF)finCurF=_finCurMes();
-  _finMesTabs('fin-fms',finCurF,'selFinF');
-  const el=document.getElementById('fin-ftitle');if(el)el.textContent=finCurF+' 2026 — festas';
+  _finMesTabs('fin-fms',finCurF,'selFinF',null,MESES_FESTAS_SHOW);
+  const el=document.getElementById('fin-ftitle');if(el)el.textContent=_rotuloFesta(finCurF)+' — festas';
   const festas=_getFinFestas(finCurF).sort((a,b)=>a.d-b.d);
   const cntEl=document.getElementById('fin-count');if(cntEl)cntEl.textContent=`${festas.length} festa(s)`;
   const tbl=document.getElementById('fin-tbl');if(!tbl)return;
@@ -8069,7 +8074,7 @@ function renderFinFestas(){
     const transpMes=opCards.filter(c=>FIN_COLS.includes(c.coluna)
       &&(c.tipoExecucao||'proprio')==='proprio'
       &&(c.dataEvento||'')>=_hoje2
-      &&_getMesFin(c.dataEvento)===finCurF
+      &&_chaveMesFesta(c.dataEvento)===finCurF
     ).sort((a,b)=>(a.dataEvento||'').localeCompare(b.dataEvento||''));
     if(transpMes.length){
       // Soma o transporte real (lado Empresa) já cadastrado em cada festa,
@@ -9643,8 +9648,8 @@ function commitPessRG(){}
 
 function renderPessEntradas(){
   if(!pessCurF)pessCurF=_finCurMes();
-  _finMesTabs('p-fms',pessCurF,'selPessF');
-  const el=document.getElementById('p-ftitle');if(el)el.textContent=pessCurF+' 2026 — festas';
+  _finMesTabs('p-fms',pessCurF,'selPessF',null,MESES_FESTAS_SHOW);
+  const el=document.getElementById('p-ftitle');if(el)el.textContent=_rotuloFesta(pessCurF)+' — festas';
   const F=[...(pessFD[pessCurF]||[])].sort((a,b)=>(a.d||0)-(b.d||0)); // cópia: renderizar não pode mexer no array salvo
   const cntEl=document.getElementById('p-fcount');if(cntEl)cntEl.textContent=`${F.length} entrada(s)`;
   const tb=document.getElementById('p-ftb');if(!tb)return;
@@ -9749,7 +9754,7 @@ function renderPessEntradas(){
     const transpPesMes=opCards.filter(c=>FIN_COLS.includes(c.coluna)
       &&(c.tipoExecucao||'proprio')==='proprio'
       &&(c.dataEvento||'')>=_hojePess
-      &&_getMesFin(c.dataEvento)===pessCurF
+      &&_chaveMesFesta(c.dataEvento)===pessCurF
     ).sort((a,b)=>(a.dataEvento||'').localeCompare(b.dataEvento||''));
     if(transpPesMes.length){
       const nec=transpPesMes.reduce((s,c)=>s+(c.gastosItens||[]).filter(g=>g.tipo==='pessoal'&&_ehGastoTransporte(g)).reduce((ss,g)=>ss+(g.val||0),0),0);
