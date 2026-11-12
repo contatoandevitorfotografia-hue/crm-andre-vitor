@@ -7494,8 +7494,15 @@ function _finCurMes(){
   return n;
 }
 function _getMesFin(ds){if(!ds)return null;const d=new Date(ds+'T12:00:00');return MESES_FIN[d.getMonth()];}
-// Meses de 2027 nas abas Festas: vêm depois de dezembro, com '/27' (mesmo padrão da aba Contas)
-const MESES_FESTAS_SHOW=[...MESES_FIN_SHOW,...MESES_FIN.map(m=>m+'/27')];
+// Meses de 2027 nas abas Festas: só aparecem quando o botão 2027 é clicado
+const MESES_FESTAS_2027=MESES_FIN.map(m=>m+'/27');
+function _anoDaChaveMes(k){return /\/27$/.test(String(k||''))?2027:2026}
+function _mesesFestasDoAno(ano){return ano===2027?MESES_FESTAS_2027:MESES_FIN_SHOW}
+function _mesPadraoDoAno(ano){
+  if(ano===2027)return 'janeiro/27';
+  const atual=_finCurMes();
+  return MESES_FIN_SHOW.includes(atual)?atual:MESES_FIN_SHOW[0];
+}
 // Festa com data em 2027 cai no mês '/27'; as demais datas continuam como antes
 function _chaveMesFesta(ds){if(!ds)return null;const d=new Date(ds+'T12:00:00');return MESES_FIN[d.getMonth()]+(d.getFullYear()===2027?'/27':'');}
 function _rotuloFesta(k){return String(k||'').endsWith('/27')?String(k).replace('/27',' 2027'):k+' 2026'}
@@ -7831,15 +7838,20 @@ function switchFinTab(tab,btn){
 }
 function toggleFinForm(id){const el=document.getElementById(id);el.classList.toggle('on');if(el.classList.contains('on'))setTimeout(()=>el.scrollIntoView({behavior:'smooth',block:'nearest'}),50);}
 
-function _finMesTabs(containerId, cur, setter, statusFn, meses){
+function _finMesTabs(containerId, cur, setter, statusFn, anoSetter){
   const cont=document.getElementById(containerId);if(!cont)return;
-  cont.innerHTML=(meses||MESES_FIN_SHOW).map(m=>{
+  // anoSetter (só a aba Festas): mostra os botões 2026 | 2027 e, embaixo, só os meses do ano escolhido
+  const anoAtivo=anoSetter?_anoDaChaveMes(cur):2026;
+  const meses=anoSetter?_mesesFestasDoAno(anoAtivo):MESES_FIN_SHOW;
+  const seletorAno=anoSetter?[2026,2027].map(a=>`<button class="fin-mtab${a===anoAtivo?' active':''}" style="font-weight:800" onclick="${anoSetter}(${a})">${a}</button>`).join('')+'<span style="width:1px;align-self:stretch;background:var(--border);margin:0 6px"></span>':'';
+  cont.innerHTML=seletorAno+meses.map(m=>{
     const st=statusFn?statusFn(m):'';
     const isQ=st==='quitado';
-    return `<button class="fin-mtab${m===cur?' active':''}${isQ?' quitado':''}" onclick="${setter}('${m}',this)" title="${isQ?'✅ Tudo pago neste mês':''}">${m}</button>`;
+    return `<button class="fin-mtab${m===cur?' active':''}${isQ?' quitado':''}" onclick="${setter}('${m}',this)" title="${isQ?'✅ Tudo pago neste mês':''}">${anoSetter?m.replace('/27',''):m}</button>`;
   }).join('');
 }
 function selFinF(m){finCurF=m;renderFinFestas();}
+function selFinAnoF(ano){finCurF=_mesPadraoDoAno(ano);renderFinFestas();}
 function selFinG(m){finCurG=m;renderFinGastos();}
 function selFinD(m){finCurD=m;renderFinDiarios();}
 
@@ -7982,13 +7994,13 @@ function commitFinRG(){}
 
 function renderFinFestas(){
   if(!finCurF)finCurF=_finCurMes();
-  _finMesTabs('fin-fms',finCurF,'selFinF',null,MESES_FESTAS_SHOW);
+  _finMesTabs('fin-fms',finCurF,'selFinF',null,'selFinAnoF');
   const el=document.getElementById('fin-ftitle');if(el)el.textContent=_rotuloFesta(finCurF)+' — festas';
   const festas=_getFinFestas(finCurF).sort((a,b)=>a.d-b.d);
   const cntEl=document.getElementById('fin-count');if(cntEl)cntEl.textContent=`${festas.length} festa(s)`;
   const tbl=document.getElementById('fin-tbl');if(!tbl)return;
   if(!festas.length){
-    tbl.innerHTML=`<div class="empty" style="padding:32px"><div class="empty-icon">🎂</div><div class="empty-title">Nenhuma festa confirmada em ${finCurF}</div><div class="empty-desc">Mova clientes para <strong>Confirmado</strong> no kanban de Oportunidades.</div></div>`;
+    tbl.innerHTML=`<div class="empty" style="padding:32px"><div class="empty-icon">🎂</div><div class="empty-title">Nenhuma festa confirmada em ${String(finCurF).replace('/27',' 2027')}</div><div class="empty-desc">Mova clientes para <strong>Confirmado</strong> no kanban de Oportunidades.</div></div>`;
     document.getElementById('fin-ftot-all').textContent='';
     document.getElementById('fin-ftot-paid').textContent='';
     document.getElementById('fin-ftot-rest').textContent='';
@@ -8088,7 +8100,7 @@ function renderFinFestas(){
       spMesEl.innerHTML=`<div style="background:var(--surface);border:1.5px solid var(--emp);border-radius:10px;padding:14px 16px;display:flex;flex-wrap:wrap;align-items:center;gap:0">
         <div style="padding:0 20px 0 0;min-width:140px">
           <div style="font-size:10px;font-weight:800;color:var(--emp);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px">🚌 Transporte — Empresa</div>
-          <div style="font-size:10px;color:var(--muted);margin-bottom:10px">${transpMes.length} festa${transpMes.length>1?'s':''} em ${finCurF}</div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:10px">${transpMes.length} festa${transpMes.length>1?'s':''} em ${String(finCurF).replace('/27',' 2027')}</div>
           <span class="fin-badge ${bdg}">${st}</span>
         </div>
         <div style="width:1px;background:var(--border);align-self:stretch;margin-right:20px"></div>
@@ -9648,7 +9660,7 @@ function commitPessRG(){}
 
 function renderPessEntradas(){
   if(!pessCurF)pessCurF=_finCurMes();
-  _finMesTabs('p-fms',pessCurF,'selPessF',null,MESES_FESTAS_SHOW);
+  _finMesTabs('p-fms',pessCurF,'selPessF',null,'selPessAnoF');
   const el=document.getElementById('p-ftitle');if(el)el.textContent=_rotuloFesta(pessCurF)+' — festas';
   const F=[...(pessFD[pessCurF]||[])].sort((a,b)=>(a.d||0)-(b.d||0)); // cópia: renderizar não pode mexer no array salvo
   const cntEl=document.getElementById('p-fcount');if(cntEl)cntEl.textContent=`${F.length} entrada(s)`;
@@ -9765,7 +9777,7 @@ function renderPessEntradas(){
       spPesMesEl.innerHTML=`<div style="background:var(--surface);border:1.5px solid var(--pess);border-radius:10px;padding:14px 16px;display:flex;flex-wrap:wrap;align-items:center;gap:0">
         <div style="padding:0 20px 0 0;min-width:140px">
           <div style="font-size:10px;font-weight:800;color:var(--pess);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px">🚌 Transporte — André</div>
-          <div style="font-size:10px;color:var(--muted);margin-bottom:10px">${transpPesMes.length} festa${transpPesMes.length>1?'s':''} em ${pessCurF}</div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:10px">${transpPesMes.length} festa${transpPesMes.length>1?'s':''} em ${String(pessCurF).replace('/27',' 2027')}</div>
           <span class="fin-badge ${bdg}">${st}</span>
         </div>
         <div style="width:1px;background:var(--border);align-self:stretch;margin-right:20px"></div>
@@ -9790,6 +9802,7 @@ function renderPessEntradas(){
   }
 }
 function selPessF(m){pessCurF=m;renderPessEntradas();}
+function selPessAnoF(ano){pessCurF=_mesPadraoDoAno(ano);renderPessEntradas();}
 function togglePessEntrada(mes,i,val){if(!pessFD[mes]||!pessFD[mes][i])return;pessFD[mes][i].p=val;savePessData();renderPessEntradas();renderPessResumo();}
 function delPessEntrada(mes,i){if(!pessFD[mes])return;if(!confirm('Excluir?'))return;pessFD[mes].splice(i,1);savePessData();renderPessEntradas();renderPessResumo();}
 function delPessFesta(mes,i,isAuto){
