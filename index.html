@@ -3263,6 +3263,8 @@ const OP_COLS=[
   {id:'confirmado',name:'Confirmado',sub:'Agendado',emoji:'✅',color:'#82B99B'},
   {id:'perdido',name:'Perdido',sub:'',emoji:'❌',color:'#8f9aaa'},
 ];
+// Cor única dos quadros de Projetos, Vídeo e Freelas (a cor de "Falta receber"). A pendência mantém o coral de atenção.
+const PR_COR_UNICA='#806B62';
 const PR_COLS=[
   {id:'festa-acontecer',name:'Festa para acontecer',emoji:'🎂',color:'#424A53'},
   {id:'pr-pendencia',name:'Pendência',sub:'⏳ Falta algo p/ avançar',emoji:'🧩',color:'#E0877A'},
@@ -4171,16 +4173,20 @@ function adjustHexColor(hex, amt){
 function buildPrCol(col,cs){
   const div=document.createElement('div');div.className='col';div.dataset.col=col.id;
   const addAction=col.cat?`openPrModal(null,'${col.id}')`:`openOpModal(null,'confirmado',null,true)`;
-  const hdrStart=adjustHexColor(col.color,10);
-  const hdrEnd=adjustHexColor(col.color,-18);
+  // Cor única nos quadros de Projetos; a pendência mantém o coral e texto escuro para ter contraste.
+  const corQuadro=col.id==='pr-pendencia'?col.color:PR_COR_UNICA;
+  const txtQuadro=col.id==='pr-pendencia'?'#11151C':'#fff';
+  const bgBadgeQuadro=col.id==='pr-pendencia'?'rgba(255,255,255,.16)':'rgba(0,0,0,.22)';
+  const hdrStart=adjustHexColor(corQuadro,4);
+  const hdrEnd=adjustHexColor(corQuadro,-18);
   const _boardKey='pr-'+(col.cat||'proj');
   div.innerHTML=`<div class="col-hdr" style="background:linear-gradient(135deg, ${hdrStart} 0%, ${hdrEnd} 100%);box-shadow:inset 0 -1px 0 rgba(255,255,255,.06)" draggable="true" title="Arraste para reordenar as colunas"
     ondragstart="colDragStart(event,'${_boardKey}','${col.id}')" ondragend="colDragEnd(event)"
     ondragover="colDragOver(event)" ondragleave="colDragLeave(event)" ondrop="colDrop(event,'${_boardKey}','${col.id}')">
-    <div class="col-hdr-top"><div class="col-title-wrap"><span class="col-emoji">${col.emoji}</span><span class="col-name">${col.name}</span></div><span class="col-badge">${cs.length}</span></div>
+    <div class="col-hdr-top"><div class="col-title-wrap"><span class="col-emoji">${col.emoji}</span><span class="col-name" style="color:${txtQuadro}">${col.name}</span></div><span class="col-badge" style="color:${txtQuadro};background:${bgBadgeQuadro}">${cs.length}</span></div>
   </div>
   <div class="cards-list" id="cl-pr-${col.id}" ondragover="onDO(event)" ondragenter="onDE(event)" ondragleave="onDL(event)" ondrop="onDrop(event,'pr','${col.id}')">
-    ${cs.map(c=>prCardHTML(c,col.color)).join('')}
+    ${cs.map(c=>prCardHTML(c,corQuadro)).join('')}
   </div>
   <button class="col-add" onclick="${addAction}">＋ Adicionar</button>`;
   return div;
