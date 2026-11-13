@@ -558,7 +558,7 @@ tr:hover td{background:var(--n50)}
 .fin-subtab-panel{display:none}.fin-subtab-panel.on{display:block}
 .fin-mes-tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:16px}
 .fin-mtab{padding:5px 12px;border:1px solid var(--border);border-radius:99px;font:600 11px 'Montserrat',sans-serif;color:var(--muted);cursor:pointer;background:var(--surface);transition:.15s;white-space:nowrap}
-.fin-mtab.active{background:var(--accent);color:#11151C;border-color:var(--accent)}
+.fin-mtab.active{background:var(--accent);color:#11151C;border-color:var(--accent)}#view-financeiro .fin-mtab.active{background:var(--emp);border-color:var(--emp)}#view-financeiro .fin-mtab:hover:not(.active){border-color:var(--emp);color:var(--emp)}
 .fin-mtab:hover:not(.active){border-color:var(--accent);color:var(--accent)}
 .fin-mtab.quitado{opacity:.38;border-style:dashed;font-weight:500}
 .fin-mtab.quitado.active{opacity:1;border-style:solid}
@@ -639,6 +639,9 @@ tr:hover td{background:var(--n50)}
 .fin-trow{display:flex;justify-content:space-between;padding:10px 16px 4px;border-top:1px solid var(--border);font-size:13px;margin-top:8px}
 /* ── Financeiro — identidade Empresa / Pessoais ── */
 :root{--emp:#D9A66F;--emp-light:#2a2119;--emp-dark:#e8c29a;--pess:#7a5c3a;--pess-light:#2a2119;--pess-dark:#e3b98a}
+#view-financeiro{--emp:#83A9C9;--emp-light:#1B2633;--emp-dark:#BCD3E6;--pess:#82B99B;--pess-light:#1B2A23;--pess-dark:#B4D8C5}
+#fin-main-pessoais{--emp:#82B99B;--emp-light:#1B2A23;--emp-dark:#B4D8C5}
+#view-financeiro input:not([type=checkbox]):not([type=radio]),#view-financeiro select,#view-financeiro textarea{background:var(--n50);color:var(--n900)}
 
 /* Seletor principal */
 .fin-main-tabs{display:flex;gap:10px;margin-bottom:0;padding-bottom:0}
@@ -651,41 +654,41 @@ tr:hover td{background:var(--n50)}
 .fin-main-tab.emp.active{background:var(--emp-light);border-color:var(--emp);border-bottom-color:var(--emp-light)}
 .fin-main-tab.emp.active .fin-main-tab-title{color:var(--emp-dark)}
 .fin-main-tab.emp.active .fin-main-tab-sub{color:var(--emp)}
-.fin-main-tab.emp:hover:not(.active){border-color:var(--emp);background:#2a2119}
+.fin-main-tab.emp:hover:not(.active){border-color:var(--emp);background:var(--emp-light)}
 /* Pessoais ativo */
 .fin-main-tab.pess.active{background:var(--pess-light);border-color:var(--pess);border-bottom-color:var(--pess-light)}
 .fin-main-tab.pess.active .fin-main-tab-title{color:var(--pess-dark)}
 .fin-main-tab.pess.active .fin-main-tab-sub{color:var(--pess)}
-.fin-main-tab.pess:hover:not(.active){border-color:var(--pess);background:#2a2119}
+.fin-main-tab.pess:hover:not(.active){border-color:var(--pess);background:var(--pess-light)}
 
 /* Painéis */
 .fin-main-panel{display:none}
 .fin-main-panel.on{display:block;border-radius:0 0 12px 12px;border:2px solid;padding-top:20px}
-#fin-main-empresa.on{border-color:#33414C;background:#11151C}
-#fin-main-pessoais.on{border-color:var(--pess);background:#1B1710}
-#fin-main-empresa.on .fin-card{background:#1B222D;border-color:rgba(100,117,135,.3)}
-#fin-main-empresa.on .fin-hdr{background:#1E252D;border-bottom-color:rgba(100,117,135,.3)}
-#fin-main-empresa.on .fin-tbl-wrap tr:hover td{background:rgba(100,117,135,.08)}
-#fin-main-empresa.on .fin-tbl-wrap th{border-bottom-color:rgba(100,117,135,.3)}
-#fin-main-empresa.on .fin-tbl-wrap td{border-bottom-color:rgba(100,117,135,.2)}
+#fin-main-empresa.on{border-color:#2E4A63;background:#11151C}
+#fin-main-pessoais.on{border-color:var(--pess);background:#101A16}
+#fin-main-empresa.on .fin-card{background:#1B222D;border-color:rgba(131,169,201,.3)}
+#fin-main-empresa.on .fin-hdr{background:#1E252D;border-bottom-color:rgba(131,169,201,.3)}
+#fin-main-empresa.on .fin-tbl-wrap tr:hover td{background:rgba(131,169,201,.08)}
+#fin-main-empresa.on .fin-tbl-wrap th{border-bottom-color:rgba(131,169,201,.3)}
+#fin-main-empresa.on .fin-tbl-wrap td{border-bottom-color:rgba(131,169,201,.2)}
 #fin-main-empresa.on .emp-tabs.fin-subtabs .fin-stab:not(.active){background:rgba(255,255,255,.05)}
-#fin-main-pessoais.on .fin-card{background:#211B12;border-color:rgba(185,137,90,.3)}
-#fin-main-pessoais.on .fin-hdr{background:#272015;border-bottom-color:rgba(185,137,90,.3)}
-#fin-main-pessoais.on .fin-tbl-wrap tr:hover td{background:rgba(185,137,90,.08)}
-#fin-main-pessoais.on .fin-tbl-wrap th{border-bottom-color:rgba(185,137,90,.3)}
-#fin-main-pessoais.on .fin-tbl-wrap td{border-bottom-color:rgba(185,137,90,.2)}
+#fin-main-pessoais.on .fin-card{background:#13201A;border-color:rgba(130,185,155,.3)}
+#fin-main-pessoais.on .fin-hdr{background:#1A2A22;border-bottom-color:rgba(130,185,155,.3)}
+#fin-main-pessoais.on .fin-tbl-wrap tr:hover td{background:rgba(130,185,155,.08)}
+#fin-main-pessoais.on .fin-tbl-wrap th{border-bottom-color:rgba(130,185,155,.3)}
+#fin-main-pessoais.on .fin-tbl-wrap td{border-bottom-color:rgba(130,185,155,.2)}
 #fin-main-pessoais.on .pess-tabs.fin-subtabs .fin-stab:not(.active){background:rgba(255,255,255,.05)}
 
 /* Barra de contexto */
 .fin-ctx-bar{display:flex;align-items:center;gap:12px;padding:12px 20px 16px;margin:-1px -20px 16px;border-radius:0}
-#fin-main-empresa.on .fin-ctx-bar{background:#2e251c;border-bottom:2px solid #6e5632}
-#fin-main-pessoais.on .fin-ctx-bar{background:var(--pess);border-bottom:2px solid var(--pess-dark)}
+#fin-main-empresa.on .fin-ctx-bar{background:var(--emp);border-bottom:2px solid #5F86A8;color:#11151C}#fin-main-empresa.on .fin-ctx-badge{background:rgba(17,21,28,.14);color:#11151C}#fin-main-empresa.on .fin-ctx-label{color:rgba(17,21,28,.85)}
+#fin-main-pessoais.on .fin-ctx-bar{background:var(--pess);border-bottom:2px solid var(--pess-dark);color:#11151C}#fin-main-pessoais.on .fin-ctx-badge{background:rgba(17,21,28,.14);color:#11151C}#fin-main-pessoais.on .fin-ctx-label{color:rgba(17,21,28,.85)}
 .fin-ctx-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 16px;border-radius:99px;font:800 12px 'Montserrat',sans-serif;letter-spacing:.06em;text-transform:uppercase;background:rgba(255,255,255,.25);color:#fff}
 .fin-ctx-label{font-size:12px;color:rgba(255,255,255,.85);font-weight:600}
 
 /* Subabas — cor dinâmica */
 .emp-tabs.fin-subtabs{background:#11151C;border-color:rgba(131,169,201,.25)}
-.pess-tabs.fin-subtabs{background:#1B1710;border-color:rgba(185,137,90,.28)}
+.pess-tabs.fin-subtabs{background:#101A16;border-color:rgba(130,185,155,.28)}
 .emp-tabs .fin-stab.active{background:var(--emp)}
 .pess-tabs .fin-stab.active{background:var(--pess)}
 .emp-tabs .fin-stab:hover:not(.active){background:var(--emp-light);color:var(--emp-dark)}
@@ -953,6 +956,7 @@ input[type=text]:focus, input[type=number]:focus, input[type=date]:focus, input[
   box-shadow: 0 6px 24px rgba(27,34,45,.2);
 }
 .sc-total    { background: linear-gradient(140deg, #2a2119 0%, #1b222d 100%); }
+#fin-stats .sc-total{background:linear-gradient(135deg,#1B2633 0%,#1B222D 100%)}#p-stats .sc-total{background:linear-gradient(135deg,#1B2A23 0%,#1B222D 100%)}
 .sc-reservas { background: linear-gradient(140deg, #2E3A4A 0%, #252E3B 100%); }
 .sc-receber  { background: linear-gradient(140deg, #252E3B 0%, #1B222D 100%); }
 .sc-quitados { background: linear-gradient(140deg, #252E3B 0%, #1B222D 100%); }
@@ -1830,7 +1834,7 @@ input[type="date"]{cursor:pointer}
       <div class="stats-grid" id="fin-stats"></div>
       <div style="display:flex;justify-content:flex-end;gap:8px;margin:10px 0 2px">
         <button onclick="abrirSimulador('fin')" style="background:none;color:#82b99b;border:1.5px solid #82b99b;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px">🧮 Simulador</button>
-        <button onclick="abrirHistMes('fin')" style="background:linear-gradient(135deg,#2a2119,#1b222d);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px">📅 Ver por mês</button>
+        <button onclick="abrirHistMes('fin')" style="background:linear-gradient(135deg,#1B2633,#1B222D);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px">📅 Ver por mês</button>
       </div>
       <div class="fin-card" style="margin-top:8px">
         <div class="fin-hdr"><h3>📊 Fluxo de Caixa — Empresa 2026</h3></div>
@@ -1939,7 +1943,7 @@ input[type="date"]{cursor:pointer}
       <div class="stats-grid" id="p-stats"></div>
       <div style="display:flex;justify-content:flex-end;gap:8px;margin:10px 0 2px">
         <button onclick="abrirSimulador('pess')" style="background:none;color:#82b99b;border:1.5px solid #82b99b;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px">🧮 Simulador</button>
-        <button onclick="abrirHistMes('pess')" style="background:linear-gradient(135deg,#2a2119,#1b222d);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px">📅 Ver por mês</button>
+        <button onclick="abrirHistMes('pess')" style="background:linear-gradient(135deg,#1B2A23,#1B222D);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px">📅 Ver por mês</button>
       </div>
       <div class="fin-card" style="margin-top:8px">
         <div class="fin-hdr"><h3>📊 Fluxo de Caixa — Pessoal 2026</h3></div>
@@ -2015,7 +2019,7 @@ input[type="date"]{cursor:pointer}
     <!-- P-APARTAMENTO -->
     <div id="p-tab-ap" class="fin-subtab-panel">
       <!-- PAGAMENTOS DA INQUILINA -->
-      <div class="fin-card" style="margin-bottom:16px;border-color:#2e251c">
+      <div class="fin-card" style="margin-bottom:16px;border-color:#1B2A23">
         <div class="fin-hdr" style="background:#2A2616;border-bottom-color:#2e251c"><h3>🏠 Pagamentos da Inquilina</h3></div>
         <div style="padding:14px">
           <div id="p-alug-lista" style="display:flex;flex-direction:column;gap:6px"></div>
@@ -2034,7 +2038,7 @@ input[type="date"]{cursor:pointer}
 
       <!-- REFORMA COM HUGO -->
       <div class="fin-card" style="margin-top:16px;border-color:#4a3a22">
-        <div class="fin-hdr" style="background:#2a2119;border-bottom-color:#4a3a22"><h3>🏗️ Reforma com Hugo</h3></div>
+        <div class="fin-hdr" style="background:#1A2A22;border-bottom-color:#2A4A3C"><h3>🏗️ Reforma com Hugo</h3></div>
 
         <!-- RESUMO -->
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;padding:14px">
@@ -2058,7 +2062,7 @@ input[type="date"]{cursor:pointer}
 
         <!-- GASTOS DO HUGO/ANA (recolhido por padrão) -->
         <div style="padding:0 14px 14px">
-          <button type="button" id="p-ref-gastos-toggle" onclick="toggleRefGastos()" style="width:100%;display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:700;color:#D8A24E;background:#2a2119;border:none;border-radius:8px;padding:9px 12px;border-left:3px solid #4a3a22;cursor:pointer;font-family:'Montserrat',sans-serif">
+          <button type="button" id="p-ref-gastos-toggle" onclick="toggleRefGastos()" style="width:100%;display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:700;color:#B4D8C5;background:#1B2A23;border:none;border-radius:8px;padding:9px 12px;border-left:3px solid #4a3a22;cursor:pointer;font-family:'Montserrat',sans-serif">
             <span>🛒 Gastos do Hugo / Ana</span><span id="p-ref-gastos-arrow">▼</span>
           </button>
           <div id="p-ref-gastos-box" style="display:none;margin-top:8px">
@@ -3263,8 +3267,8 @@ const OP_COLS=[
   {id:'confirmado',name:'Confirmado',sub:'Agendado',emoji:'✅',color:'#82B99B'},
   {id:'perdido',name:'Perdido',sub:'',emoji:'❌',color:'#8f9aaa'},
 ];
-// Cor única dos quadros de Projetos, Vídeo e Freelas (a cor de "Falta receber"). A pendência mantém o coral de atenção.
-const PR_COR_UNICA='#806B62';
+// Cor única dos quadros de Projetos, Vídeo e Freelas (o verde do CRM). A pendência mantém o coral de atenção.
+const PR_COR_UNICA='#82B99B';
 const PR_COLS=[
   {id:'festa-acontecer',name:'Festa para acontecer',emoji:'🎂',color:'#424A53'},
   {id:'pr-pendencia',name:'Pendência',sub:'⏳ Falta algo p/ avançar',emoji:'🧩',color:'#E0877A'},
@@ -4175,8 +4179,8 @@ function buildPrCol(col,cs){
   const addAction=col.cat?`openPrModal(null,'${col.id}')`:`openOpModal(null,'confirmado',null,true)`;
   // Cor única nos quadros de Projetos; a pendência mantém o coral e texto escuro para ter contraste.
   const corQuadro=col.id==='pr-pendencia'?col.color:PR_COR_UNICA;
-  const txtQuadro=col.id==='pr-pendencia'?'#11151C':'#fff';
-  const bgBadgeQuadro=col.id==='pr-pendencia'?'rgba(255,255,255,.16)':'rgba(0,0,0,.22)';
+  const txtQuadro='#11151C';
+  const bgBadgeQuadro='rgba(255,255,255,.16)';
   const hdrStart=adjustHexColor(corQuadro,4);
   const hdrEnd=adjustHexColor(corQuadro,-18);
   const _boardKey='pr-'+(col.cat||'proj');
@@ -7877,8 +7881,8 @@ function renderFinResumo(){
   const cCurFin=_calcFinMes(curMesFin);
   const finBrutoMes=cCurFin.festas.reduce((s,f)=>s+(f.vFull||0),0);
   const dispFin=cCurFin.totalAReceber-cCurFin.pendG-cCurFin.pendD+cCurFin.vg;
-  const dfOk=dispFin>1000,dfNo=dispFin<0;
-  const dfGrad=dfOk?'linear-gradient(135deg,#2E3A4A,#1B222D)':dfNo?'linear-gradient(135deg,#e78a7c,#7f1d1d)':'linear-gradient(135deg,#7a3434,#4a2420)';
+  const dfOk=dispFin>0,dfNo=dispFin<0;
+  const dfGrad=dfOk?'linear-gradient(135deg,#82B99B,#5E9C7A)':dfNo?'linear-gradient(135deg,#e78a7c,#7f1d1d)':'linear-gradient(135deg,#7a3434,#4a2420)';const dfTxt=dfOk?'#11151C':'#fff';
   // Semana atual (segunda a domingo) — gasto de transporte (lado Empresa)
   // das festas que caem nessa janela, independente do mês.
   const _hojeSem=new Date();
@@ -7892,9 +7896,9 @@ function renderFinResumo(){
     <div class="stat-card" style="background:linear-gradient(135deg,#5a6b80,#1b2633)"><div class="stat-icon">🚌</div><div class="stat-label">Transporte da Semana</div><div class="stat-value">${fmtMoney(transporteSemana)}</div><div class="stat-sub" style="opacity:.8">${festasSemana.length} evento(s) · ${fmtDate(_segISO)} a ${fmtDate(_domISO)}</div></div>
     <div class="stat-card sc-reservas"><div class="stat-icon">✅</div><div class="stat-label">Festas líquido — ${curMesFin}</div><div class="stat-value">${fmtMoney(cCurFin.totalF)}</div><div class="stat-sub">Parte líquida da empresa</div></div>
     <div class="stat-card sc-receber"><div class="stat-icon">⏳</div><div class="stat-label">A Receber — ${curMesFin}</div><div class="stat-value">${fmtMoney(cCurFin.totalAReceber)}</div><div class="stat-sub">Restante das festas do mês</div></div>
-    <div class="stat-card" style="background:${dfGrad}"><div class="stat-icon">💸</div><div class="stat-label">Pode gastar — ${curMesFin}</div><div class="stat-value">${fmtMoney(dispFin)}</div><div class="stat-sub" style="opacity:.8">Festas − contas − gastos + ${fmtMoney(cCurFin.vg)} banco</div></div>
+    <div class="stat-card" style="background:${dfGrad};color:${dfTxt}"><div class="stat-icon">💸</div><div class="stat-label">Pode gastar — ${curMesFin}</div><div class="stat-value">${fmtMoney(dispFin)}</div><div class="stat-sub" style="opacity:.8">Festas − contas − gastos + ${fmtMoney(cCurFin.vg)} banco</div></div>
     <div class="stat-card" style="background:linear-gradient(135deg,#252E3B,#1B222D)"><div class="stat-icon">🏦</div><div class="stat-label">Reserva Guardada</div><div class="stat-value" style="cursor:text" onclick="startFinRGEdit()" title="Clique para editar o valor guardado">${fmtMoney(finRG)}</div><div class="stat-sub" style="opacity:.8;cursor:text;text-decoration:underline dotted" onclick="startFinRGEdit()" title="Clique para editar o valor guardado">Clique para editar</div></div>
-    <div class="stat-card" style="background:linear-gradient(135deg,#2a2119,#1B222D)" onclick="event.stopPropagation()"><div class="stat-icon">➕</div><div class="stat-label">Adicionar ao Banco</div>
+    <div class="stat-card" style="background:linear-gradient(135deg,var(--emp-light),#1B222D)" onclick="event.stopPropagation()"><div class="stat-icon">➕</div><div class="stat-label">Adicionar ao Banco</div>
       <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px;position:relative;z-index:1">
         <input type="text" id="fin-entrada-desc" placeholder="De onde veio? (opcional)" style="width:100%;box-sizing:border-box;padding:6px 8px;border:none;border-radius:6px;font:600 12px 'Montserrat',sans-serif;outline:none">
         <div style="display:flex;gap:6px">
@@ -8074,7 +8078,7 @@ function renderFinFestas(){
   const resumoEl=document.getElementById('fin-mes-resumo');
   if(resumoEl&&festas.length){
     const cards2=[
-      {label:'💼 Empresa (40%)',val:totAll,grad:'linear-gradient(135deg,#2a2119,#1b222d)'},
+      {label:'💼 Empresa (40%)',val:totAll,grad:'linear-gradient(135deg,var(--emp-light),#1b222d)'},
       {label:'✅ Recebido',val:totPaid,grad:'linear-gradient(135deg,#2E3A4A,#252E3B)'},
       {label:'⏳ A receber',val:totRest,grad:'linear-gradient(135deg,#2E3A4A,#2A2119)'},
       {label:'📈 Lucro líquido',val:totLucro,grad:'linear-gradient(135deg,#2E3A4A,#1B222D)'},
@@ -8879,7 +8883,7 @@ function renderFinGastos(){
   // Render "Nova categoria" button area
   const catBtnArea=document.getElementById('fin-cat-btn-area');
   if(catBtnArea){
-    catBtnArea.innerHTML=`<tr id="fin-new-cat-row" style="display:none"><td colspan="4" style="padding:4px 8px;background:var(--surface-2,#252E3B)"><div style="display:flex;gap:6px;align-items:center"><input id="fin-new-cat-inp" type="text" placeholder="Nome da categoria" style="flex:1;padding:4px 8px;border:1.5px solid #82b99b;border-radius:6px;font-size:12px" onkeydown="if(event.key==='Enter')addFinCat();if(event.key==='Escape'){this.closest('tr').style.display='none'}"><button onclick="addFinCat()" style="background:#82b99b;color:#11151C;border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer">✓</button><button onclick="document.getElementById('fin-new-cat-row').style.display='none'" style="background:none;border:1px solid #ccc;border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer">✕</button></div></td></tr>
+    catBtnArea.innerHTML=`<tr id="fin-new-cat-row" style="display:none"><td colspan="4" style="padding:4px 8px;background:var(--surface-2,#252E3B)"><div style="display:flex;gap:6px;align-items:center"><input id="fin-new-cat-inp" type="text" placeholder="Nome da categoria" style="flex:1;padding:4px 8px;border:1.5px solid var(--emp);border-radius:6px;font-size:12px" onkeydown="if(event.key==='Enter')addFinCat();if(event.key==='Escape'){this.closest('tr').style.display='none'}"><button onclick="addFinCat()" style="background:#82b99b;color:#11151C;border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer">✓</button><button onclick="document.getElementById('fin-new-cat-row').style.display='none'" style="background:none;border:1px solid #ccc;border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer">✕</button></div></td></tr>
 <tr><td colspan="4" style="padding:4px 8px;background:var(--surface-2,#252E3B);border-top:1px solid var(--border)"><button onclick="document.getElementById('fin-new-cat-row').style.display='';document.getElementById('fin-new-cat-inp').focus()" style="background:none;border:1px dashed #82b99b;border-radius:6px;padding:3px 10px;font-size:11px;color:#82b99b;cursor:pointer;font-weight:600">＋ Nova categoria</button></td></tr>`;
   }
   let html='';
@@ -8894,10 +8898,10 @@ function renderFinGastos(){
       const inUse=catHasItems;
       const subtot=items.reduce((s,{g})=>s+g.v,0);
       const trashBtn=!inUse?`<button onclick="delFinCat('${esc(cat.k)}')" title="Excluir categoria" style="background:none;border:none;cursor:pointer;color:#EA7B6C;font-size:13px;padding:0 4px;opacity:.7;float:right">🗑</button>`:'';
-      html+=`<tr ondragover="event.preventDefault();this.style.outline='2px dashed #82b99b';this.style.background='#2a2119'" ondragleave="this.style.outline='';this.style.background=''" ondrop="dropFinGasto(event,'${esc(cat.k)}',this)">
+      html+=`<tr ondragover="event.preventDefault();this.style.outline='2px dashed #82b99b';this.style.background='var(--emp-light)'" ondragleave="this.style.outline='';this.style.background=''" ondrop="dropFinGasto(event,'${esc(cat.k)}',this)">
 <td colspan="4" style="background:var(--surface-2,#252E3B);padding:5px 8px;font-size:11px;font-weight:700;color:#82b99b;letter-spacing:.4px;border-top:2px solid var(--border)">${cat.lbl} <span style="font-size:10px;cursor:pointer;opacity:.6;margin-left:4px" onclick="renameFinCat('${cat.k}',this)" title="Renomear">✏️</span><span style="font-weight:600;color:#b8794c;margin-left:4px">${catHasItems?fmtMoney(subtot):''}</span>${trashBtn}</td></tr>`;
       items.forEach(({g,i})=>{
-        html+=`<tr draggable="true" ondragstart="dragFinGasto(event,'${finCurG}',${i})" ondragend="event.currentTarget.style.opacity=''" ondragover="event.preventDefault();this.style.background='#2a2119'" ondragleave="this.style.background=''" ondrop="dropFinGasto(event,'${esc(cat.k)}',this)" style="cursor:grab">
+        html+=`<tr draggable="true" ondragstart="dragFinGasto(event,'${finCurG}',${i})" ondragend="event.currentTarget.style.opacity=''" ondragover="event.preventDefault();this.style.background='var(--emp-light)'" ondragleave="this.style.background=''" ondrop="dropFinGasto(event,'${esc(cat.k)}',this)" style="cursor:grab">
     <td style="font-weight:600;cursor:pointer" onclick="editFinGastoNome('${finCurG}',${i},this)" title="✏️ Clique para editar">${esc(g.n)} <span style='font-size:10px;opacity:.4'>✏️</span></td>
     <td style="font-weight:600;cursor:pointer;color:#82b99b" onclick="editFinGastoValor('${finCurG}',${i},this)" title="✏️ Clique para editar">${fmtMoney(g.v)} <span style='font-size:10px;opacity:.5'>✏️</span></td>
     <td><input type="checkbox" class="fin-check" ${g.p?'checked':''} onchange="toggleFinGasto('${finCurG}',${i},this.checked)"></td>
@@ -8996,7 +9000,7 @@ function editFinGastoValor(mes,i,el){
   if(el.querySelector('input'))return;
   const cur=(finGD[mes]&&finGD[mes][i])?finGD[mes][i].v:0;
   el.innerHTML=`<input type="number" step="0.01" value="${cur}"
-    style="width:95px;padding:4px 7px;border:1.5px solid #82b99b;border-radius:6px;font-size:13px;font-weight:700;color:#2a2119"
+    style="width:95px;padding:4px 7px;border:1.5px solid var(--emp);border-radius:6px;font-size:13px;font-weight:700;color:var(--n900)"
     onblur="saveFinGastoValor('${mes}',${i},this)"
     onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')renderFinGastos()"
     autofocus>`;
@@ -9014,7 +9018,7 @@ function editFinGastoNome(mes,i,el){
   const cur=(finGD[mes]&&finGD[mes][i])?finGD[mes][i].n:'';
   el.innerHTML=`<div style="display:flex;gap:4px;align-items:center">
     <input id="fin-nome-inp-${i}" type="text" value="${cur.replace(/"/g,'&quot;')}"
-      style="flex:1;padding:4px 7px;border:1.5px solid #82b99b;border-radius:6px;font-size:13px;font-weight:700;color:#2a2119;background:var(--surface)"
+      style="flex:1;padding:4px 7px;border:1.5px solid var(--emp);border-radius:6px;font-size:13px;font-weight:700;color:var(--n900);background:var(--surface)"
       onkeydown="if(event.key==='Enter')_saveFinNome('${mes}',${i});if(event.key==='Escape')renderFinGastos()"
       autofocus>
     <button onclick="_saveFinNome('${mes}',${i})" style="flex-shrink:0;background:#82b99b;color:#11151C;border:none;border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer;font-weight:700">✓</button>
@@ -9043,7 +9047,7 @@ function editPessGastoNome(mes,i,el){
   const cur=(pessGD[mes]&&pessGD[mes][i])?pessGD[mes][i].n:'';
   el.innerHTML=`<div style="display:flex;gap:4px;align-items:center">
     <input id="pess-nome-inp-${i}" type="text" value="${cur.replace(/"/g,'&quot;')}"
-      style="flex:1;padding:4px 7px;border:1.5px solid #82b99b;border-radius:6px;font-size:13px;font-weight:700;color:#2a2119;background:var(--surface)"
+      style="flex:1;padding:4px 7px;border:1.5px solid var(--emp);border-radius:6px;font-size:13px;font-weight:700;color:var(--n900);background:var(--surface)"
       onkeydown="if(event.key==='Enter')_savePessNome('${mes}',${i});if(event.key==='Escape')renderPessGastos()"
       autofocus>
     <button onclick="_savePessNome('${mes}',${i})" style="flex-shrink:0;background:#82b99b;color:#11151C;border:none;border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer;font-weight:700">✓</button>
@@ -9542,8 +9546,8 @@ function renderPessResumo(){
     return s+_andLiqLinha(f);
   },0);
   const disponivel=aReceberCur-cCur.pendG-cCur.pendD+cCur.vg;
-  const dOk=disponivel>300,dNo=disponivel<0;
-  const dGrad=dOk?'linear-gradient(135deg,#2E3A4A,#1B222D)':dNo?'linear-gradient(135deg,#e78a7c,#7f1d1d)':'linear-gradient(135deg,#7a3434,#4a2420)';
+  const dOk=disponivel>0,dNo=disponivel<0;
+  const dGrad=dOk?'linear-gradient(135deg,#82B99B,#5E9C7A)':dNo?'linear-gradient(135deg,#e78a7c,#7f1d1d)':'linear-gradient(135deg,#7a3434,#4a2420)';const dTxt=dOk?'#11151C':'#fff';
   // Semana atual (segunda a domingo) — mesma lógica do Financeiro Empresa,
   // só que olhando pras festas direto em opCards (pessFD é por mês, não dá
   // pra usar quando a semana cruza a virada do mês).
@@ -9556,12 +9560,12 @@ function renderPessResumo(){
   const statsEl=document.getElementById('p-stats');
   if(statsEl)statsEl.innerHTML=`
     <div class="stat-card sc-total"><div class="stat-icon">💰</div><div class="stat-label">Festas bruto — ${curMes}</div><div class="stat-value">${fmtMoney(cCur.totalF)}</div><div class="stat-sub">${(pessFD[curMes]||[]).length} evento(s)</div></div>
-    <div class="stat-card" style="background:linear-gradient(135deg,#5a6b80,#1b2633)"><div class="stat-icon">🚌</div><div class="stat-label">Transporte da Semana</div><div class="stat-value">${fmtMoney(transporteSemanaP)}</div><div class="stat-sub" style="opacity:.8">${festasSemanaP.length} evento(s) · ${fmtDate(_segISOP)} a ${fmtDate(_domISOP)}</div></div>
+    <div class="stat-card" style="background:linear-gradient(135deg,#5B7A6A,#1B2A23)"><div class="stat-icon">🚌</div><div class="stat-label">Transporte da Semana</div><div class="stat-value">${fmtMoney(transporteSemanaP)}</div><div class="stat-sub" style="opacity:.8">${festasSemanaP.length} evento(s) · ${fmtDate(_segISOP)} a ${fmtDate(_domISOP)}</div></div>
     <div class="stat-card sc-reservas"><div class="stat-icon">✅</div><div class="stat-label">Festas líquido — ${curMes}</div><div class="stat-value">${fmtMoney(pessLiqMes)}</div><div class="stat-sub">Depois dos gastos pessoais</div></div>
     <div class="stat-card sc-receber"><div class="stat-icon">⏳</div><div class="stat-label">A Receber — ${curMes}</div><div class="stat-value">${fmtMoney(aReceberCur)}</div><div class="stat-sub">Restante das festas do mês</div></div>
-    <div class="stat-card" style="background:${dGrad}"><div class="stat-icon">💸</div><div class="stat-label">Pode gastar — ${curMes}</div><div class="stat-value">${fmtMoney(disponivel)}</div><div class="stat-sub" style="opacity:.8">Festas − contas − gastos + ${fmtMoney(cCur.vg)} banco</div></div>
+    <div class="stat-card" style="background:${dGrad};color:${dTxt}"><div class="stat-icon">💸</div><div class="stat-label">Pode gastar — ${curMes}</div><div class="stat-value">${fmtMoney(disponivel)}</div><div class="stat-sub" style="opacity:.8">Festas − contas − gastos + ${fmtMoney(cCur.vg)} banco</div></div>
     <div class="stat-card" style="background:linear-gradient(135deg,#252E3B,#1B222D)"><div class="stat-icon">🏦</div><div class="stat-label">Reserva Guardada</div><div class="stat-value" style="cursor:text" onclick="startPessRGEdit()" title="Clique para editar o valor guardado">${fmtMoney(pessRG)}</div><div class="stat-sub" style="opacity:.8;cursor:text;text-decoration:underline dotted" onclick="startPessRGEdit()" title="Clique para editar o valor guardado">Clique para editar</div></div>
-    <div class="stat-card" style="background:linear-gradient(135deg,#2a2119,#1B222D)" onclick="event.stopPropagation()"><div class="stat-icon">➕</div><div class="stat-label">Adicionar ao Banco</div>
+    <div class="stat-card" style="background:linear-gradient(135deg,var(--emp-light),#1B222D)" onclick="event.stopPropagation()"><div class="stat-icon">➕</div><div class="stat-label">Adicionar ao Banco</div>
       <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px;position:relative;z-index:1">
         <input type="text" id="pess-entrada-desc" placeholder="De onde veio? (opcional)" style="width:100%;box-sizing:border-box;padding:6px 8px;border:none;border-radius:6px;font:600 12px 'Montserrat',sans-serif;outline:none">
         <div style="display:flex;gap:6px">
@@ -9754,7 +9758,7 @@ function renderPessEntradas(){
   const resumoEl=document.getElementById('p-mes-resumo');
   if(resumoEl&&F.length){
     const pcards=[
-      {label:'💰 Total líquido',val:tot,grad:'linear-gradient(135deg,#2a2119,#1b222d)'},
+      {label:'💰 Total líquido',val:tot,grad:'linear-gradient(135deg,var(--emp-light),#1b222d)'},
       {label:'✅ Recebido',val:totPaid,grad:'linear-gradient(135deg,#2E3A4A,#252E3B)'},
       {label:'⏳ A receber',val:totRest,grad:'linear-gradient(135deg,#2E3A4A,#2A2119)'},
       {label:'💸 Custos',val:totCusto,grad:'linear-gradient(135deg,#7A3A32,#5C2A26)'},
@@ -9874,7 +9878,7 @@ function renderPessGastos(){
   // Render "Nova categoria" button area
   const catBtnAreaP=document.getElementById('pess-cat-btn-area');
   if(catBtnAreaP){
-    catBtnAreaP.innerHTML=`<tr id="pess-new-cat-row" style="display:none"><td colspan="4" style="padding:4px 8px;background:var(--surface-2,#252E3B)"><div style="display:flex;gap:6px;align-items:center"><input id="pess-new-cat-inp" type="text" placeholder="Nome da categoria" style="flex:1;padding:4px 8px;border:1.5px solid #82b99b;border-radius:6px;font-size:12px" onkeydown="if(event.key==='Enter')addPessCat();if(event.key==='Escape'){this.closest('tr').style.display='none'}"><button onclick="addPessCat()" style="background:#82b99b;color:#11151C;border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer">✓</button><button onclick="document.getElementById('pess-new-cat-row').style.display='none'" style="background:none;border:1px solid #ccc;border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer">✕</button></div></td></tr>
+    catBtnAreaP.innerHTML=`<tr id="pess-new-cat-row" style="display:none"><td colspan="4" style="padding:4px 8px;background:var(--surface-2,#252E3B)"><div style="display:flex;gap:6px;align-items:center"><input id="pess-new-cat-inp" type="text" placeholder="Nome da categoria" style="flex:1;padding:4px 8px;border:1.5px solid var(--emp);border-radius:6px;font-size:12px" onkeydown="if(event.key==='Enter')addPessCat();if(event.key==='Escape'){this.closest('tr').style.display='none'}"><button onclick="addPessCat()" style="background:#82b99b;color:#11151C;border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer">✓</button><button onclick="document.getElementById('pess-new-cat-row').style.display='none'" style="background:none;border:1px solid #ccc;border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer">✕</button></div></td></tr>
 <tr><td colspan="4" style="padding:4px 8px;background:var(--surface-2,#252E3B);border-top:1px solid var(--border)"><button onclick="document.getElementById('pess-new-cat-row').style.display='';document.getElementById('pess-new-cat-inp').focus()" style="background:none;border:1px dashed #82b99b;border-radius:6px;padding:3px 10px;font-size:11px;color:#82b99b;cursor:pointer;font-weight:600">＋ Nova categoria</button></td></tr>`;
   }
   let html='';
@@ -9887,10 +9891,10 @@ function renderPessGastos(){
       const catHasItems=items.length>0;
       const subtot=items.reduce((s,{g})=>s+g.v,0);
       const trashBtn=!catHasItems?`<button onclick="delPessCat('${esc(cat.k)}')" title="Excluir categoria" style="background:none;border:none;cursor:pointer;color:#EA7B6C;font-size:13px;padding:0 4px;opacity:.7;float:right">🗑</button>`:'';
-      html+=`<tr ondragover="event.preventDefault();this.style.outline='2px dashed #82b99b';this.style.background='#2a2119'" ondragleave="this.style.outline='';this.style.background=''" ondrop="dropPessGasto(event,'${esc(cat.k)}',this)">
+      html+=`<tr ondragover="event.preventDefault();this.style.outline='2px dashed #82b99b';this.style.background='var(--emp-light)'" ondragleave="this.style.outline='';this.style.background=''" ondrop="dropPessGasto(event,'${esc(cat.k)}',this)">
 <td colspan="4" style="background:var(--surface-2,#252E3B);padding:5px 8px;font-size:11px;font-weight:700;color:#82b99b;letter-spacing:.4px;border-top:2px solid var(--border)">${cat.lbl} <span style="font-size:10px;cursor:pointer;opacity:.6;margin-left:4px" onclick="renamePessCat('${cat.k}',this)" title="Renomear">✏️</span><span style="font-weight:600;color:#b8794c;margin-left:4px">${catHasItems?fmtMoney(subtot):''}</span>${trashBtn}</td></tr>`;
       items.forEach(({g,i})=>{
-        html+=`<tr draggable="true" ondragstart="dragPessGasto(event,'${pessCurG}',${i})" ondragend="event.currentTarget.style.opacity=''" ondragover="event.preventDefault();this.style.background='#2a2119'" ondragleave="this.style.background=''" ondrop="dropPessGasto(event,'${esc(cat.k)}',this)" style="cursor:grab">
+        html+=`<tr draggable="true" ondragstart="dragPessGasto(event,'${pessCurG}',${i})" ondragend="event.currentTarget.style.opacity=''" ondragover="event.preventDefault();this.style.background='var(--emp-light)'" ondragleave="this.style.background=''" ondrop="dropPessGasto(event,'${esc(cat.k)}',this)" style="cursor:grab">
     <td style="font-weight:600;cursor:pointer" onclick="editPessGastoNome('${pessCurG}',${i},this)" title="✏️ Clique para editar">${esc(g.n)} <span style='font-size:10px;opacity:.4'>✏️</span></td>
     <td style="font-weight:600;cursor:pointer;color:#82b99b" onclick="editPessGastoValor('${pessCurG}',${i},this)" title="✏️ Clique para editar">${fmtMoney(g.v)} <span style='font-size:10px;opacity:.5'>✏️</span></td>
     <td><input type="checkbox" class="fin-check" ${g.p?'checked':''} onchange="togglePessGasto('${pessCurG}',${i},this.checked)"></td>
@@ -9948,7 +9952,7 @@ function editPessGastoValor(mes,i,el){
   if(el.querySelector('input'))return;
   const cur=(pessGD[mes]&&pessGD[mes][i])?pessGD[mes][i].v:0;
   el.innerHTML=`<input type="number" step="0.01" value="${cur}"
-    style="width:95px;padding:4px 7px;border:1.5px solid #82b99b;border-radius:6px;font-size:13px;font-weight:700;color:#2a2119"
+    style="width:95px;padding:4px 7px;border:1.5px solid var(--emp);border-radius:6px;font-size:13px;font-weight:700;color:var(--n900)"
     onblur="savePessGastoValor('${mes}',${i},this)"
     onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape')renderPessGastos()"
     autofocus>`;
@@ -10266,7 +10270,7 @@ function _contaAccordionHTML(tipo,i,c,mes,itens,itensAtivos,temItens,pend,val){
       <span class="conta-drag-handle">⠿</span>
       <button class="ci-pag-btn${xPago?' pago':''}" onclick="pagarContaItem('${tipo}',${i},${j})" title="${xPago?'Desfazer':'Marcar como pago'}">${xPago?'✓':''}</button>
       <span class="conta-item-nome" style="${xPago?'text-decoration:line-through;color:var(--muted)':''}">${esc(x.nome)}</span>
-      ${_periodoLabel(x)?`<span style="font-size:9px;font-weight:700;color:#82b99b;background:#2e251c;border-radius:4px;padding:1px 5px;flex-shrink:0">▶ ${_periodoLabel(x)}</span>`:''}
+      ${_periodoLabel(x)?`<span style="font-size:9px;font-weight:700;color:var(--emp-dark);background:var(--emp-light);border-radius:4px;padding:1px 5px;flex-shrink:0">▶ ${_periodoLabel(x)}</span>`:''}
       <span class="conta-card-dia" style="font-size:10px;padding:1px 6px;cursor:pointer;flex-shrink:0" title="Clique para ${x.dia?'editar':'definir'} o dia do vencimento deste item" onclick="event.stopPropagation();editContaItemDia('${tipo}',${i},${j},this)">${x.dia?`Dia ${x.dia}`:'+ Dia'} <span style="font-size:9px;opacity:.4">✏️</span></span>
       <span class="conta-item-val" style="${xPago?'color:var(--success,#82B99B)':''}cursor:pointer;text-decoration:underline dotted" title="Clique para editar" onclick="event.stopPropagation();editContaItemValor('${tipo}',${i},${j},this)">${fmtMoney(xVal)} <span style="font-size:10px;opacity:.4">✏️</span></span>
       <button class="fin-del" onclick="delContaItem('${tipo}',${i},${j})" title="Remover">×</button>
@@ -10313,7 +10317,7 @@ function renderFinContas(){
         <span class="conta-card-valor" style="color:${pag?'var(--success,#82B99B)':'var(--accent)'}${!temItens?';cursor:pointer;text-decoration:underline dotted':''}" title="${!temItens?'Clique para editar o valor':'Falta pagar neste mês'}" onclick="event.stopPropagation();${!temItens?`editContaValor('fin',${i},this)`:''}">${fmtMoney(pend)}${!temItens?` <span style="font-size:10px;opacity:.4">✏️</span>`:''}</span>${pend!==val?`<span style="font-size:10.5px;color:var(--muted);white-space:nowrap;margin-left:6px">de ${fmtMoney(val)}</span>`:''}
         <span class="conta-card-dia" style="cursor:pointer" title="Clique para ${c.dia?'editar':'definir'} o dia do vencimento" onclick="event.stopPropagation();editContaDia('fin',${i},this)">${c.dia?`Dia ${c.dia}`:'+ Dia'} <span style="font-size:10px;opacity:.4">✏️</span></span>
         <button type="button" onclick="event.stopPropagation();toggleContaAlerta('fin',${i})" title="${c.semAlerta?'Sem data fixa — notificação de vencimento desativada. Clique para ativar':'Avisa quando vencer. Clique se essa conta não tem data fixa (ex: gasto do mês)'}" style="background:none;border:none;cursor:pointer;font-size:13px;opacity:${c.semAlerta?'.4':'1'};padding:0 2px">${c.semAlerta?'🔕':'🔔'}</button>
-        ${_periodoLabel(c)?`<span style="font-size:10px;font-weight:700;color:#82b99b;background:#2e251c;border-radius:5px;padding:2px 7px">${_periodoLabel(c)}</span>`:''}
+        ${_periodoLabel(c)?`<span style="font-size:10px;font-weight:700;color:var(--emp-dark);background:var(--emp-light);border-radius:5px;padding:2px 7px">${_periodoLabel(c)}</span>`:''}
         ${variavel?'':`<button class="conta-card-pag ${pag?'sim':'nao'}" onclick="event.stopPropagation();pagarFinConta(${i})">${pag?'✓ Pago':'Pagar'}</button>`}
         <button class="fin-del" onclick="event.stopPropagation();delFinConta(${i})">×</button>
       </div>
@@ -11044,7 +11048,7 @@ function renderPessContas(){
         <span class="conta-card-valor" style="color:${pag?'var(--success,#82B99B)':'var(--accent)'}${!temItens?';cursor:pointer;text-decoration:underline dotted':''}" title="${!temItens?'Clique para editar o valor':'Falta pagar neste mês'}" onclick="event.stopPropagation();${!temItens?`editContaValor('pess',${i},this)`:''}">${fmtMoney(pend)}${!temItens?` <span style="font-size:10px;opacity:.4">✏️</span>`:''}</span>${pend!==val?`<span style="font-size:10.5px;color:var(--muted);white-space:nowrap;margin-left:6px">de ${fmtMoney(val)}</span>`:''}
         <span class="conta-card-dia" style="cursor:pointer" title="Clique para ${c.dia?'editar':'definir'} o dia do vencimento" onclick="event.stopPropagation();editContaDia('pess',${i},this)">${c.dia?`Dia ${c.dia}`:'+ Dia'} <span style="font-size:10px;opacity:.4">✏️</span></span>
         <button type="button" onclick="event.stopPropagation();toggleContaAlerta('pess',${i})" title="${c.semAlerta?'Sem data fixa — notificação de vencimento desativada. Clique para ativar':'Avisa quando vencer. Clique se essa conta não tem data fixa (ex: gasto do mês)'}" style="background:none;border:none;cursor:pointer;font-size:13px;opacity:${c.semAlerta?'.4':'1'};padding:0 2px">${c.semAlerta?'🔕':'🔔'}</button>
-        ${_periodoLabel(c)?`<span style="font-size:10px;font-weight:700;color:#82b99b;background:#2e251c;border-radius:5px;padding:2px 7px">${_periodoLabel(c)}</span>`:''}
+        ${_periodoLabel(c)?`<span style="font-size:10px;font-weight:700;color:var(--emp-dark);background:var(--emp-light);border-radius:5px;padding:2px 7px">${_periodoLabel(c)}</span>`:''}
         ${variavel?'':`<button class="conta-card-pag ${pag?'sim':'nao'}" onclick="event.stopPropagation();pagarPessConta(${i})">${pag?'✓ Pago':'Pagar'}</button>`}
         <button class="fin-del" onclick="event.stopPropagation();delPessConta(${i})">×</button>
       </div>
@@ -11141,7 +11145,7 @@ function _tryVerificarContasHoje(){
 let _histMesTipo='pess'; // 'pess' ou 'fin'
 function abrirHistMes(tipo){
   _histMesTipo=tipo;
-  const cor=tipo==='fin'?'#D9A66F':'#E3B98A';
+  const cor=tipo==='fin'?'#83A9C9':'#82B99B';
   const titulo=tipo==='fin'?'📅 Histórico por Mês — Empresa':'📅 Histórico por Mês — André';
   document.getElementById('hist-mes-titulo').textContent=titulo;
   // popular select com meses disponíveis (inverso = mais recente primeiro)
@@ -11159,8 +11163,8 @@ function fecharHistMes(){
 function renderHistMes(){
   const tipo=_histMesTipo;
   const m=document.getElementById('hist-mes-sel').value;
-  const cor=tipo==='fin'?'#D9A66F':'#E3B98A';
-  const corLight=tipo==='fin'?'#2e251c':'#241715';
+  const cor=tipo==='fin'?'#83A9C9':'#82B99B';
+  const corLight=tipo==='fin'?'#1B2633':'#1B2A23';
   let bruto=0, liquido=0, transporte=0;
 
   if(tipo==='pess'){
