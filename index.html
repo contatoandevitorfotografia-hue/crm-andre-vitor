@@ -1976,8 +1976,10 @@ input[type="date"]{cursor:pointer}
         <div class="fin-trow" style="border-top:none;padding-top:2px"><span style="color:var(--muted)">Custos transporte</span><span id="p-ftot-lucro" style="font-weight:700;color:#EA7B6C"></span></div>
         <div class="fin-trow" style="border-top:none;padding-top:2px"><span style="color:var(--muted)">Lucro líquido</span><span id="p-ftot-lucroliq" style="font-weight:800;color:#b4d8c5"></span></div>
       </div>
-      <button class="fin-add-btn" onclick="toggleFinForm('p-ff')">+ Adicionar festa</button>
+      <button class="fin-add-btn" onclick="_abrirFormFestaPess()">+ Adicionar festa</button>
       <div class="fin-add-form" id="p-ff">
+        <select id="p-pick-festa" onchange="_pickFestaPess(this.value)" style="width:100%;margin-bottom:8px"></select>
+        <div id="p-pick-info" style="display:none;font-size:12px;color:var(--muted);margin-bottom:8px;line-height:1.5"></div>
         <div class="fin-row2">
           <input type="text" id="p-f-n" placeholder="Descrição (ex: Freelance, Aluguel...)">
           <input type="number" id="p-f-v" placeholder="Valor (R$)" step="0.01">
@@ -9708,7 +9710,7 @@ function renderPessEntradas(){
       ?(gastosPes>0
         ?`<span style="color:var(--danger);cursor:pointer;text-decoration:underline dotted" title="Clique para editar" onclick="event.stopPropagation();inlineEditCustoPess('${_cardPess.id}')">${fmtMoney(gastosPes)}</span>`
         :`<span style="color:#8f9aaa;cursor:pointer;font-size:12px" onclick="event.stopPropagation();inlineEditCustoPess('${_cardPess.id}')">— editar</span>`)
-      :(gastosPes>0?`<span style="color:var(--danger)">${fmtMoney(gastosPes)}</span>`:'—');
+      :(f.vTransp>0?`<span style="color:var(--muted)" title="Transporte pessoal da festa">🚌 ${fmtMoney(f.vTransp)}</span>`:(gastosPes>0?`<span style="color:var(--danger)">${fmtMoney(gastosPes)}</span>`:'—'));
     const statusClickPess=op?`inlineEditReservaPess('${op.id}')`:`quickEditPagPess('${pessCurF}',${realIdx})`;
     const delBtn = (f._opId||f._opFrlId)
       ? `<button class="fin-del" onclick="event.stopPropagation();delPessFesta('${pessCurF}',${realIdx},true)" title="Remover entrada">×</button>`
@@ -9717,6 +9719,8 @@ function renderPessEntradas(){
     // Campos editáveis
     const brutoCell = _cardA
       ? `<span style="color:var(--muted);font-weight:700" title="Valor bruto da festa (antes do transporte do André)">${fmtMoney(_andBruto)}</span>`
+      : f.vBruto!=null
+      ? `<span style="color:var(--muted);font-weight:700" title="Valor bruto da festa (antes do transporte do André)">${fmtMoney(f.vBruto)}</span>`
       : `<span style="color:var(--muted);font-weight:700;cursor:pointer;text-decoration:underline dotted" title="Clique para editar o valor bruto (antes do desconto do gasto pessoal)" onclick="editPessValor('${pessCurF}',${realIdx},this)">${fmtMoney(f.v)}</span>`;
     const valorCell = `<span style="color:var(--success);font-weight:700">${fmtMoney(Math.max(0,_andShare))}</span>`;
     const pagoBtnHtml = op 
@@ -9856,6 +9860,39 @@ function savePessEntradaValor(mes,i,inp){
   savePessData();renderPessEntradas();renderPessResumo();
   toast('✅ Valor atualizado!','green');
 }
+// Puxar uma festa confirmada para o Financeiro do André: cria uma cópia, sem vínculo automático com a festa.
+function _abrirFormFestaPess(){
+  if(!pessCurF)pessCurF=_finCurMes();
+  const sel=document.getElementById('p-pick-festa');
+  if(sel){
+    const jaLancadas=new Set((pessFD[pessCurF]||[]).filter(e=>e._festaRef).map(e=>e._festaRef));
+    const festas=opCards.filter(c=>FIN_COLS.includes(c.coluna)&&(c.valorTotal||0)>0&&c.dataEvento&&_chaveMesFesta(c.dataEvento)===pessCurF).sort((a,b)=>a.dataEvento.localeCompare(b.dataEvento));
+    sel.innerHTML='<option value="">— puxar uma festa confirmada deste mês (opcional) —</option>'+festas.map(c=>{
+      const [,mm,dd]=c.dataEvento.split('-');
+      const ja=jaLancadas.has(c.id);
+      return `<option value="${c.id}"${ja?' disabled':''}>${dd}/${mm} · ${esc(c.nomePais||c.titulo||'Cliente')} — André ${fmtMoney(calcAndreShare(c))}${ja?' (já lançada)':''}</option>`;
+    }).join('')+(festas.length?'':'<option value="" disabled>Nenhuma festa confirmada neste mês</option>');
+  }
+  window._pessPick=null;
+  const info=document.getElementById('p-pick-info');if(info)info.style.display='none';
+  const form=document.getElementById('p-ff');
+  if(form&&!form.classList.contains('on'))toggleFinForm('p-ff');
+}
+function _pickFestaPess(id){
+  const info=document.getElementById('p-pick-info');
+  const c=id?opCards.find(o=>o.id===id):null;
+  if(!c){window._pessPick=null;if(info)info.style.display='none';return;}
+  const bruto=_andreBruta(c),tr=_transporteDaFesta(c,'pessoal'),v=calcAndreShare(c);
+  window._pessPick={id:c.id,vBruto:bruto,vTransp:tr};
+  document.getElementById('p-f-n').value=c.nomePais||c.titulo||'Cliente';
+  document.getElementById('p-f-v').value=v>0?v.toFixed(2):'';
+  document.getElementById('p-f-d').value=parseInt(c.dataEvento.split('-')[2])||1;
+  document.getElementById('p-f-t').value=c.titulo||'Fotografia';
+  if(info){
+    info.style.display='block';
+    info.innerHTML=`Bruto (antes do transporte): <b>${fmtMoney(bruto)}</b> · André: <b>${fmtMoney(v)}</b> · Transporte: <b>${fmtMoney(tr)}</b>`+(v>0?'':'<br><span style="color:#E0877A">Sem parte para o André nesta festa. Digite o valor se quiser registrar mesmo assim.</span>');
+  }
+}
 function savePessEntrada(){
   const n=document.getElementById('p-f-n').value.trim();
   const v=parseFloat(document.getElementById('p-f-v').value)||0;
@@ -9863,7 +9900,11 @@ function savePessEntrada(){
   const t=document.getElementById('p-f-t').value.trim();
   if(!n||!v){alert('Preencha nome e valor!');return;}
   if(!pessFD[pessCurF])pessFD[pessCurF]=[];
-  pessFD[pessCurF].push({n,v,d,t,p:false});
+  const _pk=window._pessPick||null;
+  pessFD[pessCurF].push(_pk?{n,v,d,t,p:false,_festaRef:_pk.id,vBruto:_pk.vBruto,vTransp:_pk.vTransp}:{n,v,d,t,p:false});
+  window._pessPick=null;
+  const _selP=document.getElementById('p-pick-festa');if(_selP)_selP.value='';
+  const _infP=document.getElementById('p-pick-info');if(_infP)_infP.style.display='none';
   ['p-f-n','p-f-v','p-f-d','p-f-t'].forEach(id=>document.getElementById(id).value='');
   toggleFinForm('p-ff');savePessData();renderPessEntradas();renderPessResumo();
 }
