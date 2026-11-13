@@ -5653,12 +5653,38 @@ function recalcAllCards(){
   renderOp();renderFin();
   toast('✅ '+changed+' card(s) recalculado(s)!','green');
 }
+// Lançamento do André ligado a uma festa, em qualquer mês. Serve para achar o que já existe
+// (inclusive o que a regra antiga pôs no mês de 2026 de festas de 2027), sem mover nada.
+function _achaEntradaAndreFesta(cardId){
+  if(!cardId)return null;
+  for(const k of Object.keys(pessFD||{})){
+    const e=(pessFD[k]||[]).find(x=>x._opFrlId===cardId||x._opId===cardId);
+    if(e)return {mes:k,entrada:e};
+  }
+  return null;
+}
 function syncFreelancerToAndre(card){
   // Sincroniza trabalhos (freelancer ou próprio) para a seção pessoal do André
   if(!card||!FIN_COLS.includes(card.coluna)||!card.dataEvento)return;
   const tipoExec=card.tipoExecucao||'proprio';
-  const mes=_getMesFin(card.dataEvento);
+  const mes=_chaveMesFesta(card.dataEvento); // festa de 2027 vai para "mês/27" (antes caía no mês de 2026)
   if(!mes)return;
+  // Quanto cabe ao André (calculado antes de mexer em qualquer lançamento)
+  const vAndre=calcAndreShare(card);
+  if(mes.endsWith('/27')){
+    // Festa de 2027 que já tem lançamento vinculado (inclusive o que a regra antiga pôs no mês de 2026):
+    // ele fica onde está e só recebe o valor atualizado — não é movido nem duplicado.
+    const _ach=_achaEntradaAndreFesta(card.id);
+    if(_ach){
+      _ach.entrada.v=vAndre;
+      _ach.entrada.p=card.statusPag==='pago';
+      _ach.entrada.vCache=tipoExec==='freelancer'?card.valorFreelancer||0:0;
+      savePessData();
+      return;
+    }
+    // Festa já puxada à mão (cópia independente): não cria outra igual
+    if(Object.values(pessFD||{}).some(a=>(a||[]).some(e=>e._festaRef===card.id)))return;
+  }
   
   // Remove entrada antiga (se existia), mas guarda o valor já pago nela —
   // senão, todo save do card (até edições sem relação com pagamento) reseta
@@ -5672,15 +5698,7 @@ function syncFreelancerToAndre(card){
   const _pagoAntigo=_antigas.reduce((m,e)=>Math.max(m,+(e.pago)||0),0);
   pessFD[mes]=pessFD[mes].filter(e=>e._opFrlId!==card.id&&e._opId!==card.id);
 
-  // Calcula o que André recebe
-  let vAndre=0;
-  if(tipoExec==='freelancer'){
-    // Freelancer: André = Total - Cachê Freelancer
-    vAndre=calcAndreShare(card);
-  } else {
-    // Próprio: André recebe o que sobra depois da Empresa (40% do Plano Cores) e dos custos do pacote
-    vAndre=calcAndreShare(card);
-  }
+  // (o valor do André, vAndre, já foi calculado acima)
   
   // Adiciona à seção pessoal do André (apenas se tem valor)
   if(vAndre>0&&(card.valorTotal||0)>0){
@@ -5705,7 +5723,8 @@ function _andreVale(c){return FIN_COLS.includes(c.coluna)&&(c.valorTotal||0)>0&&
 // Remove da seção Pessoal os lançamentos de uma festa excluída. O pagamento que estava
 // neles sai também do total do mês (cancelado).
 function _removeLancamentosAndreDaFesta(cardId){
-  MESES_FIN.forEach(m=>{
+  // todos os meses, inclusive os de 2027 ("mês/27")
+  Object.keys(pessFD||{}).forEach(m=>{
     if(!pessFD[m])return;
     const saem=pessFD[m].filter(e=>e._opId===cardId||e._opFrlId===cardId);
     if(!saem.length)return;
@@ -5721,7 +5740,7 @@ function syncAllFreelancersToAndre(){
   // que o André já tinha recebido). Os totais mensais acompanham: se a festa sai das
   // confirmadas, o pagamento sai do total do mês; se muda de mês, o total muda com ela.
   const _antes={};
-  MESES_FIN.forEach(m=>{
+  Object.keys(pessFD||{}).forEach(m=>{
     (pessFD[m]||[]).forEach(e=>{
       const id=e._opFrlId||e._opId;if(!id)return;
       const p=+(e.pago)||0;
@@ -5733,20 +5752,23 @@ function syncAllFreelancersToAndre(){
     if(a.pago<=0)return;
     _initPessVG(a.mes);
     const c=opCards.find(x=>x.id===id);
-    const mNovo=c&&_andreVale(c)?_getMesFin(c.dataEvento):null;
+    // festa de 2027 não muda de mês (o lançamento fica onde está), então não precisa iniciar outro mês
+    const mNovo=c&&_andreVale(c)&&!(_chaveMesFesta(c.dataEvento)||'').endsWith('/27')?_chaveMesFesta(c.dataEvento):null;
     if(mNovo)_initPessVG(mNovo);
   });
-  MESES_FIN.forEach(m=>{
-    if(pessFD[m])pessFD[m]=pessFD[m].filter(e=>!(e._opFrlId||e._opId));
+  // Festas de 2027 válidas mantêm o lançamento vinculado no lugar (o sync só atualiza, não move);
+  // os demais vinculados são refeitos como antes.
+  const _valida2027=id=>{const c=opCards.find(x=>x.id===id);return !!(c&&_andreVale(c)&&(_chaveMesFesta(c.dataEvento)||'').endsWith('/27'));};
+  Object.keys(pessFD||{}).forEach(m=>{
+    if(pessFD[m])pessFD[m]=pessFD[m].filter(e=>{const id=e._opFrlId||e._opId;return !id||_valida2027(id);});
   });
   opCards.filter(c=>_andreVale(c)).forEach(c=>{
     syncFreelancerToAndre(c);
-    const _mes=_getMesFin(c.dataEvento);
-    const _entrada=_mes?(pessFD[_mes]||[]).find(e=>e._opFrlId===c.id):null;
-    if(_entrada&&_antes[c.id]&&_antes[c.id].pago>0)_entrada.pago=_antes[c.id].pago;
+    const _ach=_achaEntradaAndreFesta(c.id);
+    if(_ach&&_antes[c.id]&&_antes[c.id].pago>0)_ach.entrada.pago=_antes[c.id].pago;
   });
   const _depois={};
-  MESES_FIN.forEach(m=>{
+  Object.keys(pessFD||{}).forEach(m=>{
     (pessFD[m]||[]).forEach(e=>{const id=e._opFrlId||e._opId;if(id&&_antes[id])_depois[id]={mes:m,pago:+(e.pago)||0};});
   });
   Object.entries(_antes).forEach(([id,a])=>{
@@ -7407,7 +7429,7 @@ function openAgendaDayList(ds){
   document.getElementById('mo-ag-day').classList.remove('hidden');
 }
 function agPreviewEdit(){closeAgPreview();if(_agPrevType==='pr')openPrModal(_agPrevId,null,null);else openOpModal(_agPrevId,null,null);}
-function agPreviewDel(){closeAgPreview();openCfm('Excluir evento?','Esta ação não pode ser desfeita.',()=>{if(_agPrevType==='pr'){prCards=prCards.filter(c=>c.id!==_agPrevId);savPr();renderPr();renderAgenda();}else{const delId=_agPrevId;opCards=opCards.filter(c=>c.id!==delId);MESES_FIN.forEach(m=>{if(pessFD[m])pessFD[m]=pessFD[m].filter(e=>e._opId!==delId&&e._opFrlId!==delId);if(pessDD[m])pessDD[m]=pessDD[m].filter(e=>e._opId!==delId);if(finDD[m])finDD[m]=finDD[m].filter(e=>e._opId!==delId);});savOp();savePessData();saveFinData();renderOp();renderPr();renderFin();renderAgenda();}toast('🗑️ Removido','');});}
+function agPreviewDel(){closeAgPreview();openCfm('Excluir evento?','Esta ação não pode ser desfeita.',()=>{if(_agPrevType==='pr'){prCards=prCards.filter(c=>c.id!==_agPrevId);savPr();renderPr();renderAgenda();}else{const delId=_agPrevId;opCards=opCards.filter(c=>c.id!==delId);[...new Set([...MESES_FIN,...Object.keys(pessFD||{}),...Object.keys(pessDD||{})])].forEach(m=>{if(pessFD[m])pessFD[m]=pessFD[m].filter(e=>e._opId!==delId&&e._opFrlId!==delId);if(pessDD[m])pessDD[m]=pessDD[m].filter(e=>e._opId!==delId);if(finDD[m])finDD[m]=finDD[m].filter(e=>e._opId!==delId);});savOp();savePessData();saveFinData();renderOp();renderPr();renderFin();renderAgenda();}toast('🗑️ Removido','');});}
 function openAgendaPreview(id,type,evt){
   evt.stopPropagation();_agPrevId=id;_agPrevType=type;
   let c=type==='pr'?prCards.find(x=>x.id===id):opCards.find(x=>x.id===id);
@@ -8265,9 +8287,8 @@ function _andreLiqDaFesta(card){
 // só valorReserva/statusPag, exatamente como sempre.
 function _pessoalPagoDaFesta(card){
   if(!card?.id)return 0; // sem id, o find abaixo casaria com qualquer entrada manual (undefined===undefined)
-  const mes=_getMesFin(card.dataEvento);if(!mes)return 0;
-  const entrada=(pessFD[mes]||[]).find(e=>e._opFrlId===card.id||e._opId===card.id);
-  return +(entrada?.pago)||0; // sempre número — valor salvo como texto virava concatenação na soma
+  const _ach=_achaEntradaAndreFesta(card.id); // em qualquer mês (festa de 2027 pode estar no mês antigo)
+  return +(_ach?.entrada?.pago)||0; // sempre número — valor salvo como texto virava concatenação na soma
 }
 // Valor que a ficha registra como pago pelo André (separado do Financeiro Pessoal). Festa antiga,
 // sem o campo, mostra o que já estava no Financeiro Pessoal — assim nenhum valor muda de uma vez.
@@ -8390,8 +8411,10 @@ function saveQuickPag(cardId,origem){
 function _commitQuickPag(cardId,novoEmpresaPago,novoAndrePago,origem){
   const card=opCards.find(c=>c.id===cardId);if(!card)return;
   syncFreelancerToAndre(card); // garante que existe uma entrada vinculada no Financeiro Pessoal
-  const mes=_getMesFin(card.dataEvento);
-  const entrada=mes?(pessFD[mes]||[]).find(e=>e._opFrlId===card.id||e._opId===card.id):null;
+  // A entrada é a que já existe, em qualquer mês (festa de 2027 pode estar no mês antigo de 2026)
+  const _achAnd=_achaEntradaAndreFesta(card.id);
+  const mes=_achAnd?_achAnd.mes:_chaveMesFesta(card.dataEvento);
+  const entrada=_achAnd?_achAnd.entrada:null;
 
   // Empresa — direto, sem mexer no lado do André
   if(novoEmpresaPago!==null){
@@ -9873,7 +9896,7 @@ function delPessFesta(mes,i,isAuto){
     const cardNome=card?(card.nomePais||card.titulo||nome):nome;
     if(!confirm(`Remover "${cardNome}" da seção Pessoal?\n\nO evento continua visível na seção Empresa.`))return;
     // Remove só as entradas pessoais deste card (todos os meses)
-    MESES_FIN.forEach(m=>{
+    [...new Set([...Object.keys(pessFD||{}),...Object.keys(pessDD||{})])].forEach(m=>{
       if(pessFD[m])pessFD[m]=pessFD[m].filter(e=>e._opId!==cardId&&e._opFrlId!==cardId);
       if(pessDD[m])pessDD[m]=pessDD[m].filter(e=>e._opId!==cardId&&e._opFrlId!==cardId);
     });
@@ -9908,7 +9931,8 @@ function _abrirFormFestaPess(){
   if(!pessCurF)pessCurF=_finCurMes();
   const sel=document.getElementById('p-pick-festa');
   if(sel){
-    const jaLancadas=new Set((pessFD[pessCurF]||[]).filter(e=>e._festaRef).map(e=>e._festaRef));
+    // Festa já no Financeiro do André (puxada à mão ou lançada automaticamente), em qualquer mês
+    const jaLancadas=new Set([].concat(...Object.values(pessFD||{}).map(a=>Array.isArray(a)?a:[])).flatMap(e=>[e._festaRef,e._opFrlId,e._opId]).filter(Boolean));
     const festas=opCards.filter(c=>FIN_COLS.includes(c.coluna)&&(c.valorTotal||0)>0&&c.dataEvento&&_chaveMesFesta(c.dataEvento)===pessCurF).sort((a,b)=>a.dataEvento.localeCompare(b.dataEvento));
     sel.innerHTML='<option value="">— puxar uma festa confirmada deste mês (opcional) —</option>'+festas.map(c=>{
       const [,mm,dd]=c.dataEvento.split('-');
