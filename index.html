@@ -1837,7 +1837,7 @@ input[type="date"]{cursor:pointer}
         <button onclick="abrirHistMes('fin')" style="background:linear-gradient(135deg,#1B2633,#1B222D);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px">📅 Ver por mês</button>
       </div>
       <div class="fin-card" style="margin-top:8px">
-        <div class="fin-hdr"><h3>📊 Fluxo de Caixa — Empresa 2026</h3></div>
+        <div class="fin-hdr"><h3>📊 Fluxo de Caixa — Empresa 2026 e 2027</h3></div>
         <div class="fin-tbl-wrap">
           <table class="fin-resumo-tbl" style="width:100%;border-collapse:collapse">
             <thead><tr><th>Mês</th><th>Festas</th><th>Contas Fixas</th><th>Gastos Diários</th><th>Valor no Banco</th><th>Sobrou</th><th>Status</th></tr></thead>
@@ -1946,7 +1946,7 @@ input[type="date"]{cursor:pointer}
         <button onclick="abrirHistMes('pess')" style="background:linear-gradient(135deg,#1B2A23,#1B222D);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px">📅 Ver por mês</button>
       </div>
       <div class="fin-card" style="margin-top:8px">
-        <div class="fin-hdr"><h3>📊 Fluxo de Caixa — Pessoal 2026</h3></div>
+        <div class="fin-hdr"><h3>📊 Fluxo de Caixa — Pessoal 2026 e 2027</h3></div>
         <div class="fin-tbl-wrap">
           <table class="fin-resumo-tbl" style="width:100%;border-collapse:collapse">
             <thead><tr><th>Mês</th><th>Festas</th><th>Contas Fixas</th><th>Gastos Diários</th><th>Valor no Banco</th><th>Sobrou</th><th>Status</th></tr></thead>
@@ -7508,6 +7508,8 @@ function _finCurMes(){
 function _getMesFin(ds){if(!ds)return null;const d=new Date(ds+'T12:00:00');return MESES_FIN[d.getMonth()];}
 // Meses de 2027 nas abas Festas: só aparecem quando o botão 2027 é clicado
 const MESES_FESTAS_2027=MESES_FIN.map(m=>m+'/27');
+// Linhas dos Fluxos de Caixa (Resumo): maio a dezembro de 2026 e janeiro a dezembro de 2027
+const MESES_FLUXO=MESES_FIN_SHOW.concat(MESES_FESTAS_2027);
 function _anoDaChaveMes(k){return /\/27$/.test(String(k||''))?2027:2026}
 function _mesesFestasDoAno(ano){return ano===2027?MESES_FESTAS_2027:MESES_FIN_SHOW}
 function _mesPadraoDoAno(ano){
@@ -7914,9 +7916,14 @@ function renderFinResumo(){
   let rows='';
   const _mesMesAtual=_finCurMes();
   const _idxMesAtual=_idxMesContas(_mesMesAtual);
-  MESES_FIN_SHOW.forEach(m=>{
+  MESES_FLUXO.forEach(m=>{
     const c=_calcFinMes(m);
-    if(!c.festas.length&&!c.G.length&&!c.D.length&&!c.vg)return;
+    const is27=m.endsWith('/27');
+    const vazio=!c.festas.length&&!c.G.length&&!c.D.length&&!c.vg;
+    // 2027 aparece sempre (para cadastrar o Valor no Banco); 2026 só quando tem dado
+    if(vazio&&!is27)return;
+    // 2027 sem nenhum valor: não mostra sobra nem status (só o "— clique —" do Valor no Banco)
+    const semValores=!c.festas.length&&!(c.totalG>0)&&!(c.totalD>0)&&!c.vg;
     const isPassado=_idxMesContas(m)<_idxMesAtual;
     // Meses passados: contas já foram pagas na época — não mostrar como pendente
     // (meses futuros continuam mostrando o pendente real, senão fica parecendo
@@ -7931,13 +7938,13 @@ function renderFinResumo(){
       :c.autoVg>0?`<span class="fin-vg-cell" onclick="startFinEditVG('${m}',this)" style="cursor:text;color:#6e7d8f;font-style:italic" title="Auto: soma dos pagamentos recebidos — clique para substituir">${fmtMoney(c.autoVg)}</span>`
       :`<span class="fin-vg-cell" onclick="startFinEditVG('${m}',this)" style="cursor:text;color:var(--muted);font-size:11px">— clique —</span>`;
     rows+=`<tr class="${isPassado?'fin-row-passado':''}">
-      <td>${m}</td>
+      <td>${is27?m.replace('/27',' 2027'):m}</td>
       <td style="color:var(--emp);font-weight:600">${c.totalAReceber>0?fmtMoney(c.totalAReceber):''}</td>
       <td>${c.totalG>0?`<div style="font-weight:700;font-size:12px;color:var(--n900)">${fmtMoney(c.totalG)}</div><div style="font-size:10px;color:${c.pendG>0?'var(--danger)':'var(--success,#82B99B)'}">${c.pendG>0?'pendente: '+fmtMoney(c.pendG):'✓ tudo pago'}</div>`:''}</td>
       <td style="color:var(--danger)">${c.totalD>0?fmtMoney(c.totalD):''}</td>
       <td>${vgHtml}</td>
-      <td style="font-weight:800;color:${sobrouColor}">${fmtMoney(c.sobrou)}</td>
-      <td>${isPassado?'':`<span class="fin-badge ${bdg}">${st}</span>`}</td>
+      <td style="font-weight:800;color:${sobrouColor}">${is27&&semValores?'':fmtMoney(c.sobrou)}</td>
+      <td>${isPassado||(is27&&semValores)?'':`<span class="fin-badge ${bdg}">${st}</span>`}</td>
     </tr>`;
   });
   tbody.innerHTML=rows||`<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px">Sem dados ainda. Confirme festas e adicione gastos.</td></tr>`;
@@ -9613,10 +9620,15 @@ function renderPessResumo(){
   let rows='';
   const _mesMesAtualP=_finCurMes();
   const _idxMesAtualP=_idxMesContas(_mesMesAtualP);
-  MESES_FIN_SHOW.forEach(m=>{
+  MESES_FLUXO.forEach(m=>{
     const c=_calcPessMes(m);
     const aReceber=c.aReceber;
-    if(!aReceber&&!c.totalF&&!c.totalG&&!c.totalD&&!c.vg&&!c.pendIF)return;
+    const is27=m.endsWith('/27');
+    const vazio=!aReceber&&!c.totalF&&!c.totalG&&!c.totalD&&!c.vg&&!c.pendIF;
+    // 2027 aparece sempre (para cadastrar o Valor no Banco); 2026 só quando tem dado
+    if(vazio&&!is27)return;
+    // 2027 sem nenhum valor: não mostra sobra nem status (só o "— clique —" do Valor no Banco)
+    const semValores=!aReceber&&!c.totalF&&!(c.totalG>0)&&!(c.totalD>0)&&!c.vg&&!c.pendIF;
     const isPassado=_idxMesContas(m)<_idxMesAtualP;
     // Meses passados: contas já foram pagas na época — não mostrar como pendente
     // (meses futuros continuam mostrando o pendente real, senão fica parecendo
@@ -9630,13 +9642,13 @@ function renderPessResumo(){
       :`<span onclick="startPessEditVG('${m}',this)" style="cursor:text;color:var(--muted);font-size:11px">— clique —</span>`;
     const sobrouColor=ok?'var(--success)':no?'var(--danger)':'#E0877A';
     rows+=`<tr class="${isPassado?'fin-row-passado':''}">
-      <td>${m}</td>
+      <td>${is27?m.replace('/27',' 2027'):m}</td>
       <td style="color:var(--emp);font-weight:600">${aReceber>0?fmtMoney(aReceber):''}</td>
       <td>${c.totalG>0?`<div style="font-weight:700;font-size:12px;color:var(--n900)">${fmtMoney(c.totalG)}</div><div style="font-size:10px;color:${c.pendG>0?'var(--danger)':'var(--success,#82B99B)'}">${c.pendG>0?'pendente: '+fmtMoney(c.pendG):'✓ tudo pago'}</div>`:''}</td>
       <td style="color:var(--danger)">${c.totalD>0?fmtMoney(c.totalD):''}</td>
       <td>${vgHtml}</td>
-      <td style="font-weight:800;color:${sobrouColor}">${fmtMoney(c.sobrou)}</td>
-      <td>${isPassado?'':`<span class="fin-badge ${bdg}">${st}</span>`}</td>
+      <td style="font-weight:800;color:${sobrouColor}">${is27&&semValores?'':fmtMoney(c.sobrou)}</td>
+      <td>${isPassado||(is27&&semValores)?'':`<span class="fin-badge ${bdg}">${st}</span>`}</td>
     </tr>`;
   });
   tbody.innerHTML=rows||`<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px">Sem dados ainda.</td></tr>`;
