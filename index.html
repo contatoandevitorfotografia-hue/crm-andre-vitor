@@ -9193,6 +9193,35 @@ function renderFin(){
 }
 
 // ── Firebase Empresa 2026 ──
+// O Firebase não aceita "/" nas chaves, e os meses de 2027 são guardados como
+// "janeiro/27". Antes, gravar qualquer desses mapas (Pessoal ou Empresa) falhava
+// dentro do update() e o Salvar parava sem aviso. Agora só o ENVIO troca "/27"
+// por "_27" e a LEITURA desfaz a troca. O que fica salvo neste aparelho
+// (localStorage) continua com o mesmo formato.
+const _MESES_27_FB=new Set(MESES_FIN.map(m=>m+'/27'));
+function _fbMesesEnc(mapa){
+  if(!mapa||typeof mapa!=='object'||Array.isArray(mapa))return mapa;
+  const out={};
+  Object.keys(mapa).forEach(k=>{out[_MESES_27_FB.has(k)?k.replace('/27','_27'):k]=mapa[k];});
+  return out;
+}
+function _fbMesesDec(mapa){
+  if(!mapa||typeof mapa!=='object'||Array.isArray(mapa))return mapa;
+  const out={};
+  Object.keys(mapa).forEach(k=>{const m=k.slice(0,-3);out[/_27$/.test(k)&&MESES_FIN.includes(m)?m+'/27':k]=mapa[k];});
+  return out;
+}
+// Junta o que veio do servidor com os meses de 2027 que ainda só existem neste
+// aparelho. Sem isso, ao abrir a página esses lançamentos sumiriam da tela e o
+// próximo Salvar gravaria a versão incompleta por cima do que está no aparelho.
+function _fbMesesMerge(servidor,local){
+  if(!servidor||typeof servidor!=='object'||Array.isArray(servidor))return servidor;
+  const out=_fbMesesDec(servidor);
+  if(local&&typeof local==='object'&&!Array.isArray(local)){
+    Object.keys(local).forEach(k=>{if(_MESES_27_FB.has(k)&&!(k in out))out[k]=local[k];});
+  }
+  return out;
+}
 function setSyncFinStatus(s){
   const el=document.getElementById('fin-sync-st');if(!el)return;
   el.textContent=s==='saving'?'🔄 Salvando...' : s==='saved'?'☁️ Sincronizado' : s==='err'?'⚠️ Sem conexão':'';
@@ -9211,10 +9240,12 @@ function saveFinData(){
     localStorage.setItem('crm_fin_contas',JSON.stringify(finContas));
   }catch(e){}
   if(typeof _finDb!=='undefined'){
-    const _finPayload=JSON.parse(JSON.stringify({vg:finVG,gd:finGD,dd:finDD,fm:finFM,contaSpEmp,finCustomCats,finContas,rg:finRG}));
-    _finDb.ref('crm26').update(_finPayload)
-      .then(()=>setSyncFinStatus('saved'))
-      .catch(()=>setSyncFinStatus('err'));
+    const _finPayload=JSON.parse(JSON.stringify({vg:_fbMesesEnc(finVG),gd:_fbMesesEnc(finGD),dd:_fbMesesEnc(finDD),fm:_fbMesesEnc(finFM),contaSpEmp,finCustomCats,finContas,rg:finRG}));
+    try{
+      _finDb.ref('crm26').update(_finPayload)
+        .then(()=>setSyncFinStatus('saved'))
+        .catch(()=>setSyncFinStatus('err'));
+    }catch(e){console.warn('Empresa: falha ao enviar ao Firebase',e);setSyncFinStatus('err');}
   } else setSyncFinStatus('saved');
 }
 function loadFinLocal(){
@@ -9347,13 +9378,13 @@ function initFinFirebase(){
       const data=snap.val();
       if(data){
         const _fresh=Date.now()-_finSaveTs>2000;
-        if(_fresh&&data.vg)finVG=data.vg;
-        if(_fresh&&data.gd)finGD=data.gd;
-        if(_fresh&&data.dd)finDD=data.dd;
+        if(_fresh&&data.vg)finVG=_fbMesesMerge(data.vg,finVG);
+        if(_fresh&&data.gd)finGD=_fbMesesMerge(data.gd,finGD);
+        if(_fresh&&data.dd)finDD=_fbMesesMerge(data.dd,finDD);
         _normalizaNumerosFin();
         // "fm" (festas manuais) e NÃO "fd": a chave "fd" já existia no banco com
         // registros de uma versão antiga do app, que apareciam como "avulsa".
-        if(_fresh&&data.fm)finFM=data.fm;
+        if(_fresh&&data.fm)finFM=_fbMesesMerge(data.fm,finFM);
         if(data.rg!==undefined)finRG=data.rg;
         if(data.contaSpEmp!==undefined)contaSpEmp=parseFloat(data.contaSpEmp)||0;
         if(data.finCustomCats&&Array.isArray(data.finCustomCats)&&data.finCustomCats.length)finCustomCats=data.finCustomCats;
@@ -11559,8 +11590,9 @@ function savePessData(){
     localStorage.setItem('crm_pess_pedreiro',JSON.stringify(pessPedreiro));
   }catch(e){}
   if(typeof _pessDb!=='undefined'){
-    const _pessPayload=JSON.parse(JSON.stringify({vg:pessVG,gd:pessGD,dd:pessDD,fd:pessFD,ap:pessAP,pc:pessPC,hugo:pessHUGO,dv:pessDV,agar:pessAP_gar,an:pessAP_n,anap:pessAnaP,alug:pessAlug,reftotal:pessRefTotal,contaSP,pessCustomCats,pessContas,pedreiro:pessPedreiro,refitens:pessRefItens,refpend:pessRefPend,rg:pessRG}));
-    _pessDb.ref('pess26').update(_pessPayload);
+    const _pessPayload=JSON.parse(JSON.stringify({vg:_fbMesesEnc(pessVG),gd:_fbMesesEnc(pessGD),dd:_fbMesesEnc(pessDD),fd:_fbMesesEnc(pessFD),ap:pessAP,pc:pessPC,hugo:pessHUGO,dv:pessDV,agar:pessAP_gar,an:pessAP_n,anap:pessAnaP,alug:pessAlug,reftotal:pessRefTotal,contaSP,pessCustomCats,pessContas,pedreiro:pessPedreiro,refitens:pessRefItens,refpend:pessRefPend,rg:pessRG}));
+    try{_pessDb.ref('pess26').update(_pessPayload);}
+    catch(e){console.warn('Pessoais: falha ao enviar ao Firebase',e);}
   }
 }
 function _guessCat(nome, tipo){
@@ -11649,10 +11681,10 @@ function initPessFirebase(){
       const data=snap.val();
       if(data){
         const _fresh=Date.now()-_pessSaveTs>2000;
-        if(_fresh&&data.vg)pessVG=data.vg;
-        if(_fresh&&data.gd)pessGD=data.gd;
-        if(_fresh&&data.dd)pessDD=data.dd;
-        if(data.fd)pessFD=data.fd;
+        if(_fresh&&data.vg)pessVG=_fbMesesMerge(data.vg,pessVG);
+        if(_fresh&&data.gd)pessGD=_fbMesesMerge(data.gd,pessGD);
+        if(_fresh&&data.dd)pessDD=_fbMesesMerge(data.dd,pessDD);
+        if(data.fd)pessFD=_fbMesesMerge(data.fd,pessFD);
         if(data.rg!==undefined)pessRG=data.rg;
         // Deduplicar: remove entradas manuais cujo primeiro nome
         // coincide com uma entrada Fotografia (auto) no mesmo mês
