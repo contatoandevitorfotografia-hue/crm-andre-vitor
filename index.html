@@ -4104,7 +4104,7 @@ function opCardHTML(c,cc){
   const pendOpenList=(c.pendencias||[]).filter(p=>!p.done);
   const pendBox=pendOpenList.length?`<div style="font-size:11px;font-weight:700;color:#E0877A;background:#2a2119;border:1px solid #3a2e1d;border-radius:6px;padding:6px 8px;margin-top:6px;line-height:1.4">${pendOpenList.map(p=>`📌 ${esc((p.label||'').slice(0,100))}${(p.label||'').length>100?'…':''}`).join('<br>')}</div>`:'';
   return `<div class="card" draggable="true" data-id="${c.id}" style="--cc:${cc}${leadStyle}" ondragstart="onDS(event,'${c.id}','op')" ondragend="onDE2(event)" onclick="openOpModal('${c.id}',null,event)">
-    <div class="card-actions"><button class="cab del" onclick="qDel('op','${c.id}',event)">🗑</button>${c.telefone?`<button class="cab wa" onclick="event.stopPropagation();openTplSend('${c.id}')" title="Enviar WhatsApp">💬</button>`:''}<button class="cab" onclick="event.stopPropagation();openContractModal('${c.id}')" title="Contrato digital">📄</button><button class="cab" onclick="event.stopPropagation();abrirOrcamento('${c.id}')" title="Gerar orçamento">📋</button>${_clienteDoCard(c)?`<button class="cab" onclick="event.stopPropagation();abrirFichaClienteDoCard('${c.id}')" title="Abrir ficha do cliente">👤</button>`:''}<button class="cab">✏️</button></div>
+    <div class="card-actions"><button class="cab del" onclick="qDel('op','${c.id}',event)">🗑</button><button class="cab" onclick="event.stopPropagation();abrirQuestionarioFesta('${c.id}')" title="Questionário pré-festa">📝</button>${c.telefone?`<button class="cab wa" onclick="event.stopPropagation();openTplSend('${c.id}')" title="Enviar WhatsApp">💬</button>`:''}<button class="cab" onclick="event.stopPropagation();openContractModal('${c.id}')" title="Contrato digital">📄</button><button class="cab" onclick="event.stopPropagation();abrirOrcamento('${c.id}')" title="Gerar orçamento">📋</button>${_clienteDoCard(c)?`<button class="cab" onclick="event.stopPropagation();abrirFichaClienteDoCard('${c.id}')" title="Abrir ficha do cliente">👤</button>`:''}<button class="cab">✏️</button></div>
     <div class="c-titulo">${esc(dt)}</div>
     ${c.nomePais&&c.titulo?`<div class="c-name">👤 ${esc(c.nomePais)}</div>`:''}
     ${_getCriancas(c).map(crianca=>`<div class="c-child">🎈 <strong>${esc(crianca.nome)}</strong>${crianca.idade?' · '+esc(crianca.idade):''}</div>`).join('')}
@@ -4120,7 +4120,7 @@ function opCardHTML(c,cc){
     ${isAutoAssinado ? `<span style="font-size:9px;background:#3a2e0a;color:#D9A66F;padding:2px 7px;border-radius:10px;font-weight:600;letter-spacing:.04em">✍️ ASSINOU AGORA</span>` : ''}
     ${isSouFreela?`<span style="display:inline-flex;align-items:center;gap:3px;font-size:9.5px;font-weight:700;color:#e0c6b9;background:#2b211d;border:1px solid #8f6f60;border-radius:20px;padding:2px 7px;margin-top:2px">📸 Sou o freela${parceiroNomeOp?' · '+esc(parceiroNomeOp):''}</span>`:''}
     ${isFreelaContratei?`<span style="display:inline-flex;align-items:center;gap:3px;font-size:9.5px;font-weight:700;color:#d7dfe3;background:#22282d;border:1px solid #65727b;border-radius:20px;padding:2px 7px;margin-top:2px">🤝 Freela contratado${frlNomeOp?' · '+esc(frlNomeOp):''}</span>`:''}
-    ${contractBadge}${pendBadge}${fuBadge}
+    ${contractBadge}${pendBadge}${fuBadge}${respostasDaFesta(c.id).length?`<span class="pend-badge ok" style="margin-top:6px;display:inline-block">📝 Questionário respondido</span>`:''}
     ${pendBox}
   </div>`;
 }
@@ -9347,12 +9347,94 @@ function fbApp(){
   try{_fbAppCache=firebase.app('crm')}catch(e){_fbAppCache=firebase.initializeApp(FB_CFG,'crm')}
   return _fbAppCache;
 }
+// ── Questionário pré-festa (formulário enviado à família) ──
+// O link leva o id do cliente (?c=) para a resposta cair no cadastro certo.
+const FORM_FESTA_URL=location.origin+'/formulario-da-festa/formulario.html';
+let respostasFestaCache={};
+function linkQuestionarioFesta(card){
+  const crianca=(card.nomeCrianca||(_getCriancas(card)[0]?.nome)||'').trim();
+  const q=new URLSearchParams();
+  if(crianca)q.set('crianca',crianca);
+  q.set('c',card.id);
+  return `${FORM_FESTA_URL}?${q.toString()}`;
+}
+function respostasDaFesta(cardId){
+  const obj=respostasFestaCache[cardId]||{};
+  return Object.entries(obj).map(([k,v])=>({k,...v})).sort((a,b)=>(a.recebidoEm||0)-(b.recebidoEm||0));
+}
+function initRespostasFestaFirebase(){
+  if(!window._finDb)return;
+  _finDb.ref('respostasFesta').on('value',snap=>{
+    respostasFestaCache=snap.val()||{};
+    _avisarRespostasFesta();
+    if(typeof renderOp==='function')renderOp();
+  });
+}
+// Avisa só as respostas novas (na primeira carga, nada é avisado).
+function _avisarRespostasFesta(){
+  const ids=[];
+  Object.entries(respostasFestaCache).forEach(([cardId,obj])=>Object.keys(obj||{}).forEach(k=>ids.push(cardId+'/'+k)));
+  const salvo=localStorage.getItem('crm_respostas_vistas');
+  if(salvo===null){localStorage.setItem('crm_respostas_vistas',JSON.stringify(ids));return;}
+  const vistas=new Set(JSON.parse(salvo)||[]);
+  const novas=ids.filter(id=>!vistas.has(id));
+  if(!novas.length)return;
+  localStorage.setItem('crm_respostas_vistas',JSON.stringify(ids));
+  const linhas=novas.slice(0,3).map(id=>{
+    const [cardId,k]=id.split('/');
+    const resp=(respostasFestaCache[cardId]||{})[k]||{};
+    const card=opCards.find(c=>c.id===cardId);
+    const nome=card?(card.nomePais||card.titulo||'Cliente'):(resp.child||'Cliente');
+    return `<strong>${esc(nome)}</strong> respondeu o questionário pré-festa.`;
+  }).join('<br>');
+  _showLembrete('📝 Questionário respondido',linhas+(novas.length>3?`<br>e mais ${novas.length-3}…`:'')+'<br><br>Abra o cadastro do cliente para ver as respostas (📝 no card).',null,null);
+}
+function abrirQuestionarioFesta(cardId){
+  const card=opCards.find(c=>c.id===cardId);if(!card)return;
+  const old=document.getElementById('qfesta-overlay');if(old)old.remove();
+  const link=linkQuestionarioFesta(card);
+  const respostas=respostasDaFesta(cardId);
+  const lista=respostas.length
+    ?respostas.map(r=>`<div style="background:var(--n50);border-radius:9px;padding:10px;margin-top:8px;font-size:12px;line-height:1.5">
+        <div style="font-weight:700">${esc(r.respondentName||'—')}${r.respondentRole?` · ${esc(r.respondentRole)}`:''}</div>
+        ${r.spouseName?`<div><b>Outro responsável:</b> ${esc(r.spouseName)}</div>`:''}
+        ${r.importantPeople?`<div><b>Não podem faltar:</b> ${esc(r.importantPeople)}</div>`:''}
+        ${r.specialEvent?`<div><b>Algo especial:</b> ${esc(r.specialEvent)}</div>`:''}
+        ${r.guestPhotos?`<div><b>Fotos com convidados:</b> ${esc(r.guestPhotos)}${r.guestPhotoStyle?` (${esc(r.guestPhotoStyle)})`:''}</div>`:''}
+        ${r.finalNotes?`<div><b>Mensagem:</b> ${esc(r.finalNotes)}</div>`:''}
+        <div style="color:var(--muted);font-size:11px;margin-top:4px">${r.recebidoEm?esc(new Date(r.recebidoEm).toLocaleString('pt-BR')):''}</div>
+      </div>`).join('')
+    :`<div style="color:var(--muted);font-size:12px;margin-top:8px">Ainda não respondeu.</div>`;
+  const div=document.createElement('div');
+  div.id='qfesta-overlay';
+  div.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);padding:16px';
+  div.innerHTML=`<div onclick="event.stopPropagation()" style="background:var(--surface);border-radius:16px;padding:20px;width:100%;max-width:480px;max-height:86vh;overflow:auto;box-shadow:0 10px 36px rgba(0,0,0,0.35)">
+    <div style="font-weight:700;font-size:16px;margin-bottom:4px">📝 Questionário pré-festa — ${esc(card.nomeCrianca||card.nomePais||'Cliente')}</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Mande este link para a família. A resposta cai neste cadastro.</div>
+    <div style="display:flex;gap:6px">
+      <input id="qfesta-link" type="text" readonly value="${esc(link)}" style="flex:1;min-width:0;padding:9px;border:1.5px solid var(--border);border-radius:8px;font:500 12px 'Montserrat',sans-serif;background:var(--n50);color:var(--n900)">
+      <button onclick="copiarLinkQuestionario()" style="background:#82B99B;color:#11151C;border:none;border-radius:8px;padding:9px 14px;font-weight:700;cursor:pointer">Copiar</button>
+    </div>
+    <div style="font-weight:700;font-size:12px;margin-top:16px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Respostas</div>
+    ${lista}
+    <div style="text-align:right;margin-top:14px"><button onclick="document.getElementById('qfesta-overlay').remove()" style="background:var(--n100);color:var(--n900);border:1.5px solid var(--border);border-radius:9px;padding:9px 16px;cursor:pointer">Fechar</button></div>
+  </div>`;
+  div.addEventListener('click',()=>div.remove());
+  document.body.appendChild(div);
+}
+function copiarLinkQuestionario(){
+  const inp=document.getElementById('qfesta-link');if(!inp)return;
+  inp.select();
+  navigator.clipboard?.writeText(inp.value).catch(()=>document.execCommand('copy'));
+  toast('✅ Link copiado','green');
+}
 function iniciarSincronizacao(){
   if(_syncIniciada)return;_syncIniciada=true;
   window._fbOffline=false;
   try{initFinFirebase()}catch(e){console.warn(e)}
   try{initPessFirebase()}catch(e){console.warn(e)}
   try{initLeadsFirebase()}catch(e){console.warn(e)}
+  try{initRespostasFestaFirebase()}catch(e){console.warn(e)}
 }
 function iniciarSomenteLocal(){
   if(_syncIniciada)return;_syncIniciada=true;
