@@ -9364,7 +9364,7 @@ function respostasDaFesta(cardId){
 }
 function initRespostasFestaFirebase(){
   if(!window._finDb)return;
-  _finDb.ref('respostasFesta').on('value',snap=>{
+  _finDb.ref('crm26/respostasFesta').on('value',snap=>{
     respostasFestaCache=snap.val()||{};
     _avisarRespostasFesta();
     if(typeof renderOp==='function')renderOp();

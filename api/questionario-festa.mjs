@@ -1,5 +1,6 @@
 // Recebe as respostas do questionário pré-festa (formulario-da-festa/formulario.html),
-// guarda em respostasFesta/<id do cliente> no Firebase e avisa os celulares inscritos.
+// guarda em crm26/respostasFesta/<id do cliente> no Firebase e avisa os celulares inscritos.
+// Fica dentro de crm26 porque o CRM já lê esse nó: assim não precisa mudar as regras do Firebase.
 // Variáveis de ambiente no Vercel: FB_DB_SECRET (já usada pela função do Telegram),
 // VAPID_PUBLIC_KEY e VAPID_PRIVATE_KEY (as mesmas do push do Netlify).
 import webpush from 'web-push';
@@ -41,7 +42,7 @@ export default async function handler(req, res) {
   const registro = { cardId, child: texto(body.child, 80), recebidoEm: Date.now() };
   for (const campo of CAMPOS) registro[campo] = texto(body[campo]);
 
-  const r = await fetch(`${FB_DB}/respostasFesta/${cardId}.json${auth}`, {
+  const r = await fetch(`${FB_DB}/crm26/respostasFesta/${cardId}.json${auth}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(registro),

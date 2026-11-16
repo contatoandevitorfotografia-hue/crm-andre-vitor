@@ -10,8 +10,6 @@
 
     "leads26":     { ".read": "auth != null", ".write": true },
 
-    "pushSubs":    { ".read": false, ".write": true },
-
-    "respostasFesta": { ".read": "auth != null", ".write": false }
+    "pushSubs":    { ".read": false, ".write": true }
   }
 }
