@@ -3150,6 +3150,8 @@ input[type="date"]{cursor:pointer}
       <div id="login-erro" style="display:none;font-size:12px;color:#EA7B6C;background:#2E1A18;border:1px solid #7A3A32;border-radius:9px;padding:9px 12px;line-height:1.5"></div>
       <button id="login-btn" onclick="fazerLogin()"
         style="width:100%;padding:13px;background:var(--primary);color:#1b1710;border:none;border-radius:10px;font:800 14px 'Montserrat',sans-serif;cursor:pointer">Entrar</button>
+      <button onclick="esqueciSenha()"
+        style="width:100%;padding:6px;background:transparent;color:var(--muted);border:none;font:600 12px 'Montserrat',sans-serif;cursor:pointer;text-decoration:underline">Esqueci minha senha</button>
       <button onclick="entrarOffline()"
         style="width:100%;padding:10px;background:transparent;color:var(--muted);border:1.5px solid var(--border);border-radius:10px;font:600 12.5px 'Montserrat',sans-serif;cursor:pointer">📴 Usar offline neste aparelho</button>
     </div>
@@ -9479,6 +9481,17 @@ function fazerLogin(){
         mostrarLogin(m);
       });
   }catch(e){restaura();mostrarLogin('Autenticação indisponível. Use o modo offline.')}
+}
+// Manda o link para criar uma senha nova para o e-mail digitado (sem precisar lembrar a senha).
+function esqueciSenha(){
+  const email=(document.getElementById('login-email')?.value||'').trim();
+  const estilo=ok=>{const e=document.getElementById('login-erro');if(!e)return;e.style.color=ok?'#cfd6df':'#EA7B6C';e.style.background=ok?'#1B222D':'#2E1A18';e.style.borderColor=ok?'#2F3A48':'#7A3A32'};
+  if(!email){mostrarLogin('Digite seu e-mail no campo acima e toque de novo em "Esqueci minha senha".');estilo(false);document.getElementById('login-email')?.focus();return}
+  try{
+    firebase.auth(fbApp()).sendPasswordResetEmail(email)
+      .then(()=>{mostrarLogin('Enviamos um link para criar uma nova senha no e-mail '+email+'. Confira também a caixa de spam.');estilo(true)})
+      .catch(err=>{const c=err&&err.code||'';mostrarLogin(c==='auth/invalid-email'?'Esse e-mail não parece válido.':'Não consegui enviar agora: '+(err&&err.message||c));estilo(false)});
+  }catch(e){mostrarLogin('Autenticação indisponível. Use o modo offline.');estilo(false)}
 }
 function entrarOffline(){
   esconderLogin();

@@ -256,6 +256,8 @@ select{background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;c
       <div id="login-erro" style="display:none;font-size:12px;color:var(--err);background:#fbeae6;border:1px solid var(--err);border-radius:9px;padding:9px 12px;line-height:1.5"></div>
       <button id="login-btn" onclick="fazerLogin()"
         style="width:100%;padding:13px;background:var(--acc);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;font-family:'Montserrat',sans-serif">Entrar</button>
+      <button onclick="esqueciSenha()"
+        style="width:100%;padding:6px;background:none;border:none;color:var(--mut);font-size:12px;cursor:pointer;text-decoration:underline;font-family:'Montserrat',sans-serif">Esqueci minha senha</button>
     </div>
   </div>
 </div>
@@ -879,6 +881,18 @@ function fazerLogin(){
         show(c==='auth/invalid-credential'||c==='auth/wrong-password'||c==='auth/user-not-found'
           ?'E-mail ou senha incorretos.':'Não consegui entrar: '+(e&&e.message||c));});
   }catch(e){back();show('Autenticação indisponível.')}
+}
+// Manda o link para criar uma senha nova para o e-mail digitado (sem precisar lembrar a senha).
+function esqueciSenha(){
+  const email=(document.getElementById('login-email')?.value||'').trim();
+  const estilo=ok=>{const e=document.getElementById('login-erro');if(!e)return;e.style.color=ok?'var(--txt)':'var(--err)';e.style.background=ok?'var(--surf2)':'#fbeae6';e.style.borderColor=ok?'var(--brd)':'var(--err)'};
+  const show=(m,ok)=>{const e=document.getElementById('login-erro');if(!e)return;e.textContent=m;e.style.display='block';estilo(ok)};
+  if(!email){show('Digite seu e-mail no campo acima e toque de novo em "Esqueci minha senha".',false);document.getElementById('login-email')?.focus();return}
+  try{
+    firebase.auth(mobApp()).sendPasswordResetEmail(email)
+      .then(()=>show('Enviamos um link para criar uma nova senha no e-mail '+email+'. Confira também a caixa de spam.',true))
+      .catch(err=>{const c=err&&err.code||'';show(c==='auth/invalid-email'?'Esse e-mail não parece válido.':'Não consegui enviar agora: '+(err&&err.message||c),false)});
+  }catch(e){show('Autenticação indisponível.',false)}
 }
 function initMobSync(){
   if(_mobSync)return;_mobSync=true;
