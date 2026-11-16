@@ -4122,6 +4122,7 @@ function opCardHTML(c,cc){
     ${isFreelaContratei?`<span style="display:inline-flex;align-items:center;gap:3px;font-size:9.5px;font-weight:700;color:#d7dfe3;background:#22282d;border:1px solid #65727b;border-radius:20px;padding:2px 7px;margin-top:2px">🤝 Freela contratado${frlNomeOp?' · '+esc(frlNomeOp):''}</span>`:''}
     ${contractBadge}${pendBadge}${fuBadge}
     ${pendBox}
+    ${c.negociacaoStatus?`<div style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.4">🤝 ${esc(c.negociacaoStatus.slice(0,90))}${c.negociacaoStatus.length>90?'…':''}</div>`:''}
   </div>`;
 }
 // Compara horários "HH:MM" pra ordenação — sem horário sempre vai por
@@ -4735,6 +4736,42 @@ function clearParaPerdido(card){
   card.pacoteId='';card.pacoteCustom='';
   card.galeria='';card.galeriaClienteId='';card.followupDate='';card.obs='';
 }
+// Popup ao arrastar uma oportunidade para "Negociação": registra como está a negociação e o que
+// está pendente. O pendente entra nas pendências do cliente e aparece como 📌 no card.
+function _abrirPopupNegociacao(cardId){
+  const card=opCards.find(c=>c.id===cardId);if(!card)return;
+  const old=document.getElementById('neg-overlay');if(old)old.remove();
+  const div=document.createElement('div');
+  div.id='neg-overlay';
+  div.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);padding:16px';
+  div.innerHTML=`<div onclick="event.stopPropagation()" style="background:var(--surface);border-radius:16px;padding:22px 20px;width:100%;max-width:440px;box-shadow:0 10px 36px rgba(0,0,0,0.35)">
+    <div style="font-weight:700;font-size:16px;margin-bottom:4px">🤝 Negociação — ${esc(card.nomePais||card.titulo||'Cliente')}</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Registre como está e o que falta para fechar.</div>
+    <label for="neg-status" style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Como está a negociação?</label>
+    <textarea id="neg-status" rows="3" style="width:100%;box-sizing:border-box;margin-bottom:14px;padding:10px;border:1.5px solid var(--border);border-radius:9px;background:var(--n50);color:var(--n900);font:500 13px 'Montserrat',sans-serif;resize:vertical">${esc(card.negociacaoStatus||'')}</textarea>
+    <label for="neg-pend" style="display:block;font-size:11px;font-weight:700;color:#E0877A;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">📌 O que está pendente?</label>
+    <input type="text" id="neg-pend" placeholder="Ex.: Aguardando retorno de qual pacote vai querer" style="width:100%;box-sizing:border-box;margin-bottom:16px;padding:10px;border:1px solid #3a2e1d;border-radius:9px;background:#2a2119;color:#E0877A;font:700 13px 'Montserrat',sans-serif">
+    <div style="display:flex;gap:10px">
+      <button onclick="_fecharPopupNegociacao()" style="flex:1;padding:11px;border:1.5px solid var(--border);background:var(--n100);color:var(--n900);border-radius:9px;font-size:14px;cursor:pointer;font-weight:500">Pular</button>
+      <button onclick="_salvarPopupNegociacao('${cardId}')" style="flex:2;padding:11px;background:#82B99B;color:#11151C;border:none;border-radius:9px;font-size:15px;font-weight:700;cursor:pointer">Salvar</button>
+    </div>
+  </div>`;
+  div.addEventListener('click',()=>div.remove());
+  document.body.appendChild(div);
+  setTimeout(()=>document.getElementById('neg-status')?.focus(),30);
+}
+function _fecharPopupNegociacao(){const ov=document.getElementById('neg-overlay');if(ov)ov.remove();}
+function _salvarPopupNegociacao(cardId){
+  const card=opCards.find(c=>c.id===cardId);
+  if(!card){_fecharPopupNegociacao();return;}
+  const status=(document.getElementById('neg-status')?.value||'').trim();
+  const pend=(document.getElementById('neg-pend')?.value||'').trim();
+  card.negociacaoStatus=status;
+  if(pend){card.pendencias=card.pendencias||[];card.pendencias.push({id:uid(),label:pend,done:false});}
+  card.updatedAt=Date.now();
+  savOp();_fecharPopupNegociacao();renderOp();
+  toast('✅ Negociação registrada','green');
+}
 function onDrop(e,board,targetCol){
   e.preventDefault();const id=e.dataTransfer.getData('text/plain')||dragId;
   if(!id||dragBoard!==board)return;
@@ -4760,6 +4797,8 @@ function onDrop(e,board,targetCol){
     const col=OP_COLS.find(c=>c.id===targetCol);
     toast(`${col.emoji} Movido para ${col.name}${!wasConf&&isConf?' · 🎬 Adicionado em Projetos!':''}`, 'green');
     if(!wasConf&&isConf)_lembreteTransporteConfirmado(card.id);
+    // Arrastou para Negociação (de outra coluna): registra como está e o que está pendente
+    if(targetCol==='negociacao'&&oldCol!=='negociacao')_abrirPopupNegociacao(card.id);
   }else if(board==='pr'){
     const card=prCards.find(c=>c.id===id);if(!card||card.coluna===targetCol)return;
     const _oldColPr=card.coluna;
