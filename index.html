@@ -4122,7 +4122,6 @@ function opCardHTML(c,cc){
     ${isFreelaContratei?`<span style="display:inline-flex;align-items:center;gap:3px;font-size:9.5px;font-weight:700;color:#d7dfe3;background:#22282d;border:1px solid #65727b;border-radius:20px;padding:2px 7px;margin-top:2px">🤝 Freela contratado${frlNomeOp?' · '+esc(frlNomeOp):''}</span>`:''}
     ${contractBadge}${pendBadge}${fuBadge}
     ${pendBox}
-    ${c.negociacaoStatus?`<div style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.4">🤝 ${esc(c.negociacaoStatus.slice(0,90))}${c.negociacaoStatus.length>90?'…':''}</div>`:''}
   </div>`;
 }
 // Compara horários "HH:MM" pra ordenação — sem horário sempre vai por
