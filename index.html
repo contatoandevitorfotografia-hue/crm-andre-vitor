@@ -14586,8 +14586,12 @@ document.addEventListener('mousedown',e=>{
   const inp=e.target.closest('input[type="date"]');
   if(!inp||inp.disabled)return;
   e.preventDefault();
+  if(document.activeElement===inp)inp.blur(); // campo com foco também abre o nativo no clique: solta o foco
   _openDatePicker(inp);
 });
+// O clique e as teclas também não podem abrir o calendário nativo do navegador.
+document.addEventListener('click',e=>{const inp=e.target.closest('input[type="date"]');if(inp&&!inp.disabled)e.preventDefault()},true);
+document.addEventListener('keydown',e=>{const inp=e.target.closest&&e.target.closest('input[type="date"]');if(inp&&!inp.disabled&&(e.key===' '||e.key==='Enter'||e.key==='ArrowDown')){e.preventDefault();_openDatePicker(inp)}},true);
 
 // Checar ao carregar e a cada minuto
 function _initTarefasChecks(){
