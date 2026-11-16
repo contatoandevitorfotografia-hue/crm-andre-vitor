@@ -221,6 +221,11 @@ select{background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;c
 .ag-legend{display:flex;align-items:center;gap:16px;padding:10px 16px;font-size:11px;color:var(--mut);font-weight:600}
 .ag-legend span{display:flex;align-items:center;gap:5px}
 .ag-legend .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+/* modo embed: só o Financeiro, dentro da página de celular */
+body.embed-fin{background:transparent}
+body.embed-fin #mob-hdr,body.embed-fin #mob-nav{display:none!important}
+body.embed-fin .mob-sec{display:none!important}
+body.embed-fin #sec-fin{display:block!important;padding:12px 12px 24px}
 </style>
 </head>
 <body>
@@ -2125,6 +2130,14 @@ function renderSaudeLista(){
       ${linhas}
     </div>`;
   }).join('');
+}
+</script>
+<script>
+// Modo embed: quando a página de celular abre só o Financeiro (dentro de um iframe).
+if(new URLSearchParams(location.search).get('embed')==='fin'){
+  document.body.classList.add('embed-fin');
+  document.querySelectorAll('.mob-sec').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sec-fin').classList.add('active');
 }
 </script>
 </body>

@@ -544,6 +544,13 @@ select{background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;c
       </div>
     </section>
 
+    <section id="sec-resp" class="mob-sec">
+      <h2 style="font-size:18px;font-weight:800;color:var(--txt);margin:14px 14px 4px">📋 Respostas do questionário</h2>
+      <div id="resp-list" style="padding:8px 14px 90px"></div>
+    </section>
+    <section id="sec-finx" class="mob-sec">
+      <iframe id="fin-frame" title="Financeiro" style="width:100%;height:calc(100vh - 150px);border:0;border-radius:12px;background:transparent"></iframe>
+    </section>
   </div>
 
   <nav id="mob-nav">
@@ -558,6 +565,12 @@ select{background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;c
     </button>
     <button class="nav-btn" onclick="showSec('gst',this)">
       <span class="ni">💸</span><span>Gastos</span>
+    </button>
+    <button class="nav-btn" onclick="showSec('resp',this)">
+      <span class="ni">📋</span><span>Respostas</span>
+    </button>
+    <button class="nav-btn" onclick="showSec('finx',this)">
+      <span class="ni">💰</span><span>Financeiro</span>
     </button>
   </nav>
 </div>
@@ -629,6 +642,8 @@ function showSec(k,btn){
   else if(k==='gst'){renderGstFestas();}
   else if(k==='pes'){renderPessoais();}
   else if(k==='sau'){renderSaude();}
+  else if(k==='resp'){renderRespostasFesta();}
+  else if(k==='finx'){const f=document.getElementById('fin-frame');if(f&&!f.getAttribute('src'))f.src='app.html?embed=fin';}
   // mostra/esconde FAB
   document.getElementById('ag-fab').style.display=k==='ag'?'flex':'none';
 }
@@ -883,6 +898,8 @@ function initMobSync(){
     // tempo, mostra o app com o que já está salvo no aparelho em vez de
     // deixar a tela de carregamento girando pra sempre.
     setTimeout(()=>{if(!_rDados){_rDados=true;checkReady();}},5000);
+
+    _finDb.ref('crm26/respostasFesta').on('value',snap=>{respostasFestaMob=snap.val()||{};renderRespostasFesta();});
 
     _finDb.ref('dados26').on('value',snap=>{
       const d=snap.val();
@@ -2125,6 +2142,33 @@ function renderPessoaisLista(lista){
   el.innerHTML=html;
 }
 
+let respostasFestaMob={};
+// Respostas do questionário pré-festa (vêm do CRM, em crm26/respostasFesta).
+function renderRespostasFesta(){
+  const el=document.getElementById('resp-list');if(!el)return;
+  const lista=[];
+  Object.entries(respostasFestaMob||{}).forEach(([cardId,obj])=>Object.values(obj||{}).forEach(r=>lista.push({...r,cardId})));
+  lista.sort((a,b)=>(b.recebidoEm||0)-(a.recebidoEm||0));
+  if(!lista.length){el.innerHTML='<div style="text-align:center;color:var(--mut);padding:30px 10px;font-size:14px">Nenhuma resposta de questionário ainda.</div>';return;}
+  el.innerHTML=lista.map(r=>{
+    const card=opCards.find(c=>c.id===r.cardId);
+    const nome=card?(card.nomePais||card.titulo||'Cliente'):(r.child||'Cliente');
+    const data=r.recebidoEm?new Date(r.recebidoEm).toLocaleString('pt-BR'):'';
+    const linhas=[
+      ['Respondeu',[r.respondentName,r.respondentRole].filter(Boolean).join(' · ')],
+      ['Outro responsável',r.spouseName],
+      ['Não podem faltar',r.importantPeople],
+      ['Algo especial',r.specialEvent],
+      ['Fotos com convidados',[r.guestPhotos,r.guestPhotoStyle].filter(Boolean).join(' · ')],
+      ['Mensagem',r.finalNotes]
+    ].filter(([,v])=>v&&String(v).trim());
+    return `<div style="background:var(--surf2);border-radius:12px;padding:12px 14px;margin-bottom:10px">
+      <div style="font-weight:700;font-size:15px;color:var(--txt)">📝 ${esc(nome)}</div>
+      <div style="font-size:11px;color:var(--mut);margin:2px 0 8px">${esc(data)}</div>
+      ${linhas.map(([k,v])=>`<div style="font-size:13px;color:var(--txt);margin-bottom:4px"><b>${esc(k)}:</b> ${esc(v)}</div>`).join('')}
+    </div>`;
+  }).join('');
+}
 function renderFreelas(){
   const el=document.getElementById('frl-list');if(!el)return;
   const today=new Date().toISOString().split('T')[0];

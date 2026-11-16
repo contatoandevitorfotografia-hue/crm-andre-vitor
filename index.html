@@ -7431,6 +7431,7 @@ function getEventColor(c){
   if(c.tipoExecucao==='freelancer')return'#C0392B';
   return'#c9a27d';
 }
+let lembretes=[]; // compromissos criados no celular (dados26.lem)
 let _agPrevId=null,_agPrevType=null;
 let _agDayEvents={}; // eventos do mês em exibição, por data — usado pelo "+N mais"
 function openAgendaDayList(ds){
@@ -7444,7 +7445,7 @@ function openAgendaDayList(ds){
     html+=`<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">${de.length} evento${de.length>1?'s':''}</div>`;
     html+=de.map(c=>{
       const ec=getEventColor(c);
-      const isConf=c.coluna==='confirmado'||c.coluna==='confirmado-pendencias'||c._type==='pr';
+      const isConf=c.coluna==='confirmado'||c.coluna==='confirmado-pendencias'||c._type==='pr'||c._type==='lem';
       const agData=c._type==='pr'&&c.sourceId?(opCards.find(o=>o.id===c.sourceId)||c):c;
       const hora=agData.horario?`${esc(agData.horario)} · `:'';
       const crianca=_resumoCriancas(agData)?esc(_resumoCriancas(agData)):esc(c.titulo||agData.nomePais||'?');
@@ -7523,6 +7524,7 @@ function renderAgenda(){
   const events={};
   opCards.filter(c=>c.coluna!=='perdido'&&c.dataEvento).forEach(c=>{if(!events[c.dataEvento])events[c.dataEvento]=[];events[c.dataEvento].push({...c,_type:'op'})});
   prCards.filter(c=>c.dataEvento&&!c.copiaDe).forEach(c=>{const srcOk=c.sourceId&&opCards.find(o=>o.id===c.sourceId&&(o.coluna==='confirmado'||o.coluna==='confirmado-pendencias'));const srcAny=c.sourceId?opCards.find(o=>o.id===c.sourceId):null;if(!srcOk){if(!events[c.dataEvento])events[c.dataEvento]=[];events[c.dataEvento].push({...c,_type:'pr',titulo:srcAny?.titulo||c.titulo||c.nomePais})}});
+  lembretes.filter(l=>l.data).forEach(l=>{if(!events[l.data])events[l.data]=[];events[l.data].push({id:l.id,titulo:l.titulo||'Compromisso',horario:l.hora||'',coluna:'lem',_type:'lem'})});
   _agDayEvents=events;
   const prevDays=new Date(agYear,agMonth,0).getDate();
   for(let i=firstDay-1;i>=0;i--)grid.innerHTML+=`<div class="ag-day other-month"><div class="ag-day-num">${prevDays-i}</div></div>`;
@@ -7531,7 +7533,7 @@ function renderAgenda(){
     const isT=today.getFullYear()===agYear&&today.getMonth()===agMonth&&today.getDate()===d;
     const de=events[ds]||[];
     const numH=isT?`<div class="ag-day-num"><span>${d}</span></div>`:`<div class="ag-day-num">${d}</div>`;
-    const evH=de.slice(0,3).map(c=>{const ec=getEventColor(c);const isConf=c.coluna==='confirmado'||c.coluna==='confirmado-pendencias'||c._type==='pr';const agData=c._type==='pr'&&c.sourceId?(opCards.find(o=>o.id===c.sourceId)||c):c;const hora=agData.horario?`${esc(agData.horario)} · `:'';const crianca=_resumoCriancas(agData)?esc(_resumoCriancas(agData)):esc(c.titulo||agData.nomePais||'?');const chip=hora+crianca;const style=isConf?`background:${ec}22;color:${ec}`:`background:transparent;color:${ec};border:1.5px dashed ${ec};opacity:.75`;return`<div class="ag-event" style="${style}" onclick="openAgendaPreview('${c.id}','${c._type}',event)">${isConf?'':'⏳ '}${chip}</div>`}).join('')+(de.length>3?`<div style="font-size:10px;color:var(--muted);cursor:pointer;text-decoration:underline dotted" onclick="event.stopPropagation();openAgendaDayList('${ds}')">+${de.length-3} mais</div>`:'');
+    const evH=de.slice(0,3).map(c=>{const ec=getEventColor(c);const isConf=c.coluna==='confirmado'||c.coluna==='confirmado-pendencias'||c._type==='pr'||c._type==='lem';const agData=c._type==='pr'&&c.sourceId?(opCards.find(o=>o.id===c.sourceId)||c):c;const hora=agData.horario?`${esc(agData.horario)} · `:'';const crianca=_resumoCriancas(agData)?esc(_resumoCriancas(agData)):esc(c.titulo||agData.nomePais||'?');const chip=hora+crianca;const style=isConf?`background:${ec}22;color:${ec}`:`background:transparent;color:${ec};border:1.5px dashed ${ec};opacity:.75`;return`<div class="ag-event" style="${style}" onclick="openAgendaPreview('${c.id}','${c._type}',event)">${isConf?'':'⏳ '}${chip}</div>`}).join('')+(de.length>3?`<div style="font-size:10px;color:var(--muted);cursor:pointer;text-decoration:underline dotted" onclick="event.stopPropagation();openAgendaDayList('${ds}')">+${de.length-3} mais</div>`:'');
     grid.innerHTML+=`<div class="ag-day${isT?' today':''}" onclick="openAgendaDayList('${ds}')">${numH}${evH}</div>`;
   }
   const rem=(firstDay+daysInMonth)%7===0?0:7-((firstDay+daysInMonth)%7);
@@ -9556,6 +9558,9 @@ function initFinFirebase(){
     });
     _finDb.ref('dados26').on('value',snap=>{
       const data=snap.val();
+      // Compromissos criados no celular (dados26.lem) aparecem na agenda do desktop.
+      lembretes=Array.isArray(data?.lem)?data.lem:Object.values(data?.lem||{});
+      try{if(typeof renderAgenda==='function')renderAgenda();}catch(e){console.warn('agenda:',e)}
       // Firebase tem dados reais? (não vazio)
       const fbTemDados=data&&((data.op&&data.op.length)||(data.pr&&data.pr.length)||(data.cl&&data.cl.length)||(data.pac&&data.pac.length));
       // Este dispositivo tem dados locais?
