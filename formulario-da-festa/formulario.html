@@ -248,10 +248,11 @@
       function emailBody(answers){return `Questionário pré-festa: festa ${reference()}\n\n1. Seu nome / como gostaria de ser chamada(o):\n${answers.respondentName}\n\n2. ${parentLabel()}:\n${answers.spouseName||"Não informado"}\n\n3. Pessoas e fotos que não podem faltar:\n${answers.importantPeople}\n\n4. Algo especial na festa:\n${answers.specialEvent||"Não informado"}\n\n5. Fotos com todos os convidados:\n${answers.guestPhotos}\n\n6. Forma preferida:\n${answers.guestPhotoStyle}\n\n7. Característica marcante ou pedido especial:\n${answers.finalNotes}`}
 
       // Manda a resposta também para o CRM (além do e-mail). O id do cliente vem no link (?c=...).
+      function comLimite(promessa,ms){return Promise.race([promessa,new Promise(resolve=>setTimeout(()=>resolve(false),ms))])}
       function enviarParaCRM(answers){
         const cardId=new URLSearchParams(location.search).get("c")||"";
         const body={cardId,child:identity.child,respondentName:answers.respondentName,respondentRole:document.querySelector('input[name="respondentRole"]:checked')?.value||identity.respondentRole,spouseName:answers.spouseName,importantPeople:answers.importantPeople,specialEvent:answers.specialEvent,guestPhotos:answers.guestPhotos,guestPhotoStyle:answers.guestPhotoStyle,finalNotes:answers.finalNotes,_honey:$("honeypot").value};
-        fetch("https://crm-andre-vitor.vercel.app/api/questionario-festa",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).catch(()=>{});
+        return fetch("https://crm-andre-vitor.vercel.app/api/questionario-festa",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(r=>r.ok).catch(()=>false);
       }
       async function submitAnswers(){
         if(!validate("q7"))return;
@@ -260,17 +261,18 @@
         if(!answers.guestPhotos){showStep("q5");validate("q5");return}
         if(answers.guestPhotos==="Sim, com todos"&&!document.querySelector('input[name="guestPhotoStyle"]:checked')){showStep("q6");validate("q6");return}
         const payload={_subject:`Questionário pré-festa: festa ${reference()}`,_template:"table",_captcha:"false",_honey:$("honeypot").value,"Festa":`Festa ${reference()}`,"1. Nome / como gostaria de ser chamada(o)":answers.respondentName,[`2. ${parentLabel()}`]:answers.spouseName||"Não informado","3. Pessoas e fotos que não podem faltar":answers.importantPeople,"4. Algo especial na festa":answers.specialEvent||"Não informado","5. Fotos com todos os convidados":answers.guestPhotos,"6. Forma preferida":answers.guestPhotoStyle,"7. Característica marcante ou pedido especial":answers.finalNotes,"Enviado em":new Date().toLocaleString("pt-BR"),"Página de origem":location.href};
-        enviarParaCRM(answers);
         button.disabled=true;button.textContent="Enviando...";status.className="send-status";status.textContent="Enviando suas respostas com segurança...";
-        try{
-          const response=await fetch(`https://formsubmit.co/ajax/${EMAIL_DESTINO}`,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(payload)});
-          if(!response.ok)throw new Error("Falha no envio");
-          clearDraft();showStep("success",false);
-        }catch(_){
+        // CRM e e-mail são enviados ao mesmo tempo. Nenhum dos dois segura o botão por mais de 10 segundos.
+        const crmEnvio=comLimite(enviarParaCRM(answers),10000);
+        const emailEnvio=comLimite(fetch(`https://formsubmit.co/ajax/${EMAIL_DESTINO}`,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(payload)}).then(r=>r.ok).catch(()=>false),10000);
+        const [crmOk,emailOk]=await Promise.all([crmEnvio,emailEnvio]);
+        if(crmOk||emailOk){clearDraft();showStep("success",false);}
+        else{
           const subject=encodeURIComponent(`Questionário pré-festa: festa ${reference()}`);const body=encodeURIComponent(emailBody(answers));
           status.className="send-status error";status.textContent="Não conseguimos enviar automaticamente. Abrimos seu aplicativo de e-mail com as respostas prontas. É só enviar.";
           window.location.href=`mailto:${EMAIL_DESTINO}?subject=${subject}&body=${body}`;
-        }finally{button.disabled=false;button.textContent="Enviar respostas ✉"}
+        }
+        button.disabled=false;button.textContent="Enviar respostas ✉";
       }
 
       $("startButton").addEventListener("click",()=>{if(!identity.child){const child=normalizeName($("fallbackChild").value);if(!child){$("welcomeError").textContent="Digite o nome da criança para começar.";$("fallbackChild").focus();return}const selected=$("fallbackArticle").value;setIdentity({child,article:selected==="auto"?inferArticle(child):selected});clearDraft()}showStep("q1")});
