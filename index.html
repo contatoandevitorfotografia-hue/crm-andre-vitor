@@ -9366,8 +9366,55 @@ function respostasDaFesta(cardId){
   const obj=respostasFestaCache[cardId]||{};
   return Object.entries(obj).map(([k,v])=>({k,...v})).sort((a,b)=>(a.recebidoEm||0)-(b.recebidoEm||0));
 }
+// Pedidos de orçamento do formulário do Instagram (api/orcamento → crm26/orcamentosRecebidos).
+// Cada pedido vira um cartão em Oportunidades (Novo Contato) e uma pendência, e sai da caixa de entrada.
+const _TIPOS_OP=['Aniversário infantil','Ensaio Newborn','Ensaio Gestante','Ensaio Família','Batizado','Formatura','Casamento','Outro'];
+function initOrcamentosFirebase(){
+  _finDb.ref('crm26/orcamentosRecebidos').on('value',snap=>{
+    const pedidos=snap.val();
+    if(!pedidos)return;
+    Object.entries(pedidos).forEach(([key,d])=>{
+      const ref=_finDb.ref('crm26/orcamentosRecebidos/'+key);
+      if(!d||opCards.some(c=>c.pedidoId===key)){ref.remove();return}
+      _importarPedidoOrcamento(key,d);
+      ref.remove();
+    });
+  });
+}
+function _importarPedidoOrcamento(key,d){
+  const tipoOk=_TIPOS_OP.includes(d.eventType);
+  const tipo=tipoOk?d.eventType:'Outro';
+  const obs=[
+    !tipoOk&&d.eventType?`Tipo informado: ${d.eventType}`:'',
+    d.respondentNickname?`Prefere ser chamada(o) de: ${d.respondentNickname}`:'',
+    d.guestCount?`Convidados: ${d.guestCount}`:'',
+    d.eventNotes?`Observações: ${d.eventNotes}`:''
+  ].filter(Boolean).join('\n');
+  const nome=d.respondentName||'Cliente';
+  const crianca=d.birthdayName||'';
+  const newCard={
+    id:uid(),pedidoId:key,coluna:'novo-contato',somenteProjeto:false,
+    titulo:d.eventSubject||(crianca?`${tipo} de ${crianca}`:`${tipo} de ${nome}`),
+    nomePais:nome,telefone:d.respondentPhone||'',email:'',
+    nomeCrianca:crianca,idade:d.birthdayAge||'',nomeCrianca2:'',idade2:'',
+    dataEvento:d.dataEvento||'',horario:d.eventTime||'',horarioFim:'',
+    local:d.eventLocation||'',tipo,origem:'Instagram',
+    pacoteId:'',pacoteCustom:'',tipoExecucao:'proprio',freelancerId:'',
+    valorTotal:0,valorReserva:0,dataReserva:'',valorRestante:0,dataRestante:'',
+    statusPag:'pendente',gastos:0,gastosItens:[],formaPag:'avista',nParcelas:1,parcelasItens:[],
+    obs,motivo:'',detalhe:'',pendencias:[],followupDate:'',
+    criadoEm:d.criadoEm||Date.now(),updatedAt:Date.now(),_novoAuto:true
+  };
+  opCards.unshift(newCard);savOp();
+  const hoje=new Date().toISOString().slice(0,10);
+  pendencias.unshift({id:uid(),texto:`Enviar orçamento para ${nome}`,clienteId:'',clienteNome:'',prazo:hoje,status:'pendente',criadoEm:Date.now()});
+  savPen();
+  try{renderOp();renderAgenda();renderDashListas();}catch(e){console.warn('orçamento:',e)}
+  toast('📩 Novo pedido de orçamento: '+nome,'green');
+}
 function initRespostasFestaFirebase(){
   if(!window._finDb)return;
+  try{initOrcamentosFirebase()}catch(e){console.warn('orçamentos:',e)}
   _finDb.ref('crm26/respostasFesta').on('value',snap=>{
     respostasFestaCache=snap.val()||{};
     _avisarRespostasFesta();
