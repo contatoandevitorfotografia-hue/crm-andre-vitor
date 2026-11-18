@@ -3207,6 +3207,16 @@ input[type="date"]{cursor:pointer}
     <div class="mo-body"><div id="ag-day-list" style="display:flex;flex-direction:column;gap:8px"></div></div>
   </div>
 </div>
+<div class="mo hidden" id="mo-locais" onclick="moOverlay(event,'mo-locais')">
+  <div class="mo-box sm">
+    <div class="mo-hdr"><h2>📍 Locais cadastrados</h2><button class="mo-close" onclick="closeMo('mo-locais')">✕</button></div>
+    <div class="mo-body">
+      <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:10px">Remova os buffets e espaços que você não usa mais. Eles saem só do menu: as festas que já usam esse local continuam com ele.</div>
+      <input type="text" id="mo-locais-busca" placeholder="🔍 Buscar local..." oninput="renderGerenciarLocais()" style="width:100%;margin-bottom:10px">
+      <div id="mo-locais-lista" style="max-height:55vh;overflow:auto"></div>
+    </div>
+  </div>
+</div>
 <div class="mo hidden" id="mo-import" onclick="moOverlay(event,'mo-import')">
   <div class="mo-box sm">
     <div class="mo-hdr"><h2>📥 Importar Formulário</h2><button class="mo-close" onclick="closeMo('mo-import')">✕</button></div>
@@ -3358,6 +3368,9 @@ const LOCAIS_SUGERIDOS=['Buffet Engenho'];
 // Buffets e espaços salvos pelo botão "Salvar na lista" (sincronizados com os demais dados)
 let locaisSalvos=(()=>{try{return JSON.parse(localStorage.getItem('crm_locais_v1')||'[]')}catch{return[]}})();
 function savLocaisSalvos(){localStorage.setItem('crm_locais_v1',JSON.stringify(locaisSalvos));_saveDadosFirebase()}
+// Locais que você tirou do menu (as festas antigas continuam com o local; só some da lista)
+let locaisOcultos=(()=>{try{return JSON.parse(localStorage.getItem('crm_locais_ocultos_v1')||'[]')}catch{return[]}})();
+function savLocaisOcultos(){localStorage.setItem('crm_locais_ocultos_v1',JSON.stringify(locaisOcultos));_saveDadosFirebase()}
 // Anotações do dia a dia: uma lista de notas soltas (ex.: comandos do deploy, brindes para clientes)
 let anotNotas=_anotCarregar();
 function savAnotNotas(){localStorage.setItem('crm_anot_v2',JSON.stringify(anotNotas));_saveDadosFirebase()}
@@ -3475,7 +3488,7 @@ function _flushDadosFirebase(){
     pgr:pendenciasGerais,
     pendencias:pendencias,
     indic:indicData,
-    loc:locaisSalvos,
+    loc:locaisSalvos,locOcultos:locaisOcultos,
     anot:{n:anotNotas.length,notas:anotNotas}
   };
   // O Firebase recusa o update() inteiro se QUALQUER campo, em qualquer
@@ -9662,6 +9675,8 @@ function initFinFirebase(){
       if(data.pendencias&&Array.isArray(data.pendencias)){pendencias=data.pendencias;localStorage.setItem('crm_pen_v1',JSON.stringify(pendencias));}
       if(data.indic&&typeof data.indic==='object'){indicData=data.indic;localStorage.setItem('crm_indic_v1',JSON.stringify(indicData));}
       if(data.loc&&Array.isArray(data.loc)){locaisSalvos=data.loc;localStorage.setItem('crm_locais_v1',JSON.stringify(locaisSalvos));}
+      // Lista vazia não fica salva no Firebase: se o campo não veio, nenhum local está escondido
+      locaisOcultos=Array.isArray(data.locOcultos)?data.locOcultos:[];localStorage.setItem('crm_locais_ocultos_v1',JSON.stringify(locaisOcultos));
       if(data.anot&&typeof data.anot==='object'&&'n' in data.anot){anotNotas=Array.isArray(data.anot.notas)?data.anot.notas:_anotDeCategorias(data.anot.cats);localStorage.setItem('crm_anot_v2',JSON.stringify(anotNotas));renderAnotacoes();}
       syncAllDistrib();
       if(currentTab==='oportunidades')renderOp();
@@ -12158,7 +12173,7 @@ function _listaLocais(){
   const mapa=new Map();
   [...LOCAIS_SUGERIDOS,...locaisSalvos,...opCards.map(c=>c.local)].forEach(l=>{
     const nome=(l||'').trim();const k=_chaveLocal(nome);
-    if(k&&!mapa.has(k))mapa.set(k,nome);
+    if(k&&!mapa.has(k)&&!locaisOcultos.includes(k))mapa.set(k,nome);
   });
   return [...mapa.values()].sort((a,b)=>a.localeCompare(b,'pt-BR'));
 }
@@ -12172,6 +12187,34 @@ function _locaisDaFicha(){
   const salvos=new Set(locaisSalvos.map(_chaveLocal));
   return _listaLocais().filter(l=>{const n=_norm(l);return salvos.has(_chaveLocal(l))||n.includes('buffet')||n.includes('espaco')});
 }
+// Janela "Locais cadastrados": lista o que aparece no menu e permite tirar alguns
+let _locaisGerenciar=[];
+function abrirGerenciarLocais(){
+  const busca=document.getElementById('mo-locais-busca');if(busca)busca.value='';
+  renderGerenciarLocais();
+  document.getElementById('mo-locais').classList.remove('hidden');
+  setTimeout(()=>{if(busca)busca.focus()},100);
+}
+function renderGerenciarLocais(){
+  const termo=_norm(document.getElementById('mo-locais-busca')?.value||'').trim();
+  _locaisGerenciar=_locaisDaFicha().filter(l=>!termo||_norm(l).includes(termo));
+  const el=document.getElementById('mo-locais-lista');if(!el)return;
+  el.innerHTML=_locaisGerenciar.length
+    ?_locaisGerenciar.map((l,i)=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 4px;border-bottom:1px solid var(--border)"><span style="font-size:13px;color:var(--text)">${esc(l)}</span><button type="button" class="btn btn-g btn-sm" style="color:var(--danger)" onclick="removerLocalIdx(${i})">🗑️ Remover</button></div>`).join('')
+    :`<div class="dash-empty" style="padding:10px 2px">${termo?'Nenhum local encontrado.':'Nenhum buffet ou espaço cadastrado ainda.'}</div>`;
+}
+function removerLocalIdx(i){
+  const nome=_locaisGerenciar[i];if(!nome)return;
+  const k=_chaveLocal(nome);
+  locaisSalvos=locaisSalvos.filter(l=>_chaveLocal(l)!==k);
+  savLocaisSalvos();
+  if(!locaisOcultos.includes(k))locaisOcultos.push(k);
+  savLocaisOcultos();
+  renderGerenciarLocais();
+  // atualiza o menu da ficha aberta; se a festa já usava esse local, ele continua selecionado como "Outro"
+  _preencheLocalSelect(_localDoFormulario());
+  toast(`🗑️ "${nome}" removido da lista`,'orange');
+}
 function _preencheLocalSelect(valor){
   const slot=document.getElementById('f-local-slot');if(!slot)return;
   const locais=_locaisDaFicha();
@@ -12181,7 +12224,7 @@ function _preencheLocalSelect(valor){
     locais.map(l=>`<option value="${esc(l)}"${l===atual?' selected':''}>${esc(l)}</option>`).join('')+
     `<option value="__outro__"${outro?' selected':''}>✏️ Outro (digitar local)…</option></select>`+
     `<input type="text" id="f-localCustom" placeholder="Digite o local da festa" oninput="onLocalChange()" style="margin-top:8px;width:100%;display:${outro?'block':'none'}" value="${outro?esc(atual):''}">`+
-    `<button type="button" id="f-local-salvar" class="btn btn-g btn-sm" onclick="salvarLocalNaLista()" style="margin-top:6px;display:${outro?'inline-block':'none'}">💾 Salvar na lista de buffets/espaços</button>`;
+    `<button type="button" id="f-local-salvar" class="btn btn-g btn-sm" onclick="salvarLocalNaLista()" style="margin-top:6px;display:${outro?'inline-block':'none'}">💾 Salvar na lista de buffets/espaços</button>`+`<button type="button" class="btn btn-g btn-sm" onclick="abrirGerenciarLocais()" style="margin-top:6px">🗑️ Gerenciar lista de locais</button>`;
 }
 function onLocalChange(){
   const sel=document.getElementById('f-local');const custom=document.getElementById('f-localCustom');
@@ -12200,6 +12243,7 @@ function salvarLocalNaLista(){
   if(!nome){toast('⚠️ Digite o nome do buffet ou espaço.','orange');return;}
   const k=_chaveLocal(nome);
   if(!locaisSalvos.some(l=>_chaveLocal(l)===k))locaisSalvos.push(nome);
+  if(locaisOcultos.includes(k)){locaisOcultos=locaisOcultos.filter(x=>x!==k);savLocaisOcultos()}
   savLocaisSalvos();
   _preencheLocalSelect(nome);
   toast(`📍 "${nome}" salvo na lista de buffets/espaços`,'green');
