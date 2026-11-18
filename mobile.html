@@ -173,6 +173,15 @@ select{background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;c
 .lst-tabs::-webkit-scrollbar{display:none}
 .lst-tab{flex-shrink:0;padding:7px 14px;border-radius:20px;border:1.5px solid var(--brd);background:var(--surf);color:var(--mut);font-size:12px;font-weight:700;cursor:pointer;font-family:'Montserrat',sans-serif;transition:all .15s}
 .lst-tab.active{background:var(--acc);border-color:var(--acc);color:var(--on)}
+/* Pessoal: formulário de consultas e linha de aviso */
+.pes-form{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.pes-form input[type=text],.pes-form input[type=date],.pes-form input[type=time]{background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;color:var(--txt);padding:9px 11px;font-size:13px;outline:none;font-family:'Montserrat',sans-serif;min-width:0;width:100%;box-sizing:border-box}
+.pes-row2{display:flex;gap:8px}
+.pes-row2>*{flex:1;min-width:0}
+.pes-aviso{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--mut);margin:8px 0}
+.pes-aviso select{flex:1;background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;color:var(--txt);padding:8px 10px;font-size:12px;font-family:'Montserrat',sans-serif}
+.pes-save{background:var(--acc);color:var(--on);border:none;border-radius:12px;padding:11px;font-weight:800;font-size:13px;cursor:pointer;font-family:'Montserrat',sans-serif}
+.pes-hint{font-size:11px;color:var(--err);margin:4px 0 10px;line-height:1.4}
 .lst-sec{display:none;padding:10px 12px 0}
 .lst-sec.active{display:block}
 .lst-add-row{display:flex;gap:8px;margin-bottom:10px}
@@ -407,18 +416,44 @@ select{background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;c
     <!-- PESSOAIS -->
     <section id="sec-pes" class="mob-sec">
       <div class="lst-tabs">
-        <button class="lst-tab active" onclick="switchPesTab('fazer',this)">✅ A Fazer</button>
+        <button class="lst-tab active" onclick="switchPesTab('fazer',this)">📌 Pendências</button>
+        <button class="lst-tab" onclick="switchPesTab('consultas',this)">🩺 Consultas</button>
         <button class="lst-tab" onclick="switchPesTab('compras',this)">🧺 Compras</button>
         <button class="lst-tab" onclick="switchPesTab('outros',this)">📝 Outros</button>
       </div>
 
       <div class="lst-sec active" id="pes-sec-fazer">
         <div class="lst-add-row">
-          <input type="text" id="pes-fazer-inp" placeholder="Nova tarefa pessoal..." onkeydown="if(event.key==='Enter')addPes('fazer')">
+          <input type="text" id="pes-fazer-inp" placeholder="Nova pendência..." onkeydown="if(event.key==='Enter')addPes('fazer')">
           <input type="date" id="pes-fazer-data" style="background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;color:var(--txt);padding:8px 10px;font-size:12px;outline:none;font-family:'Montserrat',sans-serif;flex-shrink:0">
           <button class="btn-add" onclick="addPes('fazer')">+</button>
         </div>
+        <div class="pes-aviso"><span>⏰ Avisar</span><select id="pes-fazer-aviso">
+          <option value="nunca">Sem aviso</option>
+          <option value="na-hora">No dia, às 9h</option>
+          <option value="1dia" selected>1 dia antes, às 9h</option>
+        </select></div>
         <div id="pes-fazer-list"></div>
+      </div>
+
+      <div class="lst-sec" id="pes-sec-consultas">
+        <div class="pes-form">
+          <input type="text" id="pes-consultas-inp" placeholder="Nome da consulta (ex.: Dentista)">
+          <input type="date" id="pes-consultas-data" title="Data da consulta">
+          <div class="pes-row2">
+            <input type="time" id="pes-consultas-hora" value="09:00" title="Horário">
+            <input type="text" id="pes-consultas-local" placeholder="Local (opcional)">
+          </div>
+          <div class="pes-aviso"><span>⏰ Avisar</span><select id="pes-consultas-aviso">
+            <option value="nunca">Sem aviso</option>
+            <option value="na-hora">Na hora</option>
+            <option value="15min">15 min antes</option>
+            <option value="1h">1 hora antes</option>
+            <option value="1dia" selected>1 dia antes</option>
+          </select></div>
+          <button class="pes-save" onclick="addPes('consultas')">+ Cadastrar consulta</button>
+        </div>
+        <div id="pes-consultas-list"></div>
       </div>
 
       <div class="lst-sec" id="pes-sec-compras">
@@ -562,6 +597,9 @@ select{background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;c
     <button class="nav-btn" onclick="showSec('ag',this)">
       <span class="ni">📅</span><span>Agenda</span>
     </button>
+    <button class="nav-btn" onclick="showSec('pes',this)">
+      <span class="ni">👤</span><span>Pessoal</span>
+    </button>
     <button class="nav-btn" onclick="showSec('resp',this)">
       <span class="ni">📋</span><span>Respostas</span>
     </button>
@@ -620,6 +658,7 @@ let _finDb=null;
 let _dadosTs=0;
 let _dadosTmr=null;
 let _rDados=false;
+let _mobLida=false;
 
 function toast(msg,dur=2200){
   const el=document.getElementById('mob-toast');
@@ -825,6 +864,8 @@ function saveD(){
 function _flushDados(){
   clearTimeout(_dadosTmr);_dadosTmr=null;
   if(!_finDb)return; // sem conexão ainda — a flag "pending" garante nova tentativa depois
+  // Celular que nunca recebeu a nuvem não envia nada antes de recebê-la nesta abertura
+  if(!_mobLida&&localStorage.getItem('mob_nuvem_ok_v1')!=='1')return;
   const payload=_dadosPayload();
   try{
     _finDb.ref('dados26').update(payload).then(()=>{
@@ -911,6 +952,16 @@ function initMobSync(){
 
     _finDb.ref('dados26').on('value',snap=>{
       const d=snap.val();
+      const temNuvem=!!(d&&Object.keys(d).length);
+      _mobLida=true; // a partir daqui os envios já podem sair
+      // Celular que nunca recebeu a nuvem: a nuvem vence. Um envio pendente criado antes dela
+      // (ex.: um item do Pessoal) não pode mandar listas incompletas por cima.
+      const primeiraNuvem=temNuvem&&localStorage.getItem('mob_nuvem_ok_v1')!=='1';
+      if(primeiraNuvem){
+        clearTimeout(_dadosTmr);_dadosTmr=null;
+        localStorage.removeItem('mob_dados_pending');localStorage.removeItem('mob_dados_pending_ts');
+      }
+      if(temNuvem)localStorage.setItem('mob_nuvem_ok_v1','1');
       // Existe edição local ainda não confirmada no Firebase? Não deixa um
       // snapshot desatualizado sobrescrever o que a pessoa acabou de digitar
       // — em vez disso, reenvia o dado local. Só respeita a flag se for
@@ -921,8 +972,9 @@ function initMobSync(){
         if(Date.now()-pendTs<120000){_flushDados();if(!_rDados){_rDados=true;checkReady();}return;}
         localStorage.removeItem('mob_dados_pending');localStorage.removeItem('mob_dados_pending_ts');
       }
-      const has=d&&(d.op||d.cnt);
-      if(has&&Date.now()-_dadosTs>2000){
+      const has=temNuvem;
+      // No primeiro recebimento a nuvem entra sempre; depois, ignora o que acabou de ser salvo aqui
+      if(has&&(primeiraNuvem||Date.now()-_dadosTs>2000)){
         if(d.op){opCards=toArr(d.op);if(typeof Notification!=='undefined'&&Notification.permission==='granted')scheduleFestaAusenciaNotifs();}
         if(d.pac)packages=toArr(d.pac);
         if(d.cnt)conteudos=toArr(d.cnt);
@@ -935,7 +987,7 @@ function initMobSync(){
         try{localStorage.setItem('mob_dados_v1',JSON.stringify(_dadosPayload()));}catch(e){}
       }
       // lembretes sempre carrega (pode existir mesmo sem op/tar/cnt)
-      if(d&&d.lem&&Date.now()-_dadosTs>2000){lembretes=toArr(d.lem);}
+      if(d&&d.lem&&(primeiraNuvem||Date.now()-_dadosTs>2000)){lembretes=toArr(d.lem);}
       // Anotações: aplica a lista do Firebase, a não ser que este aparelho tenha edição pendente
       if(d&&d.anot&&typeof d.anot==='object'&&'n' in d.anot){
         if(localStorage.getItem('mob_anot_pending')==='1'){
@@ -2086,7 +2138,7 @@ function renderLstPgr(){
 }
 
 // ── PESSOAIS ─────────────────────────────────
-const PES_LBL={fazer:'A Fazer',compras:'Compras',outros:'Outros'};
+const PES_LBL={fazer:'Pendências',consultas:'Consultas',compras:'Compras',outros:'Outros'};
 function switchPesTab(tab,btn){
   _pesTab=tab;
   document.querySelectorAll('#sec-pes .lst-tab').forEach(b=>b.classList.remove('active'));
@@ -2099,12 +2151,22 @@ function addPes(lista){
   const inp=document.getElementById('pes-'+lista+'-inp');
   const dInp=document.getElementById('pes-'+lista+'-data');
   const texto=inp.value.trim();if(!texto)return;
-  const data=dInp.value||'';
-  pessoais.unshift({id:Date.now().toString(36)+Math.random().toString(36).slice(2),
-    lista,texto,data,done:false,criadoEm:Date.now()});
-  inp.value='';dInp.value='';
+  const data=dInp?dInp.value||'':'';
+  if(lista==='consultas'&&!data){toast('⚠️ Escolha a data da consulta');return;}
+  const avEl=document.getElementById('pes-'+lista+'-aviso');
+  const item={id:Date.now().toString(36)+Math.random().toString(36).slice(2),
+    lista,texto,data,done:false,criadoEm:Date.now()};
+  // Aviso só faz sentido com data: sem data não há dia nem horário para avisar
+  if(avEl)item.aviso=data?avEl.value:'nunca';
+  if(lista==='consultas'){
+    item.hora=document.getElementById('pes-consultas-hora').value||'09:00';
+    item.local=(document.getElementById('pes-consultas-local').value||'').trim();
+  }
+  pessoais.unshift(item);
+  inp.value='';if(dInp)dInp.value='';
+  if(lista==='consultas')document.getElementById('pes-consultas-local').value='';
   saveD();renderPessoaisLista(lista);
-  toast('✅ Item adicionado');
+  toast(lista==='consultas'?'🩺 Consulta cadastrada':'✅ Item adicionado');
 }
 function togglePes(id){
   const p=pessoais.find(x=>x.id===id);if(!p)return;
@@ -2127,7 +2189,7 @@ function editPes(id){
   saveD();renderPessoaisLista(p.lista);
 }
 function renderPessoais(){
-  ['fazer','compras','outros'].forEach(renderPessoaisLista);
+  ['fazer','consultas','compras','outros'].forEach(renderPessoaisLista);
 }
 function renderPessoaisLista(lista){
   const el=document.getElementById('pes-'+lista+'-list');if(!el)return;
@@ -2135,19 +2197,33 @@ function renderPessoaisLista(lista){
   if(!items.length){el.innerHTML='<div class="empty">Nenhum item pessoal ainda.</div>';return;}
   const abertos=items.filter(p=>!p.done);
   const feitos=items.filter(p=>p.done);
-  const hoje=new Date().toISOString().slice(0,10);
+  // Consultas em ordem de data e horário
+  if(lista==='consultas')abertos.sort((a,b)=>(a.data||'').localeCompare(b.data||'')||(a.hora||'').localeCompare(b.hora||''));
+  // Data de hoje no fuso do aparelho (toISOString usaria UTC e erraria à noite no Brasil)
+  const hoje=(d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`)(new Date());
+  const avisoTxt=p=>lista==='fazer'
+    ?({'na-hora':'no dia, às 9h','1dia':'1 dia antes, às 9h'})[p.aviso]
+    :({'na-hora':'na hora','15min':'15 min antes','30min':'30 min antes','1h':'1 hora antes','2h':'2 horas antes','1dia':'1 dia antes'})[p.aviso];
   const row=p=>{
     const venc=p.data&&p.data<hoje&&!p.done;
+    const quando=p.data?p.data.split('-').reverse().join('/')+(p.hora?' · '+p.hora:''):'';
+    const meta=[quando,p.local].filter(Boolean).join(' · ');
+    const av=p.data&&p.aviso&&p.aviso!=='nunca'&&avisoTxt(p)?'⏰ '+avisoTxt(p):'';
+    const linha=(meta?'📅 '+meta:'')+(meta&&av?' · ':'')+av;
     return`<div class="lst-item${p.done?' done':''}">
       <div class="chk${p.done?' on':''}" onclick="togglePes('${p.id}')"></div>
       <div style="flex:1;min-width:0" onclick="editPes('${p.id}')">
         <div class="lst-txt">${esc(p.texto)}</div>
-        ${p.data?`<div class="lst-meta" style="color:${venc?'var(--err)':'var(--mut)'}">📅 ${p.data.split('-').reverse().join('/')}</div>`:''}
+        ${linha?`<div class="lst-meta" style="color:${venc?'var(--err)':'var(--mut)'}">${esc(linha)}</div>`:''}
       </div>
       <button class="btn-del" onclick="delPes('${p.id}')">✕</button>
     </div>`;
   };
-  let html=abertos.length?abertos.map(row).join(''):'<div class="empty" style="padding:12px">Nada por aqui ✨</div>';
+  // Sem permissão de notificação, o aviso não chega: avisa na própria tela
+  const algumAviso=items.some(p=>p.aviso&&p.aviso!=='nunca');
+  const semPermissao=algumAviso&&typeof Notification!=='undefined'&&Notification.permission!=='granted';
+  let html=semPermissao?'<div class="pes-hint">⚠️ Os avisos só chegam se as notificações estiverem ativas neste celular.</div>':'';
+  html+=abertos.length?abertos.map(row).join(''):'<div class="empty" style="padding:12px">Nada por aqui ✨</div>';
   if(feitos.length) html+=`<div class="sec-ttl" style="margin-top:4px">Concluídos</div>${feitos.map(row).join('')}`;
   el.innerHTML=html;
 }
