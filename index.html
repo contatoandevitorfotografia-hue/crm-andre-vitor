@@ -3461,7 +3461,7 @@ function load(){
   try{pendencias=JSON.parse(localStorage.getItem('crm_pen_v1')||'[]')}catch{pendencias=[]}
   try{pendenciasGerais=JSON.parse(localStorage.getItem('crm_pgr_v1')||'[]')}catch{pendenciasGerais=[]}
   try{templates=JSON.parse(localStorage.getItem('crm_tpl_v1')||'[]')}catch{templates=[]}
-  if(!templates.length){templates=DEFAULT_TEMPLATES;savTemplates()}
+  if(!templates.length){templates=DEFAULT_TEMPLATES;salvaTemplatesNoAparelho()}
   ensureIndicTemplate();
   try{indicData=JSON.parse(localStorage.getItem('crm_indic_v1')||'{}')}catch{indicData={}}
 }
@@ -3474,11 +3474,15 @@ function ensureIndicTemplate(){
   ];
   let mudou=false;
   defs.forEach(d=>{if(!templates.find(t=>t.id===d.id)){templates.push(d);mudou=true;}});
-  if(mudou)savTemplates();
+  if(mudou)salvaTemplatesNoAparelho();
 }
-let _dadosSaveTs=parseInt(localStorage.getItem('crm_dados_savets')||'0'),_dadosSaveTimer=null,_dadosPending=false;
+let _dadosSaveTs=parseInt(localStorage.getItem('crm_dados_savets')||'0'),_dadosSaveTimer=null,_dadosPending=false,_nuvemTemDados=undefined;
+// Este aparelho tem alguma festa, cliente, projeto ou pacote carregado?
+function _aparelhoTemDados(){return !!(opCards.length||prCards.length||clients.length||packages.length)}
 function _flushDadosFirebase(){
   if(!window._finDb||!_dadosPending)return;
+  // Navegador sem dados que ainda não recebeu a nuvem não envia nada: enviaria listas vazias por cima da nuvem
+  if(!_aparelhoTemDados()&&localStorage.getItem('crm_nuvem_ok_v1')!=='1'&&_nuvemTemDados!==false)return;
   clearTimeout(_dadosSaveTimer);_dadosSaveTimer=null;
   _dadosPending=false;
   const payloadRaw={
@@ -3531,6 +3535,8 @@ window.addEventListener('pagehide',_flushDadosFirebase);
 window.addEventListener('beforeunload',_flushDadosFirebase);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')_flushDadosFirebase()});
 function savTemplates(){localStorage.setItem('crm_tpl_v1',JSON.stringify(templates));_saveDadosFirebase()}
+// Modelos padrão criados ao abrir: ficam só neste aparelho, sem contar como mudança para enviar à nuvem
+function salvaTemplatesNoAparelho(){localStorage.setItem('crm_tpl_v1',JSON.stringify(templates))}
 // Limpeza do campo "Meu futuro", que saiu do app: tira o campo das festas que
 // ainda o têm salvo. Devolve quantas festas foram limpas.
 function _apagaMeuFuturoDasFestas(){
@@ -9638,9 +9644,16 @@ function initFinFirebase(){
       const fbTemDados=data&&((data.op&&data.op.length)||(data.pr&&data.pr.length)||(data.cl&&data.cl.length)||(data.pac&&data.pac.length));
       // Este dispositivo tem dados locais?
       const localTemDados=opCards.length||prCards.length||clients.length||packages.length;
+      _nuvemTemDados=!!fbTemDados;
       if(!fbTemDados){
         if(localTemDados)_saveDadosFirebase(); // empurra dados locais → Firebase
         return;
+      }
+      // Navegador sem nenhum dado que ainda não recebeu a nuvem: só recebe, nunca envia.
+      // Sem isto, um "envio pendente" criado ao abrir mandava listas vazias por cima da nuvem.
+      if(!localTemDados&&localStorage.getItem('crm_nuvem_ok_v1')!=='1'){
+        _dadosPending=false;clearTimeout(_dadosSaveTimer);_dadosSaveTimer=null;
+        localStorage.removeItem('crm_dados_pending');localStorage.removeItem('crm_dados_pending_ts');
       }
       if(localStorage.getItem('crm_dados_pending')==='1'){
         // Existe uma edição local (ex.: card movido) que ainda não foi confirmada
@@ -9662,6 +9675,7 @@ function initFinFirebase(){
       }
       const _fresh=Date.now()-_dadosSaveTs>2000;
       if(!_fresh)return; // dados que acabamos de salvar — ignora
+      localStorage.setItem('crm_nuvem_ok_v1','1'); // este navegador já recebeu dados da nuvem
       if(data.op&&Array.isArray(data.op)){opCards=data.op;_normalizaNumerosOp();_backfillGastoAlbumTipoErrado();localStorage.setItem('crm_op_v4',JSON.stringify(opCards));if(_apagaMeuFuturoDasFestas()>0){localStorage.setItem('crm_op_v4',JSON.stringify(opCards));_saveDadosFirebase();}}
       if(data.pr&&Array.isArray(data.pr)){prCards=data.pr;_backfillCoresRuidoFinalizados();localStorage.setItem('crm_pr_v4',JSON.stringify(prCards));}
       if(data.pac&&Array.isArray(data.pac)){packages=data.pac;localStorage.setItem('crm_pac_v4',JSON.stringify(packages));}
