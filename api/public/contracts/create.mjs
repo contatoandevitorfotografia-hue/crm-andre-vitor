@@ -1,5 +1,5 @@
 // POST /api/public/contracts/create — o CRM manda os dados do evento e a senha do gerador (cabeçalho X-Admin-Password).
-import { cors, lerCorpo, limpaDados, CAMPOS_OBRIGATORIOS, renderizaTexto, novoToken, senhaConfere, fbGravar, origemDe, TEXTOS_CONFIRMADOS, VERSAO_TEXTO } from '../../../lib/contratos.mjs';
+import { cors, lerCorpo, limpaDados, CAMPOS_OBRIGATORIOS, renderizaTexto, novoToken, senhaConfere, fbGravar, origemDe, modeloLiberado, VERSAO_TEXTO } from '../../../lib/contratos.mjs';
 
 export default async function handler(req, res) {
   cors(res, 'POST, OPTIONS');
@@ -10,9 +10,8 @@ export default async function handler(req, res) {
   if (senha === 'nao_configurada') return res.status(500).json({ error: 'Senha do gerador não configurada no servidor (variável GERADOR_SENHA_ADMIN).' });
   if (senha !== true) return res.status(403).json({ error: 'invalid_password' });
 
-  if (!TEXTOS_CONFIRMADOS) return res.status(503).json({ error: 'Os textos dos contratos ainda estão em revisão. Nenhum contrato foi criado.' });
-
   const dados = limpaDados(lerCorpo(req));
+  if (!modeloLiberado(dados.contractModel)) return res.status(503).json({ error: 'Este modelo de contrato ainda está em revisão. Nenhum contrato foi criado.' });
   const faltando = CAMPOS_OBRIGATORIOS.filter(c => !dados[c]);
   if (faltando.length) return res.status(400).json({ error: 'Campos obrigatórios faltando: ' + faltando.join(', ') });
 
