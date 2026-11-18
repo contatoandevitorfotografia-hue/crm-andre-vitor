@@ -4433,8 +4433,21 @@ function _adiarTransporteLembrete(opId){
   }
   toast('📌 Reservar o transporte está em Pendências de clientes','');
 }
+// Colunas "Finalizado" dos projetos e dos freelas. No vídeo, a última etapa se chama "Finalizado, entregar", antes do pagamento.
+const PR_COLS_FINALIZADO=['finalizado','frl-finalizado'];
+// Projeto com pagamento em aberto não vai para Finalizado. Usa a mesma conta do "Falta: R$" do card.
+// Se ainda falta pagar, mostra o aviso e devolve true (o movimento é cancelado).
+function _bloqueiaFinalizadoPr(c){
+  const src=c.sourceId?opCards.find(o=>o.id===c.sourceId):null;
+  const freelaTipo=src?(src.tipoExecucao==='sou-freela'?'sou-freela':(src.tipoExecucao==='freelancer'||!!src.freelancerId?'contratei':'')):(c.freela||'');
+  const falta=_pagamentoDaFesta(src||c,freelaTipo==='contratei').falta;
+  if(!(falta>0.009))return false;
+  toast(`💰 Pagamento pendente: falta ${fmtMoney(falta)}. Quite o projeto antes de finalizar.`,'orange');
+  return true;
+}
 function marcarFreelaFinalizado(id){
   const card=prCards.find(c=>c.id===id);if(!card)return;
+  if(_bloqueiaFinalizadoPr(card))return;
   card.coluna='finalizado';card.coresDone=true;card.ruidoDone=true;card.updatedAt=Date.now();
   savPr();renderPr();
   toast('🎉 Projeto movido para Finalizados!','green');
@@ -4821,6 +4834,8 @@ function onDrop(e,board,targetCol){
     if(targetCol==='negociacao'&&oldCol!=='negociacao')_abrirPopupNegociacao(card.id);
   }else if(board==='pr'){
     const card=prCards.find(c=>c.id===id);if(!card||card.coluna===targetCol)return;
+    // Finalizado só com o pagamento quitado: se ainda falta pagar, o card nem sai do lugar
+    if(PR_COLS_FINALIZADO.includes(targetCol)&&_bloqueiaFinalizadoPr(card))return;
     const _oldColPr=card.coluna;
     card.coluna=targetCol;card.updatedAt=Date.now();
     // Chegar em Finalizado já significa que Cores e Ruído estão prontos —
@@ -6264,6 +6279,8 @@ function savePrCard(){
   const nomePais=src2?.nomePais||(isStandalone?document.getElementById('f-pr-nome').value.trim():oldCard?.nomePais||'');
   const dataEvento=src2?.dataEvento||(isStandalone?document.getElementById('f-pr-data').value:oldCard?.dataEvento||'');
   if(isStandalone&&!nomePais){toast('⚠️ Informe o nome do projeto!','orange');document.getElementById('f-pr-nome').focus();return}
+  // Mudar a fase na ficha para Finalizado tem a mesma regra do arraste
+  if(oldCard&&PR_COLS_FINALIZADO.includes(newCol)&&oldCard.coluna!==newCol&&_bloqueiaFinalizadoPr(oldCard))return;
   const freela=isStandalone?(document.querySelector('input[name="pr-freela"]:checked')?.value||''):(oldCard?.freela||'');
   const parceiroId=isStandalone&&freela==='sou-freela'?(document.getElementById('f-pr-parceiroId')?.value||''):(oldCard?.parceiroId||'');
   // Chegar em Finalizado já significa que Cores e Ruído estão prontos — não
