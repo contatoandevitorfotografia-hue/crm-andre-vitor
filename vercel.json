@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/contrato/:token", "destination": "/contrato.html" }
+  ]
+}

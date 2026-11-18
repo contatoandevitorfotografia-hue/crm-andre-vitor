@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Contrato · André Vitor Fotografia</title>
+<style>
+:root{--ink:#1d2430;--mut:#5b6472;--line:#d9dee5;--ok:#2f7a55;--bad:#a8432f;--bg:#f4f6f8;--card:#fff;--acc:#4f8f6f}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg)}
+main{max-width:760px;margin:0 auto;padding:20px 16px 48px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px}
+h1{font-size:20px;margin:0 0 6px}
+.badge{display:inline-block;font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;margin-bottom:12px}
+.badge.pendente{background:#fdf1d8;color:#8a5a00}
+.badge.aceito{background:#dff3e8;color:var(--ok)}
+#texto{white-space:pre-wrap;font:14px/1.6 ui-monospace,Menlo,Consolas,monospace;background:#fafbfc;border:1px solid var(--line);border-radius:8px;padding:14px;margin:14px 0}
+form{display:grid;gap:10px;margin-top:14px}
+label{font-size:13px;font-weight:600;color:var(--mut)}
+input,select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font:inherit;background:#fff}
+.check{display:flex;gap:8px;align-items:flex-start;font-weight:500;color:var(--ink)}
+.check input{width:auto;margin-top:4px}
+button{padding:12px 16px;border:0;border-radius:10px;background:var(--acc);color:#fff;font:inherit;font-weight:700;cursor:pointer}
+button:disabled{opacity:.6;cursor:wait}
+.msg{font-weight:600;margin:0}
+.erro{color:var(--bad);min-height:1em;margin-top:10px}
+.aceito-box{background:#eef8f2;border:1px solid #bfe3cd;border-radius:10px;padding:14px;margin-top:14px}
+.aceito-box p{margin:4px 0}
+.oculto{display:none!important}
+@media print{
+  body{background:#fff}
+  .card{border:0;padding:0}
+  .nao-imprime{display:none!important}
+  #texto{border:0;background:#fff;padding:0}
+}
+</style>
+</head>
+<body>
+<main>
+  <div class="card">
+    <div id="badge" class="badge pendente">Carregando…</div>
+    <h1 id="titulo">Contrato</h1>
+    <div id="texto"></div>
+    <div id="erro" class="erro nao-imprime" role="alert"></div>
+
+    <form id="form" class="nao-imprime oculto" novalidate>
+      <p class="msg">Para aceitar, leia o contrato acima e confirme seus dados.</p>
+      <label for="nome">Nome completo *</label>
+      <input id="nome" name="nome" autocomplete="name" maxlength="120" required>
+      <label for="cpf">CPF (opcional)</label>
+      <input id="cpf" name="cpf" inputmode="numeric" maxlength="20" placeholder="000.000.000-00">
+      <label for="usoImagem">Uso de imagens *</label>
+      <select id="usoImagem" name="usoImagem" required>
+        <option value="">Escolha uma opção</option>
+        <option value="authorized">Autorizo o uso das imagens do evento</option>
+        <option value="not_authorized">Não autorizo o uso das imagens</option>
+      </select>
+      <label class="check"><input type="checkbox" id="confirmo" name="confirmo"> <span>Li e concordo com o contrato acima.</span></label>
+      <button id="enviar" type="submit">Aceitar contrato</button>
+    </form>
+
+    <div id="aceito" class="aceito-box oculto nao-imprime"></div>
+    <div class="nao-imprime" style="margin-top:14px">
+      <button id="imprimir" type="button" class="oculto">Imprimir ou salvar em PDF</button>
+    </div>
+  </div>
+</main>
+<script>
+const token = decodeURIComponent(location.pathname.split('/').filter(Boolean).pop() || '');
+const impressao = new URLSearchParams(location.search).get('impressao') === '1';
+const $ = id => document.getElementById(id);
+const dataHora = iso => iso ? new Date(iso).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '';
+const mostraErro = msg => { $('erro').textContent = msg || ''; };
+
+function render(c) {
+  document.title = c.titulo + ' · André Vitor Fotografia';
+  $('titulo').textContent = c.titulo;
+  $('texto').textContent = c.texto;
+  const aceito = c.status === 'accepted';
+  $('badge').textContent = aceito ? '✅ Aceito' : '⏳ Aguardando aceite';
+  $('badge').className = 'badge ' + (aceito ? 'aceito' : 'pendente');
+
+  $('form').classList.toggle('oculto', aceito || impressao);
+  $('imprimir').classList.toggle('oculto', !(aceito || impressao));
+
+  const caixa = $('aceito');
+  caixa.innerHTML = '';
+  if (aceito) {
+    [
+      ['Protocolo', c.protocolo],
+      ['Aceito em', dataHora(c.aceiteEm)],
+      ['Nome', c.nomeAceite],
+      ['Uso de imagens', c.usoImagem === 'authorized' ? 'Autorizado' : 'Não autorizado']
+    ].forEach(([rotulo, valor]) => {
+      const p = document.createElement('p');
+      const forte = document.createElement('strong');
+      forte.textContent = rotulo + ': ';
+      p.appendChild(forte);
+      p.appendChild(document.createTextNode(valor || '—'));
+      caixa.appendChild(p);
+    });
+    caixa.classList.remove('oculto');
+  } else {
+    caixa.classList.add('oculto');
+  }
+}
+
+async function carregar() {
+  if (!token) return mostraErro('Link incompleto. Confira o endereço que você recebeu.');
+  try {
+    const r = await fetch(`/api/public/contracts/${encodeURIComponent(token)}/view`, { cache: 'no-store' });
+    if (!r.ok) {
+      $('badge').textContent = '';
+      return mostraErro(r.status === 404 ? 'Contrato não encontrado. Confira o link que você recebeu.' : 'Não consegui abrir o contrato agora. Tente de novo em instantes.');
+    }
+    render(await r.json());
+  } catch (e) {
+    mostraErro('Sem conexão. Tente de novo.');
+  }
+}
+
+$('form').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  mostraErro('');
+  const nome = $('nome').value.trim();
+  const usoImagem = $('usoImagem').value;
+  if (nome.length < 5) return mostraErro('Digite seu nome completo.');
+  if (!usoImagem) return mostraErro('Escolha a opção de uso de imagens.');
+  if (!$('confirmo').checked) return mostraErro('Marque que leu e concorda com o contrato.');
+  const botao = $('enviar');
+  botao.disabled = true;
+  botao.textContent = 'Registrando…';
+  try {
+    const r = await fetch(`/api/public/contracts/${encodeURIComponent(token)}/accept`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nome, cpf: $('cpf').value.trim(), usoImagem, confirmo: true })
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) return mostraErro(d.error || 'Não consegui registrar o aceite. Tente de novo.');
+    await carregar();
+  } catch (e) {
+    mostraErro('Sem conexão. Tente de novo.');
+  } finally {
+    botao.disabled = false;
+    botao.textContent = 'Aceitar contrato';
+  }
+});
+
+$('imprimir').addEventListener('click', () => window.print());
+carregar();
+</script>
+</body>
+</html>

@@ -14005,19 +14005,18 @@ async function _enviarPushMobile(titulo,corpo,tag){
 // ══════════════════════════════════════════════
 // CONTRATOS — integração automática com o CRM
 // ══════════════════════════════════════════════
-const CONTRACT_SYSTEM_FALLBACK_URL='https://photo-client-joy.lovable.app';
-// O gerador de contratos é um sistema à parte, hospedado no Lovable — não faz
-// parte deste repositório/deploy do CRM. Antes, esta função tentava usar o
-// próprio endereço de onde o CRM estava aberto (o que só "funcionava por
-// acidente" quando o CRM era aberto como arquivo local, já que aí o protocolo
-// não é http(s) e cai no fallback). Agora que o CRM roda no Vercel, usar o
-// próprio endereço aponta pro domínio errado (sem esse gerador) e dá 404 —
-// por isso sempre aponta direto pro sistema de contratos de verdade.
+const CONTRACT_SYSTEM_FALLBACK_URL='https://crm-andre-vitor.vercel.app';
+// O gerador de contratos roda neste mesmo projeto (api/public/contracts e /contrato/<token>).
+// Contratos antigos continuam no endereço do Lovable: cada contrato guarda o próprio endereço
+// (ct.url) e as consultas usam o endereço do contrato, não este padrão.
 function contractSystemOrigin(){
   return CONTRACT_SYSTEM_FALLBACK_URL;
 }
 const CONTRACT_SYSTEM_URL=contractSystemOrigin();
-function contractSystemBase(){return CONTRACT_SYSTEM_URL;}
+function contractSystemBase(ct){
+  try{ if(ct?.url)return new URL(ct.url).origin; }catch(_){}
+  return CONTRACT_SYSTEM_URL;
+}
 function contractPublicUrl(contract){
   if(!contract?.token)return'';
   try{
