@@ -13968,40 +13968,14 @@ function saveNotifPend(i){
   toast('🔔 Lembrete configurado!','green');
 }
 
-// ── FCM V1 — envia push para o celular mesmo com app fechado ──
-const _SA={
-  pk:'-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDRswQh994cb4jF\n3xwdNmd18F496jnYwYUYpc2XMfKghwU30D+v6MZMkS0zXp32DyQsqkPLvOuI3CkO\n9LyHMY7/w8rlb66jab7wzsHxk5gjGHjjLnaduZjLqT8NkhXC9ItwGeAzHfq07Ut3\niuY4nM0eE7y20ImyHY3dhfFclLbLXZI6FaPtNAlKaQpsqZ2TvVxzZwWm0SmhnANn\nbCnDIbZIZZTf5IUMPZkapdti51PYfqwONSjd/voWTaykS1+i0uFRDFwNFp/7modK\nvOQz9DbuUj20yzSavtMNqjFrNXieb0TH4rWahs+k7J5/Ne09OEtO3FXqa8ta5ys0\nED4/rTybAgMBAAECggEAAyjP0VsEpBaVMqQwC2L+aIP9dseeawuUGetI3gKe3m96\nWOAoCSAj1ofw4RU2FrEdQS+RLGFuKQrarSWxFxwtuPgkn/D2ak+ba+jA12QpqZg/\nwDQjyAHBoBYXTISLQpLU7KA60KjkePa9BnqmOCWvMOwLqPlJR6I5LUdjqmwbXAi8\nHjUzJWZJtFPMpD0DqWNtUYGgysvw+IOkWtb3Vj9wlchRxjZfib1OS+NnMisOkEZu\nIrx941tOhtHX4ujLDpwCPxh8KCSE2JftptIJJYjx5IwuXA5Z2nm/5sBVJEirACVd\neTaLZT8LHF2qeYiAjGJxGZJLyEmJzmmVYBrKKp6jGQKBgQDvaDQZhm16ETEq4xAl\nLowModhk0EhyMgwVK2eJH0EqUBFXIjhFUPOd1Sx2jr6BsMUtAOoj+cfe7cLX5Y6D\nWZRY7UV7Pv9yRHAvmDEhtlcDqSTMRNz4l9roNgFXouK9BOLxb5/y1ehQKqz/PPkN\n+tcHyvNEtLp+nolV36q6w8on2QKBgQDgO7VHl3CuPxYJFKqMemfeYlW2ip14ilTd\nMs06kGtkC2vp7mxnrR33zbCARMqZyQAcK4v6zsN+HhBknlGIo8HyS7YaF8s9mINK\nCImrqzuPEES37laNiTWtLDCXcIduYB7ciMYe64lSjdVvjLMlbnUZ+35e5ZFEpAMx\nY/TsLfVTkwKBgQCbHDttMkBp7wuZCsZiILdSU+Xc42mcuzpC2P1axSo2XOvvNVeZ\n6Wn9n6kQI0ngwwPtNYN9zY6mrAsqUCu2hGpt90SmJlng0eCRpZxniDj2QTd7NT6p\nvdFx09Oo0PrwlmLnJHhQIDFFB3FQaVO/r/5zqRVWNXYDJXo7bg+ys7mdeQKBgDU8\nF6qaeobztUCMpnzZZqV2RREkUYRXmxQ0xmJ7/PLwfzs3focSo4W8UIXzTwI5pQwL\nDp2JzwG3E38/0u2Uqyvh66bANWE3PxwpcL3P1kD9xMLCE8xgYdzuG88oSQ7cRRdo\nZVjb5Gsz/xMPnUxqr+RuP68540Yfhh6Is5IKyy5/AoGBAJFJCJlIMw4816VDGf07\nAcjjQEIlU+gPvlIcbntzuY47nGthVOTI6NA9teTd4d0e9QjfI37Y3WuLni8EgWlh\ndUbAXK3FhLcRtZXtrOAbUoaz4BnN+YvotBqXZSxkGRZLCX39JHQ0f7Y5FB4zh46A\nDgoCWBJrG5pT//jg0LNB9GRb\n-----END PRIVATE KEY-----\n',
-  email:'firebase-adminsdk-fbsvc@crm---2026.iam.gserviceaccount.com',
-  proj:'crm---2026'
-};
-let _fcmAT=null,_fcmATExp=0;
-function _pemToArr(pem){const b64=pem.replace(/-----[^-]+-----/g,'').replace(/\s/g,'');const bin=atob(b64);const buf=new ArrayBuffer(bin.length);const v=new Uint8Array(buf);for(let i=0;i<bin.length;i++)v[i]=bin.charCodeAt(i);return buf;}
-function _b64u(x){const b=typeof x==='string'?btoa(x):btoa(String.fromCharCode(...new Uint8Array(x)));return b.replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');}
-async function _getFCMAT(){
-  const now=Math.floor(Date.now()/1000);
-  if(_fcmAT&&_fcmATExp>now+60)return _fcmAT;
-  const h=_b64u(JSON.stringify({alg:'RS256',typ:'JWT'}));
-  const p=_b64u(JSON.stringify({iss:_SA.email,scope:'https://www.googleapis.com/auth/firebase.messaging',aud:'https://oauth2.googleapis.com/token',exp:now+3600,iat:now}));
-  const k=await crypto.subtle.importKey('pkcs8',_pemToArr(_SA.pk),{name:'RSASSA-PKCS1-v1_5',hash:'SHA-256'},false,['sign']);
-  const s=await crypto.subtle.sign('RSASSA-PKCS1-v1_5',k,new TextEncoder().encode(`${h}.${p}`));
-  const jwt=`${h}.${p}.${_b64u(s)}`;
-  const r=await fetch('https://oauth2.googleapis.com/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${jwt}`});
-  const d=await r.json();
-  if(d.access_token){_fcmAT=d.access_token;_fcmATExp=now+(d.expires_in||3600);}
-  return _fcmAT;
-}
+// ── Avisos no celular (Web Push). Quem envia é o servidor: o navegador só manda o token de login ──
 async function _enviarPushMobile(titulo,corpo,tag){
   try{
-    const snap=await _finDb.ref('pushTokens/mobile').get();
-    const tok=snap.val()?.token; if(!tok)return;
-    const at=await _getFCMAT(); if(!at)return;
-    await fetch(`https://fcm.googleapis.com/v1/projects/${_SA.proj}/messages:send`,{
-      method:'POST',
-      headers:{'Authorization':'Bearer '+at,'Content-Type':'application/json'},
-      body:JSON.stringify({message:{token:tok,notification:{title:titulo,body:corpo},webpush:{notification:{icon:'/icon.png',badge:'/icon.png',vibrate:[200,100,200],tag:tag||'avf'}}}})
-    });
-    console.log('📱 Push enviado:',titulo);
-  }catch(e){console.warn('FCM V1:',e);}
+    const user=firebase.auth(fbApp()).currentUser;if(!user)return;
+    const token=await user.getIdToken();
+    const r=await fetch(`${CONTRACT_SYSTEM_URL}/api/push-aviso`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({titulo,corpo,tag})});
+    if(!r.ok)console.warn('Push do servidor:',r.status);
+  }catch(e){console.warn('Push:',e);}
 }
 
 // ══════════════════════════════════════════════
