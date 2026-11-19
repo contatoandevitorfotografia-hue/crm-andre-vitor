@@ -2804,6 +2804,7 @@ input[type="date"]{cursor:pointer}
         <div class="fg"><label>WhatsApp / Telefone</label><input type="text" id="cl-tel" placeholder="(11) 99999-9999"></div>
         <div class="fg"><label>Email</label><input type="email" id="cl-email" placeholder="email@exemplo.com"></div>
         <div class="fg"><label>CPF</label><input type="text" id="cl-cpf" placeholder="000.000.000-00" oninput="fmtCpf(this)"></div>
+        <div class="fg"><label>Sexo (para o contrato)</label><select id="cl-sexo"><option value="">Não informado</option><option value="feminino">Feminino</option><option value="masculino">Masculino</option></select></div>
         <div class="fg"><label>Cidade / Estado</label><input type="text" id="cl-cidade" placeholder="Ex: São Paulo - SP"></div>
         <div class="fg full"><label>📦 Endereço completo <span style="font-weight:400;text-transform:none;letter-spacing:0">(para envio de brindes)</span></label><input type="text" id="cl-endereco" placeholder="Rua, número, complemento, bairro, cidade e CEP"></div>
         <div class="fg full" style="display:flex;gap:8px;align-items:center">
@@ -12400,7 +12401,7 @@ function openClientModal(clientId){
   document.getElementById('btn-del-cl').style.display=cl?'inline-flex':'none';
   document.getElementById('cl-nome').value=cl?.nome||'';
   setClTipo(cl?.tipo||'cliente');
-  if(cl)document.getElementById('mo-cl-title').textContent=cl.tipo==='parceiro'?'✏️ Editar Parceiro':'✏️ Editar Cliente';document.getElementById('cl-tel').value=cl?.telefone||'';document.getElementById('cl-email').value=cl?.email||'';document.getElementById('cl-cpf').value=cl?.cpf||'';document.getElementById('cl-cidade').value=cl?.cidade||'';document.getElementById('cl-endereco').value=cl?.endereco||'';document.getElementById('cl-tags').value=cl?.tags||'';document.getElementById('cl-obs').value=cl?.obs||'';
+  if(cl)document.getElementById('mo-cl-title').textContent=cl.tipo==='parceiro'?'✏️ Editar Parceiro':'✏️ Editar Cliente';document.getElementById('cl-tel').value=cl?.telefone||'';document.getElementById('cl-email').value=cl?.email||'';document.getElementById('cl-cpf').value=cl?.cpf||'';document.getElementById('cl-sexo').value=cl?.sexo||'';document.getElementById('cl-cidade').value=cl?.cidade||'';document.getElementById('cl-endereco').value=cl?.endereco||'';document.getElementById('cl-tags').value=cl?.tags||'';document.getElementById('cl-obs').value=cl?.obs||'';
   document.getElementById('cl-galeria').value=cl?.galeria||'';
   onClGaleriaInput();
   const _origSel=document.getElementById('cl-origem');
@@ -12423,7 +12424,7 @@ function saveClient(){
   const old=editingClId?clients.find(c=>c.id===editingClId):null;
   const _origVal=document.getElementById('cl-origem').value;
   const tipo=document.getElementById('cl-tipo').value||'cliente';
-  const data={id:editingClId||uid(),tipo,nome,telefone:document.getElementById('cl-tel').value.trim(),email:document.getElementById('cl-email').value.trim(),cpf:tipo==='parceiro'?'':document.getElementById('cl-cpf').value.trim(),cidade:document.getElementById('cl-cidade').value.trim(),endereco:document.getElementById('cl-endereco').value.trim(),galeria:document.getElementById('cl-galeria').value.trim(),origem:_origVal,origemClienteId:_origVal==='indicacao'?document.getElementById('cl-origem-ref-id').value:'',tags:document.getElementById('cl-tags').value.trim(),obs:document.getElementById('cl-obs').value.trim(),notes:old?.notes||[],criadoEm:old?.criadoEm||Date.now(),updatedAt:Date.now()};
+  const data={id:editingClId||uid(),tipo,nome,telefone:document.getElementById('cl-tel').value.trim(),email:document.getElementById('cl-email').value.trim(),cpf:tipo==='parceiro'?'':document.getElementById('cl-cpf').value.trim(),cidade:document.getElementById('cl-cidade').value.trim(),sexo:document.getElementById('cl-sexo').value,endereco:document.getElementById('cl-endereco').value.trim(),galeria:document.getElementById('cl-galeria').value.trim(),origem:_origVal,origemClienteId:_origVal==='indicacao'?document.getElementById('cl-origem-ref-id').value:'',tags:document.getElementById('cl-tags').value.trim(),obs:document.getElementById('cl-obs').value.trim(),notes:old?.notes||[],criadoEm:old?.criadoEm||Date.now(),updatedAt:Date.now()};
   if(editingClId){const i=clients.findIndex(c=>c.id===editingClId);if(i!==-1)clients[i]=data;else clients.push(data)}else clients.push(data);
   savCl();closeMo('mo-cl');try{renderClientes();}catch(err){console.error(err);}toast(tipo==='parceiro'?'🤝 Parceiro salvo!':'👤 Cliente salvo!','green');
   if(_addClienteRetornoOp){
@@ -14281,7 +14282,7 @@ function fillContractModal(card){
   const cl=contractLinkedClient(card);
   setContractField('ct-op-id',card.id);
   setContractField('ct-client-name',cl?.nome||card.nomePais||'');
-  setContractField('ct-client-cpf',cl?.cpf||'');
+  setContractField('ct-client-cpf',cl?.cpf||'');setContractField('ct-client-sex',cl?.sexo||'');
   setContractField('ct-child-name',_nomesCriancas(card)||card.titulo||'');
   setContractField('ct-event-type',card.tipo||'Aniversário infantil');ctAjustaNomeDoEvento();
   setContractField('ct-event-date',card.dataEvento||'');
@@ -14390,7 +14391,7 @@ async function createContractFromCrm(){
       if(res.status===404)throw new Error('Gerador de contratos não encontrado nesta versão. Atualize o CRM pelo link oficial e tente novamente.');
       throw new Error(result.error||'Não foi possível gerar o contrato.');
     }
-    const _modeloNovo=(contractFieldValue('ct-contract-model')||'padrao');card.contratoModelo=_modeloNovo;card.contratoFotografoEquipe=contractFieldValue('ct-team-photographer');
+    const _modeloNovo=(contractFieldValue('ct-contract-model')||'padrao');card.contratoModelo=_modeloNovo;card.contratoFotografoEquipe=contractFieldValue('ct-team-photographer');const _clVinc=contractLinkedClient(card);if(_clVinc&&!_clVinc.sexo&&contractFieldValue('ct-client-sex')){_clVinc.sexo=contractFieldValue('ct-client-sex');savCl();}
     _gravaContratosDaFesta(card,[..._contratosDaFesta(card),{model:_modeloNovo,token:result.token,url:result.contractUrl||`${CONTRACT_SYSTEM_URL}/contrato/${result.token}`,version:result.contractVersion,status:'pending',createdAt:new Date().toISOString(),acceptedAt:null,protocol:null,imageConsent:null,pdfUrl:null,lastCheckedAt:new Date().toISOString()}]);
     if(['novo-contato','orcamento-enviado','negociacao'].includes(card.coluna))card.coluna='contrato-enviado';
     card.updatedAt=Date.now();savOp();renderOp();renderDashboard();renderOpContractSection(card);
