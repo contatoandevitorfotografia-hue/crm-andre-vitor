@@ -415,6 +415,7 @@ select{background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;c
 
     <!-- PESSOAIS -->
     <section id="sec-pes" class="mob-sec">
+      <div style="display:flex;justify-content:flex-end;margin:0 0 8px"><button type="button" onclick="desligaAvisosPessoais()" style="background:transparent;border:1.5px solid var(--brd);border-radius:10px;color:var(--mut);padding:7px 12px;font-size:12px;cursor:pointer;font-family:'Montserrat',sans-serif">🔕 Desligar avisos antigos</button></div>
       <div class="lst-tabs">
         <button class="lst-tab active" onclick="switchPesTab('fazer',this)">📌 Pendências</button>
         <button class="lst-tab" onclick="switchPesTab('consultas',this)">🩺 Consultas</button>
@@ -429,9 +430,9 @@ select{background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;c
           <button class="btn-add" onclick="addPes('fazer')">+</button>
         </div>
         <div class="pes-aviso"><span>⏰ Avisar</span><select id="pes-fazer-aviso">
-          <option value="nunca">Sem aviso</option>
+          <option value="nunca" selected>Sem aviso</option>
           <option value="na-hora">No dia, às 9h</option>
-          <option value="1dia" selected>1 dia antes, às 9h</option>
+          <option value="1dia">1 dia antes, às 9h</option>
         </select></div>
         <div id="pes-fazer-list"></div>
       </div>
@@ -445,11 +446,11 @@ select{background:var(--surf);border:1.5px solid var(--brd);border-radius:10px;c
             <input type="text" id="pes-consultas-local" placeholder="Local (opcional)">
           </div>
           <div class="pes-aviso"><span>⏰ Avisar</span><select id="pes-consultas-aviso">
-            <option value="nunca">Sem aviso</option>
+            <option value="nunca" selected>Sem aviso</option>
             <option value="na-hora">Na hora</option>
             <option value="15min">15 min antes</option>
             <option value="1h">1 hora antes</option>
-            <option value="1dia" selected>1 dia antes</option>
+            <option value="1dia">1 dia antes</option>
           </select></div>
           <button class="pes-save" onclick="addPes('consultas')">+ Cadastrar consulta</button>
         </div>
@@ -2186,7 +2187,30 @@ function editPes(id){
   p.texto=t;
   const novaData=prompt('Data (YYYY-MM-DD, deixe vazio para nenhuma):',p.data||'');
   if(novaData!==null) p.data=novaData.trim();
+  // Sem data não há o que avisar. Com data, você escolhe o aviso deste item.
+  if(!p.data) p.aviso='nunca';
+  else p.aviso=escolheAviso(p.lista,p.aviso||'nunca');
   saveD();renderPessoaisLista(p.lista);
+}
+// Pergunta o aviso com as mesmas opções do formulário da lista (compras e outros não têm aviso)
+function escolheAviso(lista,atual){
+  const sel=document.getElementById('pes-'+lista+'-aviso');
+  if(!sel)return atual;
+  const opcoes=[...sel.options].map(o=>({valor:o.value,rotulo:o.text}));
+  const pos=Math.max(0,opcoes.findIndex(o=>o.valor===atual));
+  const resp=prompt('Aviso (digite o número):\n'+opcoes.map((o,i)=>(i+1)+' = '+o.rotulo).join('\n'),String(pos+1));
+  if(resp===null)return atual;
+  const i=parseInt(resp,10)-1;
+  return opcoes[i]?opcoes[i].valor:atual;
+}
+// Desliga o aviso de todos os itens de uma vez. Os itens continuam na lista, só deixam de avisar.
+function desligaAvisosPessoais(){
+  const com=pessoais.filter(p=>p.aviso&&p.aviso!=='nunca');
+  if(!com.length){toast('Nenhum item com aviso.');return;}
+  if(!confirm('Desligar o aviso de '+com.length+' item(ns)? Os itens continuam na lista, só deixam de avisar.'))return;
+  com.forEach(p=>{p.aviso='nunca';});
+  saveD();renderPessoaisLista('fazer');renderPessoaisLista('consultas');
+  toast('🔕 Avisos desligados');
 }
 function renderPessoais(){
   ['fazer','consultas','compras','outros'].forEach(renderPessoaisLista);
