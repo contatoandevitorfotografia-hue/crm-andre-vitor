@@ -1,5 +1,5 @@
 // POST /api/public/contracts/create — o CRM manda os dados do evento e a senha do gerador (cabeçalho X-Admin-Password).
-import { cors, lerCorpo, limpaDados, CAMPOS_OBRIGATORIOS, renderizaTexto, novoToken, senhaConfere, fbGravar, origemDe, modeloLiberado, VERSAO_TEXTO } from '../../../lib/contratos.mjs';
+import { cors, lerCorpo, limpaDados, CAMPOS_OBRIGATORIOS, renderizaTexto, novoTokenComNome, nomeDoLink, fbLer, senhaConfere, fbGravar, origemDe, modeloLiberado, VERSAO_TEXTO } from '../../../lib/contratos.mjs';
 
 export default async function handler(req, res) {
   cors(res, 'POST, OPTIONS');
@@ -10,14 +10,22 @@ export default async function handler(req, res) {
   if (senha === 'nao_configurada') return res.status(500).json({ error: 'Senha do gerador não configurada no servidor (variável GERADOR_SENHA_ADMIN).' });
   if (senha !== true) return res.status(403).json({ error: 'invalid_password' });
 
-  const dados = limpaDados(lerCorpo(req));
+  const corpo = lerCorpo(req);
+  const dados = limpaDados(corpo);
+  const nomeLink = String(corpo.slug ?? '').trim();   // final do link escolhido no CRM (opcional)
   if (!modeloLiberado(dados.contractModel)) return res.status(503).json({ error: 'Este modelo de contrato ainda está em revisão. Nenhum contrato foi criado.' });
   if (!dados.clientSex) return res.status(400).json({ error: 'Informe o sexo da contratante (feminino ou masculino).' });
   const faltando = CAMPOS_OBRIGATORIOS.filter(c => !dados[c]);
   if (faltando.length) return res.status(400).json({ error: 'Campos obrigatórios faltando: ' + faltando.join(', ') });
+  if (nomeLink && nomeDoLink(nomeLink).length < 3) return res.status(400).json({ error: 'Escreva pelo menos 3 letras ou números no final do link.' });
 
   try {
-    const token = novoToken();
+    let token = novoTokenComNome(nomeLink);
+    let tentativas = 0;
+    while (await fbLer(`contratos26/${token}`)) {   // nunca sobrescreve um contrato existente
+      if (++tentativas >= 3) return res.status(500).json({ error: 'Não consegui criar o link do contrato. Tente de novo.' });
+      token = novoTokenComNome(nomeLink);
+    }
     const reg = {
       token,
       status: 'pending',
