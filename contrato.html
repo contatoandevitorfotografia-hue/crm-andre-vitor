@@ -82,8 +82,6 @@ details[open] > summary::after{content:"−"}
 .aceite > h2{margin:0 0 6px;font-size:19px;font-weight:600;color:var(--titulo)}
 .msg{margin:0 0 4px;font-size:15px;color:var(--suave)}
 form{display:grid;gap:16px;margin-top:14px}
-.g2{display:grid;gap:16px}
-@media (min-width:620px){.g2{grid-template-columns:1fr 1fr}}
 .campo label{display:block;margin:0 0 7px;font-size:14px;font-weight:600;color:var(--suave)}
 input,select{display:block;width:100%;min-height:52px;padding:12px 14px;font-size:16px;color:var(--titulo);background:var(--card2);border:1px solid var(--linha);border-radius:12px}
 input::placeholder{color:var(--discreto)}
@@ -102,7 +100,9 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--azul);outline-offse
 .aceito-box{margin:6px 0 0;padding:16px 18px;background:rgba(var(--verde-rgb),.08);border:1px solid rgba(var(--verde-rgb),.36);border-radius:14px}
 .aceito-box p{margin:6px 0;font-size:15px;color:var(--titulo);overflow-wrap:anywhere}
 .aceito-box strong{color:var(--verde);font-weight:600}
-.acao{margin-top:16px}
+.topo-acoes{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px}
+.baixar{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:10px 18px;border:1px solid var(--linha);border-radius:999px;background:transparent;color:var(--titulo);font-size:15px;font-weight:600;text-decoration:none}
+.baixar:hover{border-color:var(--azul)}
 
 /* Celular */
 @media (max-width:480px){
@@ -127,7 +127,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--azul);outline-offse
   .capa,.tile,.categoria,.parte,.destaque,.aceite,.aceito-box{background:#fff!important;border:1px solid #ccc!important;box-shadow:none!important}
   .categoria{break-inside:avoid;margin:0 0 10px}
   .capa h1,.cat-titulo,.hl,.tile .val,.aceite > h2,.aceito-box p,.aceito-box strong,.destaque,.rot,.rot-parte,.categoria p,.categoria p.eyebrow,.bloco > h2,.kicker{color:#111!important}
-  .cat-ico,.nao-imprime,#form,#imprimir,#indice,#erro,.msg{display:none!important}
+  .cat-ico,.nao-imprime,#form,#indice,#erro,.msg{display:none!important}
   .aceite:not(:has(#aceito:not(.oculto))){display:none}
 }
 </style>
@@ -139,7 +139,10 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--azul);outline-offse
     <p class="kicker">André Vitor Fotografia</p>
     <h1 id="titulo">Contrato</h1>
     <div class="fio" aria-hidden="true"></div>
-    <span id="badge" class="badge pendente">Carregando…</span>
+    <div class="topo-acoes">
+      <span id="badge" class="badge pendente">Carregando…</span>
+      <a id="baixar-pdf" class="baixar nao-imprime oculto" download>⬇ Baixar contrato em PDF</a>
+    </div>
   </header>
 
   <section id="resumo" class="bloco oculto" aria-labelledby="resumo-titulo">
@@ -158,15 +161,9 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--azul);outline-offse
     <h2 id="aceite-titulo">Aceite do contrato</h2>
     <form id="form" class="oculto" novalidate>
       <p class="msg">Para aceitar, leia o contrato acima e confirme seus dados.</p>
-      <div class="g2">
-        <div class="campo">
-          <label for="nome">Nome completo *</label>
-          <input id="nome" name="nome" autocomplete="name" maxlength="120" required>
-        </div>
-        <div class="campo">
-          <label for="cpf">CPF (opcional)</label>
-          <input id="cpf" name="cpf" inputmode="numeric" maxlength="20" placeholder="000.000.000-00">
-        </div>
+      <div class="campo">
+        <label for="nome">Nome completo *</label>
+        <input id="nome" name="nome" autocomplete="name" maxlength="120" required>
       </div>
       <div class="campo">
         <label for="usoImagem">Uso de imagens *</label>
@@ -181,9 +178,6 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--azul);outline-offse
     </form>
     <div id="erro" class="erro nao-imprime" role="alert"></div>
     <div id="aceito" class="aceito-box oculto"></div>
-    <div class="acao nao-imprime">
-      <button id="imprimir" type="button" class="secundario oculto">Imprimir ou salvar em PDF</button>
-    </div>
   </section>
 
 </main>
@@ -412,7 +406,9 @@ function render(c) {
   montaResumo(c.texto);
   montaIndice(grupos);
   $('form').classList.toggle('oculto', aceito || impressao);
-  $('imprimir').classList.toggle('oculto', !(aceito || impressao));
+  const baixar = $('baixar-pdf');
+  baixar.href = `/api/public/contracts/${encodeURIComponent(token)}/pdf`;
+  baixar.classList.remove('oculto');
   montaAceito(c, aceito);
 }
 
@@ -445,7 +441,7 @@ $('form').addEventListener('submit', async ev => {
     const r = await fetch(`/api/public/contracts/${encodeURIComponent(token)}/accept`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nome, cpf: $('cpf').value.trim(), usoImagem, confirmo: true })
+      body: JSON.stringify({ nome, usoImagem, confirmo: true })
     });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) return mostraErro(d.error || 'Não consegui registrar o aceite. Tente de novo.');
@@ -458,7 +454,6 @@ $('form').addEventListener('submit', async ev => {
   }
 });
 
-$('imprimir').addEventListener('click', () => window.print());
 carregar();
 </script>
 </body>
