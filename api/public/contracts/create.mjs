@@ -12,6 +12,7 @@ export default async function handler(req, res) {
 
   const dados = limpaDados(lerCorpo(req));
   if (!modeloLiberado(dados.contractModel)) return res.status(503).json({ error: 'Este modelo de contrato ainda está em revisão. Nenhum contrato foi criado.' });
+  if (!dados.clientSex) return res.status(400).json({ error: 'Informe o sexo da contratante (feminino ou masculino).' });
   const faltando = CAMPOS_OBRIGATORIOS.filter(c => !dados[c]);
   if (faltando.length) return res.status(400).json({ error: 'Campos obrigatórios faltando: ' + faltando.join(', ') });
 

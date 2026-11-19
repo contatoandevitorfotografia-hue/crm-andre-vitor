@@ -2944,6 +2944,7 @@ input[type="date"]{cursor:pointer}
             <div class="g2">
               <div class="fg"><label>Nome completo *</label><input id="ct-client-name" required></div>
               <div class="fg"><label>CPF *</label><input id="ct-client-cpf" required placeholder="000.000.000-00" inputmode="numeric" maxlength="14" oninput="fmtCpf(this)"></div>
+              <div class="fg"><label>Sexo da contratante *</label><select id="ct-client-sex" required><option value="">Escolha</option><option value="feminino">Feminino</option><option value="masculino">Masculino</option></select></div>
               <div class="fg"><label id="ct-child-label">Nome da criança *</label><input id="ct-child-name" required></div>
               <div class="fg"><label>Tipo de evento *</label><input id="ct-event-type" required oninput="ctAjustaNomeDoEvento()"></div>
             </div>
@@ -14340,7 +14341,7 @@ function openContractModal(opId,clientId){
   if(clientId&&evs.length>1){
     wrap.style.display='block';sel.innerHTML=evs.map(ev=>`<option value="${ev.id}"${ev.id===card.id?' selected':''}>${esc(ev.titulo||_nomesCriancas(ev)||ev.tipo||'Evento')} · ${ev.dataEvento?fmtDate(ev.dataEvento):'sem data'}</option>`).join('');
   }else wrap.style.display='none';
-  contractCurrentStep=1;contractHighestStep=1;
+  contractCurrentStep=1;contractHighestStep=1;document.getElementById('ct-client-sex').value='';
   fillContractModal(card);bindContractSummary();showContractStep(1,true);
   document.getElementById('mo-contract').classList.remove('hidden');
   setTimeout(()=>document.getElementById('ct-client-name').focus(),100);
@@ -14360,7 +14361,7 @@ function onContractEventChange(){const id=document.getElementById('ct-event-sele
 
 function contractFieldValue(id){return(document.getElementById(id)?.value||'').trim();}
 function validateContractFields(){
-  const ids=['ct-client-name','ct-client-cpf','ct-child-name','ct-event-type','ct-event-date','ct-start-time','ct-end-time','ct-venue-name','ct-venue-address','ct-plan-name','ct-deliverables','ct-total','ct-contract-date','ct-payment-method','ct-payment-terms','ct-password'];
+  const ids=['ct-client-name','ct-client-cpf','ct-client-sex','ct-child-name','ct-event-type','ct-event-date','ct-start-time','ct-end-time','ct-venue-name','ct-venue-address','ct-plan-name','ct-deliverables','ct-total','ct-contract-date','ct-payment-method','ct-payment-terms','ct-password'];
   for(const id of ids){const el=document.getElementById(id);if(!el.value.trim()){el.focus();el.reportValidity?.();showContractMessage('Preencha todos os campos obrigatórios.','error');return false;}}
   return true;
 }
@@ -14378,7 +14379,7 @@ async function createContractFromCrm(){
   const opId=contractFieldValue('ct-op-id');const card=opCards.find(c=>c.id===opId);if(!card){showContractMessage('Evento não encontrado no CRM.','error');return;}
   const btn=document.getElementById('ct-generate-btn');btn.disabled=true;btn.textContent='Criando contrato…';clearContractMessage();
   const payload={
-    clientName:contractFieldValue('ct-client-name'),clientCpf:contractFieldValue('ct-client-cpf'),childName:contractFieldValue('ct-child-name'),eventType:contractFieldValue('ct-event-type'),eventDate:contractFieldValue('ct-event-date'),startTime:contractFieldValue('ct-start-time'),endTime:contractFieldValue('ct-end-time'),venueName:contractFieldValue('ct-venue-name'),venueAddress:contractFieldValue('ct-venue-address'),planName:contractFieldValue('ct-plan-name'),deliverables:contractFieldValue('ct-deliverables'),coverageHours:Number(contractFieldValue('ct-coverage-hours'))||4,toleranceMinutes:Number(contractFieldValue('ct-tolerance'))||15,minPhotos:Number(contractFieldValue('ct-min-photos'))||250,deliveryBusinessDays:Number(contractFieldValue('ct-delivery-days'))||5,totalAmount:Number(contractFieldValue('ct-total')),depositPercent:Number(contractFieldValue('ct-deposit'))||0,paymentMethod:contractFieldValue('ct-payment-method'),paymentTerms:contractFieldValue('ct-payment-terms'),contractDate:contractFieldValue('ct-contract-date'),contractModel:(contractFieldValue('ct-contract-model')||'padrao'),teamPhotographer:contractFieldValue('ct-team-photographer'),slug:generateSlug(contractFieldValue('ct-child-name'),contractFieldValue('ct-event-type'))
+    clientName:contractFieldValue('ct-client-name'),clientCpf:contractFieldValue('ct-client-cpf'),clientSex:contractFieldValue('ct-client-sex'),childName:contractFieldValue('ct-child-name'),eventType:contractFieldValue('ct-event-type'),eventDate:contractFieldValue('ct-event-date'),startTime:contractFieldValue('ct-start-time'),endTime:contractFieldValue('ct-end-time'),venueName:contractFieldValue('ct-venue-name'),venueAddress:contractFieldValue('ct-venue-address'),planName:contractFieldValue('ct-plan-name'),deliverables:contractFieldValue('ct-deliverables'),coverageHours:Number(contractFieldValue('ct-coverage-hours'))||4,toleranceMinutes:Number(contractFieldValue('ct-tolerance'))||15,minPhotos:Number(contractFieldValue('ct-min-photos'))||250,deliveryBusinessDays:Number(contractFieldValue('ct-delivery-days'))||5,totalAmount:Number(contractFieldValue('ct-total')),depositPercent:Number(contractFieldValue('ct-deposit'))||0,paymentMethod:contractFieldValue('ct-payment-method'),paymentTerms:contractFieldValue('ct-payment-terms'),contractDate:contractFieldValue('ct-contract-date'),contractModel:(contractFieldValue('ct-contract-model')||'padrao'),teamPhotographer:contractFieldValue('ct-team-photographer'),slug:generateSlug(contractFieldValue('ct-child-name'),contractFieldValue('ct-event-type'))
   };
   try{
     const res=await fetch(CONTRACT_SYSTEM_URL+'/api/public/contracts/create',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':contractFieldValue('ct-password')},body:JSON.stringify(payload),cache:'no-store'});
