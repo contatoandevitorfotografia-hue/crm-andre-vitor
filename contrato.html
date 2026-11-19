@@ -6,104 +6,414 @@
 <meta name="robots" content="noindex">
 <title>Contrato · André Vitor Fotografia</title>
 <style>
-:root{--ink:#1d2430;--mut:#5b6472;--line:#d9dee5;--ok:#2f7a55;--bad:#a8432f;--bg:#f4f6f8;--card:#fff;--acc:#4f8f6f}
+@font-face{font-family:"Montserrat";src:url("/fonts/montserrat-latin-400-normal.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"Montserrat";src:url("/fonts/montserrat-latin-500-normal.woff2") format("woff2");font-weight:500;font-style:normal;font-display:swap}
+@font-face{font-family:"Montserrat";src:url("/fonts/montserrat-latin-600-normal.woff2") format("woff2");font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:"Montserrat";src:url("/fonts/montserrat-latin-700-normal.woff2") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+
+/* Paleta oficial do CRM (Dark Premium) */
+:root{
+  --bg:#11151C; --card:#1B222D; --card2:#252E3B; --linha:#343F4E;
+  --titulo:#F2F4F7; --texto:#C9D1DC; --suave:#9AA5B5; --discreto:#6F7A8B;
+  --rose:#D88D91; --champagne:#D9A66F; --azul:#83A9C9; --verde:#82B99B;
+  --verde-rgb:130,185,155;
+}
 *{box-sizing:border-box}
-body{margin:0;font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg)}
-main{max-width:760px;margin:0 auto;padding:20px 16px 48px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px}
-h1{font-size:20px;margin:0 0 6px}
-.badge{display:inline-block;font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;margin-bottom:12px}
-.badge.pendente{background:#fdf1d8;color:#8a5a00}
-.badge.aceito{background:#dff3e8;color:var(--ok)}
-#texto{white-space:pre-wrap;font:14px/1.6 ui-monospace,Menlo,Consolas,monospace;background:#fafbfc;border:1px solid var(--line);border-radius:8px;padding:14px;margin:14px 0}
-form{display:grid;gap:10px;margin-top:14px}
-label{font-size:13px;font-weight:600;color:var(--mut)}
-input,select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font:inherit;background:#fff}
-.check{display:flex;gap:8px;align-items:flex-start;font-weight:500;color:var(--ink)}
-.check input{width:auto;margin-top:4px}
-button{padding:12px 16px;border:0;border-radius:10px;background:var(--acc);color:#fff;font:inherit;font-weight:700;cursor:pointer}
-button:disabled{opacity:.6;cursor:wait}
-.msg{font-weight:600;margin:0}
-.erro{color:var(--bad);min-height:1em;margin-top:10px}
-.aceito-box{background:#eef8f2;border:1px solid #bfe3cd;border-radius:10px;padding:14px;margin-top:14px}
-.aceito-box p{margin:4px 0}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+html,body{margin:0;background:var(--bg);color:var(--texto);font-family:"Montserrat",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:16px;line-height:1.7}
+body{min-height:100vh}
+button,input,select{font-family:inherit}
+.wrap{max-width:920px;margin:0 auto;padding:20px 16px 56px}
 .oculto{display:none!important}
+.card{background:var(--card);border:1px solid var(--linha);border-radius:18px}
+
+/* Capa */
+.capa{padding:28px 24px 24px}
+.capa .kicker{margin:0 0 12px;font-size:13px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--champagne)}
+.capa h1{margin:0 0 16px;font-size:clamp(22px,4vw,30px);line-height:1.25;font-weight:700;letter-spacing:.01em;color:var(--titulo);overflow-wrap:anywhere}
+.capa .fio{width:56px;height:2px;border-radius:2px;background:var(--rose);margin:0 0 18px}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;padding:7px 14px;border-radius:999px;border:1px solid var(--linha);background:var(--card2);color:var(--texto)}
+.badge.pendente{color:var(--champagne);border-color:rgba(217,166,111,.45);background:rgba(217,166,111,.10)}
+.badge.aceito{color:var(--verde);border-color:rgba(var(--verde-rgb),.45);background:rgba(var(--verde-rgb),.10)}
+
+/* Resumo e índice */
+.bloco{margin-top:20px}
+.bloco > h2{margin:0 0 12px;font-size:13px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--suave)}
+.resumo-lista{margin:0;background:var(--card);border:1px solid var(--linha);border-radius:16px;overflow:hidden}
+.linha{display:grid;grid-template-columns:1fr;gap:4px;padding:14px 18px;border-top:1px solid var(--linha)}
+.linha:first-child{border-top:0}
+.linha dt{margin:0;font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--suave)}
+.linha dd{margin:0;font-size:16px;font-weight:500;line-height:1.45;color:var(--titulo);overflow-wrap:anywhere}
+.linha.realce dd{color:var(--champagne)}
+@media (min-width:720px){.linha{grid-template-columns:200px 1fr;gap:16px;align-items:baseline}}
+summary{cursor:pointer;list-style:none;font-size:13px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--suave);padding:4px 0}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";float:right;font-size:18px;line-height:1;color:var(--suave)}
+details[open] > summary::after{content:"−"}
+.indice{display:flex;flex-wrap:wrap;gap:8px}
+.indice a{font-size:14px;color:var(--texto);text-decoration:none;padding:8px 14px;border:1px solid var(--linha);border-radius:999px;background:var(--card)}
+.indice a:hover,.indice a:focus-visible{border-color:var(--azul);color:var(--titulo);outline:none}
+
+/* Categorias do contrato */
+.contrato{margin-top:18px}
+.categoria{background:var(--card);border:1px solid var(--linha);border-radius:18px;padding:24px 22px 12px;margin:0 0 16px;box-shadow:inset 3px 0 0 var(--cor);scroll-margin-top:12px}
+.cor-rose{--cor:#D88D91;--cor-rgb:216,141,145}
+.cor-champagne{--cor:#D9A66F;--cor-rgb:217,166,111}
+.cor-azul{--cor:#83A9C9;--cor-rgb:131,169,201}
+.cor-verde{--cor:#82B99B;--cor-rgb:130,185,155}
+.cat-cab{display:flex;align-items:center;gap:14px;margin:0 0 16px}
+.cat-ico{flex:0 0 auto;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;color:var(--cor);background:rgba(var(--cor-rgb),.14);border:1px solid rgba(var(--cor-rgb),.38)}
+.cat-ico svg{width:21px;height:21px}
+.cat-titulo{margin:0;min-width:0;font-size:19px;font-weight:600;line-height:1.3;color:var(--titulo);overflow-wrap:anywhere}
+.categoria p{margin:0 0 12px;max-width:72ch;overflow-wrap:anywhere}
+.categoria p.eyebrow{max-width:none;margin:26px 0 10px;font-size:13px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--suave)}
+.categoria .clausula{margin-top:22px}
+.rot{font-weight:600;color:var(--cor)}
+.rot-parte{display:inline-block;margin-right:6px;padding:2px 10px;border-radius:999px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--cor);background:rgba(var(--cor-rgb),.14);line-height:1.6;vertical-align:1px}
+.parte{max-width:72ch;margin:0 0 12px;padding:14px 16px;background:var(--card2);border:1px solid var(--linha);border-radius:14px}
+.parte .parte-txt{margin:0;max-width:none}
+.ligacao{margin:4px 0 12px;text-align:center;font-size:15px;color:var(--suave)}
+.hl{font-weight:600;color:var(--titulo)}
+.item{padding-left:14px;border-left:2px solid var(--linha)}
+.destaque{max-width:72ch;margin:12px 0 14px;padding:14px 16px;background:var(--card2);border:1px solid var(--linha);border-left:3px solid var(--cor);border-radius:12px;color:var(--titulo);line-height:1.75;overflow-wrap:anywhere}
+
+/* Aceite */
+.aceite{margin-top:18px;padding:24px 22px;box-shadow:inset 3px 0 0 var(--verde)}
+.aceite > h2{margin:0 0 6px;font-size:19px;font-weight:600;color:var(--titulo)}
+.msg{margin:0 0 4px;font-size:15px;color:var(--suave)}
+form{display:grid;gap:16px;margin-top:14px}
+.g2{display:grid;gap:16px}
+@media (min-width:620px){.g2{grid-template-columns:1fr 1fr}}
+.campo label{display:block;margin:0 0 7px;font-size:14px;font-weight:600;color:var(--suave)}
+input,select{display:block;width:100%;min-height:52px;padding:12px 14px;font-size:16px;color:var(--titulo);background:var(--card2);border:1px solid var(--linha);border-radius:12px}
+input::placeholder{color:var(--discreto)}
+select option{background:var(--card2);color:var(--titulo)}
+input:focus,select:focus{outline:none;border-color:var(--azul);box-shadow:0 0 0 3px rgba(131,169,201,.22)}
+.check{display:flex;align-items:center;gap:12px;min-height:48px;margin:0;font-size:15px;font-weight:500;line-height:1.5;color:var(--texto);cursor:pointer}
+.check input{flex:0 0 auto;width:22px;height:22px;min-height:22px;margin:2px 0 0;padding:0;accent-color:var(--verde)}
+.principal{width:100%;min-height:56px;border:0;border-radius:14px;background:var(--verde);color:#11151C;font-size:17px;font-weight:700;letter-spacing:.01em;cursor:pointer}
+.principal:hover{filter:brightness(1.05)}
+.principal:disabled{opacity:.6;cursor:wait}
+.secundario{width:100%;min-height:52px;border-radius:14px;border:1px solid var(--linha);background:transparent;color:var(--titulo);font-size:15px;font-weight:600;cursor:pointer}
+.secundario:hover{border-color:var(--azul)}
+button:focus-visible,a:focus-visible{outline:2px solid var(--azul);outline-offset:3px}
+.erro{margin:10px 0 0;font-size:15px;font-weight:600;color:var(--rose);overflow-wrap:anywhere}
+.erro:empty{display:none}
+.aceito-box{margin:6px 0 0;padding:16px 18px;background:rgba(var(--verde-rgb),.08);border:1px solid rgba(var(--verde-rgb),.36);border-radius:14px}
+.aceito-box p{margin:6px 0;font-size:15px;color:var(--titulo);overflow-wrap:anywhere}
+.aceito-box strong{color:var(--verde);font-weight:600}
+.acao{margin-top:16px}
+
+/* Celular */
+@media (max-width:480px){
+  .wrap{padding:12px 12px 48px}
+  .capa{padding:24px 18px}
+  .categoria{padding:20px 18px 10px}
+  .aceite{padding:22px 18px}
+  .cat-titulo{font-size:17px}
+  .cat-ico{width:40px;height:40px}
+}
+/* Computador */
+@media (min-width:880px){
+  .categoria{padding:28px 32px 16px}
+  .aceite{padding:28px 32px}
+}
+
+/* Impressão: texto escuro sobre papel branco, sem botões nem índice */
 @media print{
-  body{background:#fff}
-  .card{border:0;padding:0}
-  .nao-imprime{display:none!important}
-  #texto{border:0;background:#fff;padding:0}
+  @page{size:A4;margin:16mm}
+  html,body{background:#fff;color:#111}
+  .wrap{max-width:none;padding:0}
+  .capa,.tile,.categoria,.parte,.destaque,.aceite,.aceito-box{background:#fff!important;border:1px solid #ccc!important;box-shadow:none!important}
+  .categoria{break-inside:avoid;margin:0 0 10px}
+  .capa h1,.cat-titulo,.hl,.tile .val,.aceite > h2,.aceito-box p,.aceito-box strong,.destaque,.rot,.rot-parte,.categoria p,.categoria p.eyebrow,.bloco > h2,.kicker{color:#111!important}
+  .cat-ico,.nao-imprime,#form,#imprimir,#indice,#erro,.msg{display:none!important}
+  .aceite:not(:has(#aceito:not(.oculto))){display:none}
 }
 </style>
 </head>
 <body>
-<main>
-  <div class="card">
-    <div id="badge" class="badge pendente">Carregando…</div>
+<main class="wrap">
+
+  <header class="card capa">
+    <p class="kicker">André Vitor Fotografia</p>
     <h1 id="titulo">Contrato</h1>
-    <div id="texto"></div>
-    <div id="erro" class="erro nao-imprime" role="alert"></div>
+    <div class="fio" aria-hidden="true"></div>
+    <span id="badge" class="badge pendente">Carregando…</span>
+  </header>
 
-    <form id="form" class="nao-imprime oculto" novalidate>
+  <section id="resumo" class="bloco oculto" aria-labelledby="resumo-titulo">
+    <h2 id="resumo-titulo">Resumo do contrato</h2>
+    <dl id="tiles" class="resumo-lista"></dl>
+  </section>
+
+  <details id="indice" class="bloco oculto nao-imprime">
+    <summary>Índice do contrato</summary>
+    <div id="indice-links" class="indice"></div>
+  </details>
+
+  <article id="texto" class="contrato" aria-label="Texto do contrato"></article>
+
+  <section id="aceite" class="card aceite" aria-labelledby="aceite-titulo">
+    <h2 id="aceite-titulo">Aceite do contrato</h2>
+    <form id="form" class="oculto" novalidate>
       <p class="msg">Para aceitar, leia o contrato acima e confirme seus dados.</p>
-      <label for="nome">Nome completo *</label>
-      <input id="nome" name="nome" autocomplete="name" maxlength="120" required>
-      <label for="cpf">CPF (opcional)</label>
-      <input id="cpf" name="cpf" inputmode="numeric" maxlength="20" placeholder="000.000.000-00">
-      <label for="usoImagem">Uso de imagens *</label>
-      <select id="usoImagem" name="usoImagem" required>
-        <option value="">Escolha uma opção</option>
-        <option value="authorized">Autorizo o uso das imagens do evento</option>
-        <option value="not_authorized">Não autorizo o uso das imagens</option>
-      </select>
+      <div class="g2">
+        <div class="campo">
+          <label for="nome">Nome completo *</label>
+          <input id="nome" name="nome" autocomplete="name" maxlength="120" required>
+        </div>
+        <div class="campo">
+          <label for="cpf">CPF (opcional)</label>
+          <input id="cpf" name="cpf" inputmode="numeric" maxlength="20" placeholder="000.000.000-00">
+        </div>
+      </div>
+      <div class="campo">
+        <label for="usoImagem">Uso de imagens *</label>
+        <select id="usoImagem" name="usoImagem" required>
+          <option value="">Escolha uma opção</option>
+          <option value="authorized">Autorizo o uso das imagens do evento</option>
+          <option value="not_authorized">Não autorizo o uso das imagens</option>
+        </select>
+      </div>
       <label class="check"><input type="checkbox" id="confirmo" name="confirmo"> <span>Li e concordo com o contrato acima.</span></label>
-      <button id="enviar" type="submit">Aceitar contrato</button>
+      <button id="enviar" type="submit" class="principal">Aceitar contrato</button>
     </form>
-
-    <div id="aceito" class="aceito-box oculto nao-imprime"></div>
-    <div class="nao-imprime" style="margin-top:14px">
-      <button id="imprimir" type="button" class="oculto">Imprimir ou salvar em PDF</button>
+    <div id="erro" class="erro nao-imprime" role="alert"></div>
+    <div id="aceito" class="aceito-box oculto"></div>
+    <div class="acao nao-imprime">
+      <button id="imprimir" type="button" class="secundario oculto">Imprimir ou salvar em PDF</button>
     </div>
-  </div>
+  </section>
+
 </main>
 <script>
 const token = decodeURIComponent(location.pathname.split('/').filter(Boolean).pop() || '');
 const impressao = new URLSearchParams(location.search).get('impressao') === '1';
 const $ = id => document.getElementById(id);
-const dataHora = iso => iso ? new Date(iso).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '';
 const mostraErro = msg => { $('erro').textContent = msg || ''; };
+const dataHora = iso => iso ? new Date(iso).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '';
+
+function el(tag, classe, texto) {
+  const n = document.createElement(tag);
+  if (classe) n.className = classe;
+  if (texto !== undefined && texto !== null) n.textContent = texto;
+  return n;
+}
+
+// Categorias do contrato. A ordem segue a numeração das cláusulas, para as referências continuarem certas.
+const CATEGORIAS = {
+  sobre:             { titulo: 'Sobre a contratação',                         cor: 'azul',      icone: 'doc' },
+  evento:            { titulo: 'Informações do evento',                       cor: 'rose',      icone: 'cal' },
+  servicos:          { titulo: 'Serviços e cobertura fotográfica',            cor: 'verde',     icone: 'cam' },
+  valores:           { titulo: 'Valores e condições de pagamento',            cor: 'champagne', icone: 'wal' },
+  alteracoes:        { titulo: 'Alterações, cancelamento e demais condições', cor: 'rose',      icone: 'clk' },
+  responsabilidades: { titulo: 'Responsabilidades das partes',                cor: 'azul',      icone: 'usr' },
+  entrega:           { titulo: 'Entrega das fotografias',                     cor: 'verde',     icone: 'img' },
+  final:             { titulo: 'Disposições finais e aceite',                 cor: 'champagne', icone: 'chk' },
+  demais:            { titulo: 'Demais condições',                            cor: 'azul',      icone: 'doc' }
+};
+
+const SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
+const ICONES = {
+  doc: SVG + '<path d="M7 3.5h7.5L19 8v12.5H7z"/><path d="M14.5 3.5V8H19"/><path d="M10 12.5h6M10 16h6"/></svg>',
+  cal: SVG + '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3.5v3M16 3.5v3"/></svg>',
+  cam: SVG + '<path d="M4 8h3.2l1.6-2.4h6.4L17 8h3a1 1 0 0 1 1 1v9.5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.4"/></svg>',
+  wal: SVG + '<rect x="3" y="6.5" width="18" height="13" rx="2.5"/><path d="M3 10.5h18M16 15h2"/></svg>',
+  clk: SVG + '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
+  usr: SVG + '<circle cx="9" cy="8.5" r="3.5"/><path d="M2.8 20a6.2 6.2 0 0 1 12.4 0"/><path d="M16 5.2a3.5 3.5 0 0 1 0 6.6M18.5 14.4A6.2 6.2 0 0 1 21.2 20"/></svg>',
+  img: SVG + '<rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="9" cy="10" r="1.8"/><path d="M20.5 16l-5-5L6 19.5"/></svg>',
+  chk: SVG + '<circle cx="12" cy="12" r="8.5"/><path d="M8.3 12.2l2.5 2.5 5-5.2"/></svg>'
+};
+
+// Cláusula numerada → categoria
+function categoriaDaClausula(n) {
+  if (n === 1) return 'evento';
+  if (n === 2 || n === 3) return 'servicos';
+  if (n === 4) return 'valores';
+  if (n === 5) return 'alteracoes';
+  if (n === 6) return 'responsabilidades';
+  if (n === 7 || n === 8) return 'entrega';
+  if (n >= 9) return 'final';
+  return 'demais';
+}
+function categoriaDoBloco(b, atual) {
+  const m = /^Cláusula\s+(\d+)/.exec(b);
+  if (m) return categoriaDaClausula(Number(m[1]));
+  if (/^(Pelo presente|e, de outro lado|Ajustam|CONTRATADO:|CONTRATANTE:)/.test(b)) return 'sobre';
+  if (/^(E, por acharem|SÃO PAULO,)/.test(b)) return 'final';
+  return atual ? atual.cat : 'sobre';
+}
+function classeDoBloco(b) {
+  if (/^Cláusula\s+\d+/.test(b)) return 'clausula';
+  if (/^●/.test(b)) return 'destaque';
+  if (/^Item\s+[IVX]+:/.test(b)) return 'item';
+  if (/^(CONTRATADO|CONTRATANTE):/.test(b)) return 'parte';
+  if (/^e, de outro lado, como:$/.test(b)) return 'ligacao';
+  if (/^Par[áa]grafo/.test(b)) return 'par';
+  return 'texto';
+}
+
+// Organiza o texto em categorias. Não altera nenhum caractere: só separa os blocos já existentes.
+function analisa(texto) {
+  const blocos = String(texto || '').split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
+  let titulo = null;
+  if (blocos.length && /^CONTRATO\b/.test(blocos[0]) && blocos[0] === blocos[0].toUpperCase()) titulo = blocos.shift();
+  const grupos = [];
+  let atual = null, cabecalho = null;
+  for (const b of blocos) {
+    if (/^[A-ZÇÃÕÁÉÍÓÚÂÊÔ ]+:$/.test(b)) { cabecalho = b; continue; }   // títulos originais do contrato, ex.: "DA REMUNERAÇÃO:"
+    const cat = categoriaDoBloco(b, atual);
+    if (!atual || atual.cat !== cat) { atual = { cat, itens: [] }; grupos.push(atual); }
+    atual.itens.push({ texto: b, classe: classeDoBloco(b), cabecalho });
+    cabecalho = null;
+  }
+  return { titulo, grupos };
+}
+
+// Destaques visuais (só estilo): valores, datas, horários, percentuais, prazos e quantidades
+const DESTAQUES = '(R\\$ ?[\\d.,]+(?: \\([^)]*\\))?)|(\\d{2}\\.\\d{2}\\.\\d{4})|(\\d{2}h\\d{2}min)|(\\d+%(?: \\([^)]*\\))?)|(\\d{2} \\([^)]*\\)(?: dias úteis| dias| horas))|(\\d+ min \\([^)]*\\))|(\\d+ dias corridos)|(\\d+ fotos)';
+function destacaNos(str) {
+  const re = new RegExp(DESTAQUES, 'g');
+  const nos = [];
+  let ultimo = 0, m;
+  while ((m = re.exec(str)) !== null) {
+    if (m.index > ultimo) nos.push(document.createTextNode(str.slice(ultimo, m.index)));
+    nos.push(el('strong', 'hl', m[0]));
+    ultimo = m.index + m[0].length;
+  }
+  if (ultimo < str.length) nos.push(document.createTextNode(str.slice(ultimo)));
+  return nos;
+}
+// Rótulos iniciais (Cláusula 1ª., Parágrafo primeiro, Item I:, CONTRATADO:) ficam em destaque; o texto segue igual
+const ROTULOS = [
+  [/^Cláusula\s+\d+[ªº]?\./, 'rot'],
+  [/^Par[áa]grafo\s+(?:primeiro|segundo|terceiro|quarto|único|Primeiro|Segundo|Terceiro|Quarto|Único)\s*[-:]/, 'rot'],
+  [/^Item\s+[IVX]+:/, 'rot'],
+  [/^(?:CONTRATADO|CONTRATANTE):/, 'rot rot-parte']
+];
+function nodesDe(texto) {
+  let resto = texto;
+  const nos = [];
+  for (const [re, classe] of ROTULOS) {
+    const m = re.exec(resto);
+    if (m) { nos.push(el('strong', classe, m[0])); resto = resto.slice(m[0].length); break; }
+  }
+  return nos.concat(destacaNos(resto));
+}
+
+const CLASSES_PARAGRAFO = { clausula: 'clausula', par: 'par', item: 'item', ligacao: 'ligacao', destaque: 'destaque', parte: 'parte-txt', texto: '' };
+function paragrafo(it) {
+  const p = el(it.classe === 'destaque' ? 'div' : 'p', CLASSES_PARAGRAFO[it.classe] || '');
+  p.append(...nodesDe(it.texto));
+  return p;
+}
+function montaCategoria(g) {
+  const cfg = CATEGORIAS[g.cat] || CATEGORIAS.demais;
+  const sec = el('section', 'categoria cor-' + cfg.cor);
+  sec.id = 'cat-' + g.cat;
+  const cab = el('header', 'cat-cab');
+  const ico = el('span', 'cat-ico');
+  ico.innerHTML = ICONES[cfg.icone] || ICONES.doc;
+  const h = el('h2', 'cat-titulo', cfg.titulo);
+  h.id = 'h-' + g.cat;
+  sec.setAttribute('aria-labelledby', h.id);
+  cab.append(ico, h);
+  sec.appendChild(cab);
+  for (const it of g.itens) {
+    if (it.cabecalho) sec.appendChild(el('p', 'eyebrow', it.cabecalho));
+    if (it.classe === 'parte') {
+      const caixa = el('div', 'parte');
+      caixa.appendChild(paragrafo(it));
+      sec.appendChild(caixa);
+    } else {
+      sec.appendChild(paragrafo(it));
+    }
+  }
+  return sec;
+}
+function montaTexto(grupos) {
+  $('texto').replaceChildren(...grupos.map(montaCategoria));
+}
+
+// Resumo: os mesmos dados do texto, em destaque (nenhum valor é alterado)
+function montaResumo(texto) {
+  const t = String(texto || '');
+  const pega = re => { const m = re.exec(t); return m ? m[1] : ''; };
+  const itens = [];
+  const add = (rotulo, valor, extra) => { if (valor) itens.push(Object.assign({ rotulo, valor }, extra || {})); };
+  add('Contratante', pega(/CONTRATANTE: ([^,\n]+),/));
+  add('Fotógrafo', pega(/CONTRATADO: ([^(\n]+?) \(/));
+  add('Data do evento', pega(/no dia (\d{2}\.\d{2}\.\d{4})/), { destaque: true });
+  const h = /com início às (\S+) e término no local às (\S+?),/.exec(t);
+  if (h) add('Horário', `${h[1]} às ${h[2]}`);
+  add('Local', pega(/ na ([^\n]+?), com início às/), { longo: true });
+  add('Serviço', pega(/● (Produção e edição de fotografias)/), { longo: true });
+  add('Valor total', pega(/O valor desse contrato é de (R\$ [\d.,]+(?: \([^)]*\))?)/), { destaque: true, longo: true });
+  const pct = pega(/(\d+%) do valor total do contrato/);
+  const antes = pega(/em até (\d{2} \([^)]*\) dias) antes da data do evento/);
+  if (pct || antes) add('Pagamento', [pct && `${pct} na data da assinatura`, antes && `restante em até ${antes} antes do evento`].filter(Boolean).join(' · '), { longo: true });
+  const entrega = pega(/no prazo de (\d{2} \([^)]*\) dias úteis) a partir do evento/);
+  if (entrega) add('Entrega das fotos', `${entrega} a partir do evento`, { longo: true });
+  const cancel = pega(/antecedência mínima de (\d{2} \([^)]*\) dias)/);
+  if (cancel) add('Cancelamento', `${cancel} de antecedência`, { longo: true });
+
+  const caixa = $('tiles');
+  caixa.replaceChildren();
+  for (const it of itens) {
+    const linha = el('div', 'linha' + (it.destaque ? ' realce' : ''));
+    linha.append(el('dt', null, it.rotulo), el('dd', null, it.valor));
+    caixa.appendChild(linha);
+  }
+  $('resumo').classList.toggle('oculto', itens.length === 0);
+}
+
+// Índice: atalhos para cada categoria presente no contrato
+function montaIndice(grupos) {
+  const nav = $('indice');
+  const links = $('indice-links');
+  links.replaceChildren();
+  if (grupos.length < 2) { nav.classList.add('oculto'); return; }
+  for (const g of grupos) {
+    const cfg = CATEGORIAS[g.cat] || CATEGORIAS.demais;
+    const a = el('a', null, cfg.titulo);
+    a.href = '#cat-' + g.cat;
+    links.appendChild(a);
+  }
+  nav.classList.remove('oculto');
+  nav.open = window.matchMedia('(min-width:880px)').matches;
+}
+
+function montaAceito(c, aceito) {
+  const caixa = $('aceito');
+  caixa.replaceChildren();
+  if (!aceito) { caixa.classList.add('oculto'); return; }
+  [
+    ['Protocolo', c.protocolo],
+    ['Aceito em', dataHora(c.aceiteEm)],
+    ['Nome', c.nomeAceite],
+    ['Uso de imagens', c.usoImagem === 'authorized' ? 'Autorizado' : 'Não autorizado']
+  ].forEach(([rotulo, valor]) => {
+    const p = el('p');
+    p.append(el('strong', null, rotulo + ': '), document.createTextNode(valor || '—'));
+    caixa.appendChild(p);
+  });
+  caixa.classList.remove('oculto');
+}
 
 function render(c) {
-  document.title = c.titulo + ' · André Vitor Fotografia';
-  $('titulo').textContent = c.titulo;
-  $('texto').textContent = c.texto;
+  document.title = (c.titulo || 'Contrato') + ' · André Vitor Fotografia';
+  const { titulo, grupos } = analisa(c.texto);
+  $('titulo').textContent = titulo || c.titulo || 'Contrato';
   const aceito = c.status === 'accepted';
   $('badge').textContent = aceito ? '✅ Aceito' : '⏳ Aguardando aceite';
   $('badge').className = 'badge ' + (aceito ? 'aceito' : 'pendente');
-
+  montaTexto(grupos);
+  montaResumo(c.texto);
+  montaIndice(grupos);
   $('form').classList.toggle('oculto', aceito || impressao);
   $('imprimir').classList.toggle('oculto', !(aceito || impressao));
-
-  const caixa = $('aceito');
-  caixa.innerHTML = '';
-  if (aceito) {
-    [
-      ['Protocolo', c.protocolo],
-      ['Aceito em', dataHora(c.aceiteEm)],
-      ['Nome', c.nomeAceite],
-      ['Uso de imagens', c.usoImagem === 'authorized' ? 'Autorizado' : 'Não autorizado']
-    ].forEach(([rotulo, valor]) => {
-      const p = document.createElement('p');
-      const forte = document.createElement('strong');
-      forte.textContent = rotulo + ': ';
-      p.appendChild(forte);
-      p.appendChild(document.createTextNode(valor || '—'));
-      caixa.appendChild(p);
-    });
-    caixa.classList.remove('oculto');
-  } else {
-    caixa.classList.add('oculto');
-  }
+  montaAceito(c, aceito);
 }
 
 async function carregar() {
