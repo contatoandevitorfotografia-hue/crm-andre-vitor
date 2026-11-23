@@ -1520,7 +1520,7 @@ input[type="date"]{cursor:pointer}
     <button class="proj-tab" id="ptab-video" onclick="switchProjTab('video')">🎥 Vídeo<span class="proj-tab-badge" id="ptab-video-badge" style="display:none"></span></button>
   </div>
   <div id="proj-section">
-    <div id="freelas-antigos-bar" style="display:none;margin:0 0 10px"><button type="button" class="btn btn-d" id="btn-apagar-freelas-antigos" onclick="apagarFreelasAntigos()">🗑️ Apagar cards antigos do Freelas</button></div>
+    <div id="freelas-antigos-bar" style="display:none;margin:0 0 10px"><button type="button" class="btn btn-g" id="btn-levar-freelas-antigos" onclick="levarFreelasAntigosParaProjetos()">📥 Levar cards para Projetos</button> <button type="button" class="btn btn-d" id="btn-apagar-freelas-antigos" onclick="apagarFreelasAntigos()">🗑️ Apagar cards antigos do Freelas</button></div>
     <div class="srch-bar"><div class="srch-wrap"><input class="srch-inp" id="srch-pr" placeholder="Buscar projeto..." oninput="renderPr()"></div></div>
     <div class="kb-wrap" id="kb-pr"><div class="kb-board" id="board-pr"></div></div>
     <div class="kb-scrollbar-track"><div class="kb-scrollbar-thumb" id="kb-thumb-pr"></div></div>
@@ -3311,6 +3311,7 @@ function atualizaBotaoFreelasAntigos(){
   const n=freelasAntigosCards().length;
   barra.style.display=n?'':'none';
   const b=document.getElementById('btn-apagar-freelas-antigos');if(b)b.textContent=`🗑️ Apagar ${n} card(s) antigo(s) do Freelas`;
+  const l=document.getElementById('btn-levar-freelas-antigos');if(l)l.textContent=`📥 Levar ${n} card(s) para Projetos`;
 }
 // Apaga só os cards do antigo Freelas, depois de mostrar a lista e pedir confirmação. Festas e clientes não são tocados.
 function apagarFreelasAntigos(){
@@ -3324,6 +3325,19 @@ function apagarFreelasAntigos(){
   if(_colCustom['pr-frl']){delete _colCustom['pr-frl'];_saveColCustom();}
   savPr();renderPr();
   toast(`🗑️ ${lista.length} card(s) do antigo Freelas apagado(s)`,'green');
+}
+// Leva os cards do antigo Freelas para o quadro Projetos, sem apagar nada. Cada um passa para a fase onde
+// já aparecia (colunaDoProjeto), então vira um projeto comum: sai da lista de apagar e abre normal no editor.
+function levarFreelasAntigosParaProjetos(){
+  const lista=freelasAntigosCards();
+  if(!lista.length){atualizaBotaoFreelasAntigos();return;}
+  const nomes=lista.slice(0,5).map(c=>'• '+(c.nomePais||'Sem nome')).join('\n')+(lista.length>5?`\n… e mais ${lista.length-5}`:'');
+  if(!confirm(`Levar ${lista.length} card(s) para Projetos?\n\n${nomes}\n\nNada é apagado. Cada um continua na fase onde já aparece.`))return;
+  lista.forEach(c=>{c.coluna=colunaDoProjeto(c);c.updatedAt=Date.now();});
+  if(_colCustom['pr-frl']){delete _colCustom['pr-frl'];_saveColCustom();}
+  _backfillCoresRuidoFinalizados();
+  savPr();renderPr();
+  toast(`✅ ${lista.length} card(s) levado(s) para Projetos`,'green');
 }
 // Categorias de board dentro da aba Projetos
 const PR_CATS={
