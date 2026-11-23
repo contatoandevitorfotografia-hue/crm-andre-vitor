@@ -1520,6 +1520,7 @@ input[type="date"]{cursor:pointer}
     <button class="proj-tab" id="ptab-video" onclick="switchProjTab('video')">🎥 Vídeo<span class="proj-tab-badge" id="ptab-video-badge" style="display:none"></span></button>
   </div>
   <div id="proj-section">
+    <div id="freelas-antigos-bar" style="display:none;margin:0 0 10px"><button type="button" class="btn btn-d" id="btn-apagar-freelas-antigos" onclick="apagarFreelasAntigos()">🗑️ Apagar cards antigos do Freelas</button></div>
     <div class="srch-bar"><div class="srch-wrap"><input class="srch-inp" id="srch-pr" placeholder="Buscar projeto..." oninput="renderPr()"></div></div>
     <div class="kb-wrap" id="kb-pr"><div class="kb-board" id="board-pr"></div></div>
     <div class="kb-scrollbar-track"><div class="kb-scrollbar-thumb" id="kb-thumb-pr"></div></div>
@@ -3302,6 +3303,28 @@ const colunaDoProjeto=c=>{const k=c.coluna;if(PR_FRL_PARA_PROJ[k])return PR_FRL_
   const custom=b=>{try{return(JSON.parse(localStorage.getItem('crm_col_custom')||'{}')[b])||[]}catch(e){return[]}};
   const conhecida=PR_COLS.some(x=>x.id===k)||custom('pr-proj').some(x=>x.id===k)||custom('pr-video').some(x=>x.id===k);
   return conhecida?k:'festa-acontecer';};
+// Cards do antigo quadro Freelas: as colunas frl-* e as colunas próprias que existiam nele (lidas sem depender da ordem do script)
+const freelasAntigosIds=()=>{let custom=[];try{custom=(JSON.parse(localStorage.getItem('crm_col_custom')||'{}')['pr-frl'])||[]}catch(e){custom=[]}return[...Object.keys(PR_FRL_PARA_PROJ),...custom.map(c=>c.id)];};
+const freelasAntigosCards=()=>{const ids=freelasAntigosIds();return prCards.filter(c=>ids.includes(c.coluna));};
+function atualizaBotaoFreelasAntigos(){
+  const barra=document.getElementById('freelas-antigos-bar');if(!barra)return;
+  const n=freelasAntigosCards().length;
+  barra.style.display=n?'':'none';
+  const b=document.getElementById('btn-apagar-freelas-antigos');if(b)b.textContent=`🗑️ Apagar ${n} card(s) antigo(s) do Freelas`;
+}
+// Apaga só os cards do antigo Freelas, depois de mostrar a lista e pedir confirmação. Festas e clientes não são tocados.
+function apagarFreelasAntigos(){
+  const lista=freelasAntigosCards();
+  if(!lista.length){atualizaBotaoFreelasAntigos();return;}
+  const nomes=lista.slice(0,5).map(c=>'• '+(c.nomePais||'Sem nome')).join('\n')+(lista.length>5?`\n… e mais ${lista.length-5}`:'');
+  if(!confirm(`Apagar ${lista.length} card(s) do antigo Freelas?\n\n${nomes}\n\nEssa ação não tem volta. As festas continuam no CRM.`))return;
+  try{localStorage.setItem('crm_freelas_apagados',JSON.stringify({em:new Date().toISOString(),cards:lista}));}catch(e){}
+  const ids=freelasAntigosIds();
+  prCards=prCards.filter(c=>!ids.includes(c.coluna));
+  if(_colCustom['pr-frl']){delete _colCustom['pr-frl'];_saveColCustom();}
+  savPr();renderPr();
+  toast(`🗑️ ${lista.length} card(s) do antigo Freelas apagado(s)`,'green');
+}
 // Categorias de board dentro da aba Projetos
 const PR_CATS={
   proj :{key:'proj', label:'Projetos', emoji:'📸', defCol:'festa-acontecer'},
@@ -4155,6 +4178,7 @@ function renderPr(){
   });
   board.appendChild(_colAddGhostEl('pr-proj'));
   renderPrVideo();
+  atualizaBotaoFreelasAntigos();
   updateProjTabBadges();
 }
 // Renderiza um board de projetos filtrado por categoria (video / frl)
