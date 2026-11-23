@@ -2497,14 +2497,11 @@ input[type="date"]{cursor:pointer}
           <div class="fs-title" style="margin-bottom:0">⚠️ Pendências <span id="pend-count-badge" style="display:none;font-size:11px;background:#2e251c;color:#7a3434;border-radius:99px;padding:1px 8px;font-weight:700;margin-left:4px"></span></div>
           <div style="position:relative">
             <button type="button" id="btn-pend-add" onclick="togglePendMenu()" style="background:#241b12;color:#E0877A;border:1.5px solid #5c4326;border-radius:8px;padding:5px 12px;font:700 12px Montserrat,sans-serif;cursor:pointer;display:flex;align-items:center;gap:5px">＋ Adicionar</button>
-            <div id="pend-menu" style="display:none;position:absolute;right:0;bottom:calc(100% + 6px);z-index:200;background:var(--surface);border-radius:10px;box-shadow:0 -2px 24px rgba(0,0,0,.13);border:1px solid #343F4E;padding:8px;min-width:230px">
-              <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;padding:2px 6px 6px">Opções rápidas</div>
-              <div id="pend-menu-options" style="display:flex;flex-direction:column;gap:2px"></div>
-              <div style="border-top:1px solid #343F4E;margin:8px 0 6px"></div>
+            <div id="pend-menu" style="display:none;position:absolute;right:0;bottom:calc(100% + 6px);z-index:200;background:var(--surface);border-radius:10px;box-shadow:0 -2px 24px rgba(0,0,0,.13);border:1px solid #343F4E;padding:10px;min-width:300px">
               <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;padding:0 6px 5px">Personalizada</div>
               <div style="display:flex;gap:6px">
-                <input type="text" id="pend-new" placeholder="Escreva aqui..." style="flex:1;border:1.5px solid #343F4E;border-radius:6px;padding:6px 8px;font-size:12px" onkeydown="if(event.key==='Enter'){event.preventDefault();addPendenciaCustom()}">
-                <button type="button" onclick="addPendenciaCustom()" style="background:var(--primary);color:#11151C;border:none;border-radius:6px;padding:6px 10px;font:700 14px sans-serif;cursor:pointer">＋</button>
+                <input type="text" id="pend-new" placeholder="Escreva aqui..." style="flex:1;border:1.5px solid #343F4E;border-radius:8px;padding:11px 12px;font-size:14px;min-height:42px;box-sizing:border-box" onkeydown="if(event.key==='Enter'){event.preventDefault();addPendenciaCustom()}">
+                <button type="button" onclick="addPendenciaCustom()" style="background:var(--primary);color:#11151C;border:none;border-radius:8px;padding:0 16px;font:700 20px sans-serif;cursor:pointer">＋</button>
               </div>
             </div>
           </div>
@@ -3384,12 +3381,6 @@ const DEFAULT_TEMPLATES=[
   {id:'dt5',nome:'Lembrete — 1 dia antes',colunaVinculo:'',mensagem:'Oi, {nome}! 📸\n\nAmanhã é o grande dia! Mal posso esperar para registrar esse momento especial de {crianca}. 🎈\n\nEstarei lá às {horario} no {local}.\n\nQualquer dúvida de última hora, pode me chamar! 🙌'},
   {id:'dt6',nome:'Pós-evento — Agradecimento',colunaVinculo:'',mensagem:'Oi, {nome}! 😍\n\nFoi uma alegria imensa registrar esse momento tão especial! {crianca} ficou incrível.\n\nAs fotos estão sendo preparadas com muito carinho e atenção. Assim que estiver pronto, te aviso!\n\nObrigado pela confiança. 📷✨'},
   {id:'dt7',nome:'Entrega das Fotos',colunaVinculo:'',mensagem:'Oi, {nome}! 🎉\n\nSua galeria de fotos está pronta! Foram momentos lindíssimos e ficou tudo muito especial.\n\nAcesse pelo link abaixo e me conta o que achou! 😊\n\n🔗 [link da galeria]\n\nGuardo com carinho essa memória. Obrigado! 📸'},
-];
-const DEFAULT_PENDENCIAS=[
-  {label:'Assinar contrato'},
-  {label:'Pagar reserva (sinal)'},
-  {label:'Pagar restante'},
-  {label:'Confirmar horário e local'},
 ];
 let opCards=[],opCardsPess=[],prCards=[],albCards=[],packages=[],clients=[],templates=[],freelancers=[],tarefas=[],conteudos=[],pendencias=[],pendenciasGerais=[];
 let indicData={};
@@ -4809,8 +4800,8 @@ function clearParaPerdido(card){
   card.pacoteId='';card.pacoteCustom='';
   card.galeria='';card.galeriaClienteId='';card.followupDate='';card.obs='';
 }
-// Popup ao arrastar uma oportunidade para "Negociação": registra como está a negociação e o que
-// está pendente. O pendente entra nas pendências do cliente e aparece como 📌 no card.
+// Popup ao arrastar uma oportunidade para "Negociação": registra o que está pendente.
+// O pendente entra nas pendências do cliente e aparece como 📌 no card.
 function _abrirPopupNegociacao(cardId){
   const card=opCards.find(c=>c.id===cardId);if(!card)return;
   const old=document.getElementById('neg-overlay');if(old)old.remove();
@@ -4819,9 +4810,7 @@ function _abrirPopupNegociacao(cardId){
   div.style.cssText='position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);padding:16px';
   div.innerHTML=`<div onclick="event.stopPropagation()" style="background:var(--surface);border-radius:16px;padding:22px 20px;width:100%;max-width:440px;box-shadow:0 10px 36px rgba(0,0,0,0.35)">
     <div style="font-weight:700;font-size:16px;margin-bottom:4px">🤝 Negociação — ${esc(card.nomePais||card.titulo||'Cliente')}</div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Registre como está e o que falta para fechar.</div>
-    <label for="neg-status" style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Como está a negociação?</label>
-    <textarea id="neg-status" rows="3" style="width:100%;box-sizing:border-box;margin-bottom:14px;padding:10px;border:1.5px solid var(--border);border-radius:9px;background:var(--n50);color:var(--n900);font:500 13px 'Montserrat',sans-serif;resize:vertical">${esc(card.negociacaoStatus||'')}</textarea>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Registre o que falta para fechar.</div>
     <label for="neg-pend" style="display:block;font-size:11px;font-weight:700;color:#E0877A;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">📌 O que está pendente?</label>
     <input type="text" id="neg-pend" placeholder="Ex.: Aguardando retorno de qual pacote vai querer" style="width:100%;box-sizing:border-box;margin-bottom:16px;padding:10px;border:1px solid #3a2e1d;border-radius:9px;background:#2a2119;color:#E0877A;font:700 13px 'Montserrat',sans-serif">
     <div style="display:flex;gap:10px">
@@ -4831,15 +4820,13 @@ function _abrirPopupNegociacao(cardId){
   </div>`;
   div.addEventListener('click',()=>div.remove());
   document.body.appendChild(div);
-  setTimeout(()=>document.getElementById('neg-status')?.focus(),30);
+  setTimeout(()=>document.getElementById('neg-pend')?.focus(),30);
 }
 function _fecharPopupNegociacao(){const ov=document.getElementById('neg-overlay');if(ov)ov.remove();}
 function _salvarPopupNegociacao(cardId){
   const card=opCards.find(c=>c.id===cardId);
   if(!card){_fecharPopupNegociacao();return;}
-  const status=(document.getElementById('neg-status')?.value||'').trim();
   const pend=(document.getElementById('neg-pend')?.value||'').trim();
-  card.negociacaoStatus=status;
   if(pend){card.pendencias=card.pendencias||[];card.pendencias.push({id:uid(),label:pend,done:false});}
   card.updatedAt=Date.now();
   savOp();_fecharPopupNegociacao();renderOp();
@@ -5067,20 +5054,12 @@ function renderPendList(){
     badge.style.display=pendenciasTemp.length?'':'none';
     badge.textContent=open>0?open+' aberta'+(open>1?'s':''):'✅ todas ok';
   }
-  renderPendMenuOptions();
-}
-function renderPendMenuOptions(){
-  const el=document.getElementById('pend-menu-options');if(!el)return;
-  const adicionadas=new Set(pendenciasTemp.map(p=>p.label));
-  const disponiveis=DEFAULT_PENDENCIAS.filter(p=>!adicionadas.has(p.label));
-  if(!disponiveis.length){el.innerHTML='<div style="font-size:12px;color:var(--muted);padding:4px 6px">Todas as opções já adicionadas</div>';return;}
-  el.innerHTML=disponiveis.map(p=>`<button type="button" onclick="addPendenciaPreset('${p.label.replace(/'/g,"\\'")}')" style="display:flex;align-items:center;gap:7px;width:100%;background:none;border:none;border-radius:6px;padding:6px 8px;font:500 13px Montserrat,sans-serif;color:var(--text);cursor:pointer;text-align:left" onmouseover="this.style.background='#252E3B'" onmouseout="this.style.background='none'"><span style="color:#E0877A">+</span> ${esc(p.label)}</button>`).join('');
 }
 function togglePendMenu(){
   const menu=document.getElementById('pend-menu');if(!menu)return;
   const isOpen=menu.style.display==='block';
   menu.style.display=isOpen?'none':'block';
-  if(!isOpen){renderPendMenuOptions();setTimeout(()=>{document.addEventListener('click',_closePendMenu,{once:true})},50);}
+  if(!isOpen){setTimeout(()=>{document.addEventListener('click',_closePendMenu,{once:true})},50);}
 }
 function _closePendMenu(e){
   const menu=document.getElementById('pend-menu');
@@ -5090,12 +5069,6 @@ function _closePendMenu(e){
 }
 function togglePend(i){pendenciasTemp[i].done=!pendenciasTemp[i].done;renderPendList()}
 function removePend(i){pendenciasTemp.splice(i,1);renderPendList();}
-function addPendenciaPreset(label){
-  if(!label||pendenciasTemp.find(p=>p.label===label))return;
-  pendenciasTemp.push({id:uid(),label,done:false});
-  document.getElementById('pend-menu').style.display='none';
-  renderPendList();
-}
 function addPendenciaCustom(){
   const inp=document.getElementById('pend-new');const label=(inp.value||'').trim();
   if(!label)return;
