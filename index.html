@@ -1513,13 +1513,11 @@ input[type="date"]{cursor:pointer}
     <button class="btn btn-p" id="btn-novo-proj" onclick="openOpModal(null,'confirmado',null,true)">＋ Novo Projeto</button>
     <button class="btn btn-p" id="btn-novo-alb" style="display:none" onclick="openAlbModal(null,'alb-selecao')">＋ Novo Álbum</button>
     <button class="btn btn-p" id="btn-novo-video" style="display:none" onclick="openPrModal(null,'freela-aguardando-fotos')">＋ Novo Vídeo</button>
-    <button class="btn btn-p" id="btn-novo-frl" style="display:none" onclick="openPrModal(null,'frl-aguardando-fotos')">＋ Novo Freela</button>
   </div>
   <div class="proj-tab-bar">
     <button class="proj-tab active" id="ptab-proj" onclick="switchProjTab('proj')">📸 Projetos</button>
     <button class="proj-tab" id="ptab-alb" onclick="switchProjTab('alb')">📒 Álbuns<span class="proj-tab-badge" id="ptab-alb-badge" style="display:none"></span></button>
     <button class="proj-tab" id="ptab-video" onclick="switchProjTab('video')">🎥 Vídeo<span class="proj-tab-badge" id="ptab-video-badge" style="display:none"></span></button>
-    <button class="proj-tab" id="ptab-frl" onclick="switchProjTab('frl')">🤝 Freelas<span class="proj-tab-badge" id="ptab-frl-badge" style="display:none"></span></button>
   </div>
   <div id="proj-section">
     <div class="srch-bar"><div class="srch-wrap"><input class="srch-inp" id="srch-pr" placeholder="Buscar projeto..." oninput="renderPr()"></div></div>
@@ -1535,11 +1533,6 @@ input[type="date"]{cursor:pointer}
     <div class="srch-bar"><div class="srch-wrap"><input class="srch-inp" id="srch-pr-video" placeholder="Buscar vídeo..." oninput="renderPrVideo()"></div></div>
     <div class="kb-wrap" id="kb-pr-video"><div class="kb-board" id="board-pr-video"></div></div>
     <div class="kb-scrollbar-track"><div class="kb-scrollbar-thumb" id="kb-thumb-pr-video"></div></div>
-  </div>
-  <div id="frl-proj-section" style="display:none">
-    <div class="srch-bar"><div class="srch-wrap"><input class="srch-inp" id="srch-pr-frl" placeholder="Buscar freela..." oninput="renderPrFrl()"></div></div>
-    <div class="kb-wrap" id="kb-pr-frl"><div class="kb-board" id="board-pr-frl"></div></div>
-    <div class="kb-scrollbar-track"><div class="kb-scrollbar-thumb" id="kb-thumb-pr-frl"></div></div>
   </div>
 </div>
 
@@ -3301,18 +3294,18 @@ const PR_COLS=[
   {id:'video-na-edicao',name:'Está na edição',emoji:'🎬',color:'#4E5A63',cat:'video'},
   {id:'freela-final-entregar',name:'Finalizado, entregar',emoji:'📤',color:'#526267',cat:'video'},
   {id:'freela-falta-pagar',name:'Falta pagar',emoji:'💸',color:'#806B62',cat:'video'},
-  // ── Board Freelas ──
-  {id:'frl-aguardando-fotos',name:'Aguardando fotos',emoji:'📸',color:'#5D626A',cat:'frl'},
-  {id:'frl-editando',name:'Editando',emoji:'🎨',color:'#5A6472',cat:'frl'},
-  {id:'frl-final-entregar',name:'Finalizado, entregar',emoji:'📤',color:'#526267',cat:'frl'},
-  {id:'frl-falta-receber',name:'Falta receber',emoji:'💸',color:'#806B62',cat:'frl'},
-  {id:'frl-finalizado',name:'Finalizado',emoji:'🎉',color:'#59605D',cat:'frl'},
 ];
+// Os cards do antigo quadro Freelas aparecem nas fases de Projetos equivalentes (o dado não muda de lugar)
+const PR_FRL_PARA_PROJ={'frl-aguardando-fotos':'pr-pendencia','frl-editando':'cortar-fotos','frl-final-entregar':'final-entregar','frl-falta-receber':'final-pagar','frl-finalizado':'finalizado'};
+// Fase em que o card aparece no quadro Projetos. Card de coluna que não existe mais vai para a primeira fase, para não sumir.
+const colunaDoProjeto=c=>{const k=c.coluna;if(PR_FRL_PARA_PROJ[k])return PR_FRL_PARA_PROJ[k];
+  const custom=b=>{try{return(JSON.parse(localStorage.getItem('crm_col_custom')||'{}')[b])||[]}catch(e){return[]}};
+  const conhecida=PR_COLS.some(x=>x.id===k)||custom('pr-proj').some(x=>x.id===k)||custom('pr-video').some(x=>x.id===k);
+  return conhecida?k:'festa-acontecer';};
 // Categorias de board dentro da aba Projetos
 const PR_CATS={
   proj :{key:'proj', label:'Projetos', emoji:'📸', defCol:'festa-acontecer'},
   video:{key:'video',label:'Vídeo',    emoji:'🎥', defCol:'freela-aguardando-fotos'},
-  frl  :{key:'frl',  label:'Freelas',  emoji:'🤝', defCol:'frl-aguardando-fotos'},
 };
 const prCatOf=colId=>PR_COLS.find(c=>c.id===colId)?.cat||'proj';
 // Colunas do board Projetos em que chegar ali já significa que Cores e
@@ -3625,16 +3618,15 @@ function savPgr(){localStorage.setItem('crm_pgr_v1',JSON.stringify(pendenciasGer
 
 function switchProjTab(tab){
   if(tab==='freela')tab='video'; // compat com chamadas antigas
+  if(tab==='frl')tab='proj'; // o quadro Freelas saiu de Projetos
   document.querySelectorAll('.proj-tab').forEach(b=>b.classList.remove('active'));
   document.getElementById('ptab-'+tab)?.classList.add('active');
   document.getElementById('proj-section').style.display=tab==='proj'?'':'none';
   document.getElementById('alb-section').style.display=tab==='alb'?'':'none';
   document.getElementById('video-proj-section').style.display=tab==='video'?'':'none';
-  document.getElementById('frl-proj-section').style.display=tab==='frl'?'':'none';
   document.getElementById('btn-novo-proj').style.display=tab==='proj'?'':'none';
   document.getElementById('btn-novo-alb').style.display=tab==='alb'?'':'none';
   document.getElementById('btn-novo-video').style.display=tab==='video'?'':'none';
-  document.getElementById('btn-novo-frl').style.display=tab==='frl'?'':'none';
   if(tab==='alb')renderAlb();else renderPr();
 }
 function renderAlb(){
@@ -3663,10 +3655,6 @@ function updateProjTabBadges(){
   const videoCards=prCards.filter(c=>videoCols.includes(c.coluna));
   const videoLast=videoCols[videoCols.length-1];
   setBadge('ptab-video-badge',videoCards.length,videoCards.filter(c=>c.coluna!==videoLast).length);
-  const frlCols=PR_COLS.filter(c=>c.cat==='frl').map(c=>c.id);
-  const frlCards=prCards.filter(c=>frlCols.includes(c.coluna));
-  const frlLast=frlCols[frlCols.length-1];
-  setBadge('ptab-frl-badge',frlCards.length,frlCards.filter(c=>c.coluna!==frlLast).length);
 }
 function buildAlbCol(col,cs){
   const div=document.createElement('div');div.className='col';div.dataset.col=col.id;
@@ -3746,7 +3734,6 @@ const TRANSFER_DESTS=[
   {key:'proj', label:'Projetos', emoji:'📸'},
   {key:'alb',  label:'Álbuns',   emoji:'📒'},
   {key:'video',label:'Vídeo',    emoji:'🎥'},
-  {key:'frl',  label:'Freelas',  emoji:'🤝'},
 ];
 let _trfKind=null,_trfId=null,_trfDest=null,_trfMode='mover';
 
@@ -4160,14 +4147,14 @@ function renderPr(){
   const getEffDate=c=>{if(c.sourceId){const s=opCards.find(o=>o.id===c.sourceId);if(s?.dataEvento)return s.dataEvento;}return c.dataEvento||''};
   const getEffTime=c=>{if(c.sourceId){const s=opCards.find(o=>o.id===c.sourceId);if(s)return s.horario||'';}return c.horario||''};
   _orderedCols('pr-proj',_visibleCols('pr-proj',PR_COLS.filter(col=>(col.cat||'proj')==='proj'))).forEach(col=>{
-    let cs=prCards.filter(c=>c.coluna===col.id);
+    let cs=prCards.filter(c=>colunaDoProjeto(c)===col.id);
     if(q)cs=cs.filter(c=>{const d=c.sourceId?(opCards.find(o=>o.id===c.sourceId)||c):c;return _norm(d.nomePais).includes(q)||_norm(d.nomeCrianca).includes(q)||_norm(d.nomeCrianca2).includes(q)});
     const _hoje=new Date().toISOString().slice(0,10);
     cs.sort((a,b)=>{const da=getEffDate(a),db=getEffDate(b);if(!da&&!db)return _cmpHora(getEffTime(a),getEffTime(b));if(!da)return 1;if(!db)return-1;if(da!==db)return da<db?-1:1;return _cmpHora(getEffTime(a),getEffTime(b));});
     board.appendChild(buildPrCol(col,cs));
   });
   board.appendChild(_colAddGhostEl('pr-proj'));
-  renderPrVideo();renderPrFrl();
+  renderPrVideo();
   updateProjTabBadges();
 }
 // Renderiza um board de projetos filtrado por categoria (video / frl)
@@ -4185,7 +4172,6 @@ function renderPrCat(cat,boardId,srchId){
   board.appendChild(_colAddGhostEl('pr-'+cat));
 }
 function renderPrVideo(){renderPrCat('video','board-pr-video','srch-pr-video')}
-function renderPrFrl(){renderPrCat('frl','board-pr-frl','srch-pr-frl')}
 // compat: nome antigo
 function renderPrFreela(){renderPrVideo()}
 function adjustHexColor(hex, amt){
@@ -4281,13 +4267,14 @@ function prCardHTML(c,cc){
   else if(pagoTotal>0)pagCls='pag-sinal';
   const planoDeepActive=_pi&&!isPend&&freelaTipo!=='contratei'&&freelaTipo!=='sou-freela';
   const planoBg=_pi?`background:${_pi.deepBg};border:1px solid transparent;--ptext:${_pi.deepText};`:'';
-  const pendBg=isPend?'background:#2E1D1D;border:1.5px solid #E0877A;':freelaTipo==='contratei'?'background:#1b2633;border:1.5px solid #7b8fa3;':freelaTipo==='sou-freela'?'background:#241715;border:1.5px solid #b05a45;':planoBg;
+  const pendBg=isPend?'background:#2E1D1D;border:1.5px solid #E0877A;':freelaTipo==='contratei'?'background:linear-gradient(180deg,rgba(131,169,201,.26),rgba(131,169,201,.10)),var(--surface);border:1.5px solid #83A9C9;':freelaTipo==='sou-freela'?'background:#241715;border:1.5px solid #b05a45;':planoBg;
   const planoBadge=_pi?(planoDeepActive?`<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;color:${_pi.deepText};background:rgba(255,255,255,.18);border-radius:20px;padding:2px 8px">${_pi.emoji} ${_pi.label}</span>`:`<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;color:${_pi.chipText};background:${_pi.chipBg};border:1px solid ${_pi.chipBorder};border-radius:20px;padding:2px 7px">${_pi.emoji} ${_pi.label}</span>`):'';
   const pendBadge=isPend?`<div style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:#D9A66F;background:#28231c;border:1px solid #8c7a62;border-radius:20px;padding:2px 7px;margin-bottom:6px">⚠️ Pendências</div>`:freelaTipo==='contratei'?`<div style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:#d7dfe3;background:#22282d;border:1px solid #65727b;border-radius:20px;padding:2px 7px;margin-bottom:6px">🤝 Freela contratado${frlNome?' · '+esc(frlNome):''}</div>`:freelaTipo==='sou-freela'?`<div style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:#e0c6b9;background:#2b211d;border:1px solid #8f6f60;border-radius:20px;padding:2px 7px;margin-bottom:6px">📸 Sou o freela${parceiroNome?' · '+esc(parceiroNome):''}</div>`:isPast?`<div style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:#6B7584;background:#29251f;border:1px solid #8c7a62;border-radius:20px;padding:2px 7px;margin-bottom:6px">✅ Realizado</div>`:'';
   const _cat=prCatOf(c.coluna);
   const isFreelaCol=_cat==='video';
   const isCopia=!!c.copiaDe;
-  return `<div class="proj-card${planoDeepActive?' plano-deep':''}" draggable="true" data-id="${c.id}" style="--cc:${cc};${pendBg}" ondragstart="onDS(event,'${c.id}','pr')" ondragend="onDE2(event)" onclick="openPrModal('${c.id}',null,event)">
+  const ccCard=freelaTipo==='contratei'?'#83A9C9':cc;
+  return `<div class="proj-card${planoDeepActive?' plano-deep':''}" draggable="true" data-id="${c.id}" style="--cc:${ccCard};${pendBg}" ondragstart="onDS(event,'${c.id}','pr')" ondragend="onDE2(event)" onclick="openPrModal('${c.id}',null,event)">
     <div class="card-actions"><button class="cab del" onclick="qDel('pr','${c.id}',event)">🗑</button><button class="cab" onclick="openTransfer('pr','${c.id}',event)" title="Mover ou copiar para outro board">🔀</button>${src&&_clienteDoCard(src)?`<button class="cab" onclick="event.stopPropagation();abrirFichaClienteDoCard('${src.id}')" title="Abrir ficha do cliente">👤</button>`:''}<button class="cab">✏️</button></div>
     ${isCopia?`<div style="display:inline-flex;align-items:center;gap:4px;font-size:9.5px;font-weight:700;color:#B1C0CF;background:#1B222D;border:1px solid #566370;border-radius:20px;padding:2px 7px;margin-bottom:6px">🔗 Cópia</div>`:''}
     ${(planoBadge||pendBadge)?`<div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-bottom:6px">${planoBadge}${pendBadge}</div>`:''}
@@ -4487,7 +4474,6 @@ const _COL_PROTEGIDAS={
   alb:['alb-selecao'],
   'pr-proj':['festa-acontecer'],
   'pr-video':['freela-aguardando-fotos'],
-  'pr-frl':['frl-aguardando-fotos'],
 };
 // Junta as colunas "de fábrica" com as colunas customizadas do usuário e
 // tira as que foram removidas — é isso que todo lugar que desenha um board
@@ -4502,7 +4488,6 @@ function _baseColsDoBoard(boardKey){
   if(boardKey==='alb')return ALB_COLS;
   if(boardKey==='pr-proj')return PR_COLS.filter(c=>(c.cat||'proj')==='proj');
   if(boardKey==='pr-video')return PR_COLS.filter(c=>c.cat==='video');
-  if(boardKey==='pr-frl')return PR_COLS.filter(c=>c.cat==='frl');
   return[];
 }
 function _contarCardsNaColuna(boardKey,colId){
@@ -4640,7 +4625,6 @@ function adicionarColuna(boardKey){
   if(!nome){toast('⚠️ Dê um nome pra coluna','orange');return;}
   const novo={id:'custom_'+uid(),name:nome,emoji,color:'#5A6472',sub:''};
   if(boardKey==='pr-video')novo.cat='video';
-  else if(boardKey==='pr-frl')novo.cat='frl';
   if(!_colCustom[boardKey])_colCustom[boardKey]=[];
   _colCustom[boardKey].push(novo);
   _saveColCustom();
@@ -4684,7 +4668,6 @@ const _COL_BOARD_REGISTRY={
   alb:{ids:()=>_visibleCols('alb',ALB_COLS).map(c=>c.id),render:()=>renderAlb()},
   'pr-proj':{ids:()=>_visibleCols('pr-proj',PR_COLS.filter(c=>(c.cat||'proj')==='proj')).map(c=>c.id),render:()=>renderPr()},
   'pr-video':{ids:()=>_visibleCols('pr-video',PR_COLS.filter(c=>c.cat==='video')).map(c=>c.id),render:()=>renderPrVideo()},
-  'pr-frl':{ids:()=>_visibleCols('pr-frl',PR_COLS.filter(c=>c.cat==='frl')).map(c=>c.id),render:()=>renderPrFrl()},
 };
 function colDragStart(e,boardKey,colId){
   _colDragId=colId;_colDragBoard=boardKey;
@@ -5223,7 +5206,6 @@ document.addEventListener('DOMContentLoaded',()=>{
   setupKbScroll('kb-pr','kb-thumb-pr');
   setupKbScroll('kb-alb','kb-thumb-alb');
   setupKbScroll('kb-pr-video','kb-thumb-pr-video');
-  setupKbScroll('kb-pr-frl','kb-thumb-pr-frl');
   _initTarefasChecks();
   initAutoBackup();
   initAuthGate();
