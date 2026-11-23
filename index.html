@@ -3332,12 +3332,14 @@ function levarFreelasAntigosParaProjetos(){
   const lista=freelasAntigosCards();
   if(!lista.length){atualizaBotaoFreelasAntigos();return;}
   const nomes=lista.slice(0,5).map(c=>'• '+(c.nomePais||'Sem nome')).join('\n')+(lista.length>5?`\n… e mais ${lista.length-5}`:'');
-  if(!confirm(`Levar ${lista.length} card(s) para Projetos?\n\n${nomes}\n\nNada é apagado. Cada um continua na fase onde já aparece.`))return;
+  if(!confirm(`Levar ${lista.length} card(s) para Projetos?\n\n${nomes}\n\nNada é apagado. Cada um continua na fase onde já aparece. Se essa fase estiver escondida no quadro, ela volta a aparecer.`))return;
   lista.forEach(c=>{c.coluna=colunaDoProjeto(c);c.updatedAt=Date.now();});
   if(_colCustom['pr-frl']){delete _colCustom['pr-frl'];_saveColCustom();}
   _backfillCoresRuidoFinalizados();
-  savPr();renderPr();
-  toast(`✅ ${lista.length} card(s) levado(s) para Projetos`,'green');
+  savPr();
+  const voltaram=_mostraColunasComCards('pr-proj');
+  renderPr();
+  toast(`✅ ${lista.length} card(s) levado(s) para Projetos${voltaram.length?`. Voltou a aparecer: ${voltaram.join(', ')}`:''}`,'green');
 }
 // Categorias de board dentro da aba Projetos
 const PR_CATS={
@@ -4179,6 +4181,8 @@ function _cmpHora(a,b){
   return a<b?-1:a>b?1:0;
 }
 function renderPr(){
+  const voltaram=_mostraColunasComCards('pr-proj');
+  if(voltaram.length)toast(`👁️ ${voltaram.join(', ')} voltou a aparecer: tinha cards nela.`,'green');
   const q=_norm(document.getElementById('srch-pr')?.value||'');
   const board=document.getElementById('board-pr');board.innerHTML='';
   const getEffDate=c=>{if(c.sourceId){const s=opCards.find(o=>o.id===c.sourceId);if(s?.dataEvento)return s.dataEvento;}return c.dataEvento||''};
@@ -4531,7 +4535,18 @@ function _baseColsDoBoard(boardKey){
 function _contarCardsNaColuna(boardKey,colId){
   if(boardKey==='op')return opCards.filter(c=>c.coluna===colId&&!c.somenteProjeto).length;
   if(boardKey==='alb')return albCards.filter(c=>c.coluna===colId).length;
+  // Projetos: conta pela fase onde o card aparece (cards do antigo Freelas aparecem nas fases equivalentes)
+  if(boardKey==='pr-proj')return prCards.filter(c=>colunaDoProjeto(c)===colId).length;
   return prCards.filter(c=>c.coluna===colId).length;
+}
+// Coluna escondida que ainda tem cards faz esses cards sumirem do quadro, então ela volta a aparecer.
+// Devolve os nomes das colunas que voltaram.
+function _mostraColunasComCards(boardKey){
+  const escondidas=(_colHidden[boardKey]||[]).filter(id=>_contarCardsNaColuna(boardKey,id)>0);
+  if(!escondidas.length)return[];
+  _colHidden[boardKey]=_colHidden[boardKey].filter(id=>!escondidas.includes(id));
+  _saveColHidden();
+  return escondidas.map(id=>_baseColsDoBoard(boardKey).find(c=>c.id===id)?.name||id);
 }
 // ── Simulador de gastos (Financeiro > Resumo) ──
 // Preview não-destrutivo: nada aqui é salvo, some ao recarregar a página.
